@@ -1,23 +1,7 @@
 'use client'
 import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
-
-// Tuple Type
-type XY = {
-  x: number;
-  y: number;
-}
-
-// Props for Generated boxes
-export type GeneratedBoxProps = {
-  colStart: number;
-  colEnd: number;
-  rowStart: number;
-  rowEnd: number;
-}
-
-// To bypass ts type check
-const defaultXY = {x: -1, y: -1};
+import { XY, defaultXY, GeneratedBoxProps } from '../utils/spec';
 
 export default function SpacialGrid() {
   /* STATE/REF VARS */

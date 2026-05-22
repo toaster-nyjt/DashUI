@@ -1,4 +1,4 @@
-import { GeneratedBoxProps } from "./SpatialGrid";
+import { GeneratedBoxProps } from '../utils/spec';
 
 // Created from drag interaction in Spacial Grid
 export default function GeneratedBox({ props } : { props : GeneratedBoxProps }) {
