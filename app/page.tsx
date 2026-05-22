@@ -1,7 +1,7 @@
-import SpacialGrid from "./components/SpacialGrid";
+import SpatialGrid from "./components/SpatialGrid";
 
 export default function Home() {
   return (
-      <SpacialGrid />
+      <SpatialGrid />
   );
 }

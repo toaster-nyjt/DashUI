@@ -15,6 +15,17 @@
   --color-bgdarkblue: #0a0e1a;
   --color-dots: #93c5fd4d;
   --color-highlightbox: #6a728280;
+  --color-emptycomponent: #222732;
+}
+
+/* Animations */
+@theme {
+  @keyframes blockGrow {
+    from { transform: scale(0.5); }
+    to { transform: scale(1); }
+  }
+
+  --animate-blockGrow: blockGrow 0.3s ease-out;
 }
 
 @media (prefers-color-scheme: dark) {
