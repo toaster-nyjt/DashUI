@@ -1,0 +1,100 @@
+import { useCallback, useState } from "react";
+import { Message } from "./spec";
+
+// Strip markdown code fences from generated code
+export function stripCodeFences(code: string): string {
+  // Remove opening fence: ```tsx, ```typescript, ```jsx, ```javascript, or just ```
+  let stripped = code.replace(/^```(?:tsx?|jsx?|typescript|javascript)?\s*\n?/i, "");
+  // Remove closing fence: ```
+  stripped = stripped.replace(/\n?```\s*$/i, "");
+  return stripped;
+}
+
+// API ROUTE CALLER, initializes state vars and the cached function that gets LLM code
+export function useGetCode() {
+
+  // Message history, including assistant messages
+  const [messages, setMessages] = useState<Message[]>([]);
+  // Called in API calling function, sets -> stream updates code -> sets again
+  const [generatedCode, setGeneratedCode] = useState<string>("");
+  // Informs components on if API is streaming resulting code
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Gets called when user sends prompt, function is cached with useCallback
+  const handleSend = useCallback(async (prompt: string) => {
+    // Create new user message from prompt
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: prompt,
+    };
+    // Destructures previous messages for multi-turn interaction
+    let currentMessages : Message[] = [];
+    // prev is current message[], adds the new message
+    setMessages((prev) => {
+      currentMessages = [...prev, userMessage]; // Intercepts the new state
+      return currentMessages; // Set the new state on next render
+    }); 
+
+    setIsGenerating(true); // Sets isStreaming 
+    setGeneratedCode(""); // Resets the generated code
+
+    try {
+      // Calls API Route (in route.ts)
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // Sends in the latest prompt along with message history
+        body: JSON.stringify({
+          prompt,
+          // Utilizes the messages state var
+          history: messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate");
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullCode = "";
+
+      // Gradual setting of code -> changes generatedCode
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          fullCode += chunk;
+          setGeneratedCode(stripCodeFences(fullCode)); // Connects LLM output
+        }
+      }
+
+      // Add assistant message (static response message)
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "Component generated successfully!",
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error("Generation error:", error);
+      const errorMessage: Message = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "Sorry, there was an error generating the component. Please try again.",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+
+    } finally {
+      setIsGenerating(false); // Shuts off isStreaming 
+    }
+  }, [messages]);
+
+  // Return the setter function and the state vars
+  return { handleSend, messages, generatedCode, isGenerating};
+}

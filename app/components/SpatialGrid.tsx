@@ -1,7 +1,7 @@
 'use client'
 import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
-import { XY, defaultXY, GeneratedBoxProps } from '../utils/spec';
+import { XY, defaultXY, GeneratedBoxProps, numGridBlocksWide, numVHTall } from '../utils/spec';
 
 export default function SpacialGrid() {
   /* STATE/REF VARS */
@@ -21,6 +21,9 @@ export default function SpacialGrid() {
   const [elementArr, setElementArr] = useState<GeneratedBoxProps[]>([]);
   // Tracks the currently generated element
   const currElement = useRef<GeneratedBoxProps>(null);
+  // Tracks which element is currently selected
+  const [selectedID, setSelectedID] = useState<string | null>('');
+
 
   /* LOGIC */
   // Initial useEffect on mount
@@ -28,7 +31,7 @@ export default function SpacialGrid() {
     // Calculates gridblock size based on screen width, after component mounts
     const setGridSize = () => {  
       if (!gridRef.current) return;
-      setGridBlockSize((gridRef.current!.getBoundingClientRect().width)/30);
+      setGridBlockSize((gridRef.current!.getBoundingClientRect().width)/numGridBlocksWide);
     }
     setGridSize();
 
@@ -39,18 +42,25 @@ export default function SpacialGrid() {
 
   // Register mouse down event listener to grid
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Remove offset of grid from window
-    const rect = gridRef.current!.getBoundingClientRect();
-    const localPos : XY = { x: e.clientX - rect.left, y: e.clientY - rect.top}; 
+    // Routes behavior depending on if an element is highlighted
+    if (selectedID === '') {
+      // Remove offset of grid from window
+      const rect = gridRef.current!.getBoundingClientRect();
+      const localPos : XY = { x: e.clientX - rect.left, y: e.clientY - rect.top}; 
 
-    // Updates the ref var to location of mouseDown
-    initMousePosition.current = localPos;
+      // Updates the ref var to location of mouseDown
+      initMousePosition.current = localPos;
 
-    // Temporarily update the box's position on click (before mouse move happens)
-    boxPosition.current = {x: initMousePosition.current.x, y: initMousePosition.current.y};
+      // Temporarily update the box's position on click (before mouse move happens)
+      boxPosition.current = {x: initMousePosition.current.x, y: initMousePosition.current.y};
 
-    // Triggers next useEffect
-    setIsMouseDragging(true);
+      // Triggers next useEffect
+      setIsMouseDragging(true);
+    }
+    else {
+      // Clears any selected id
+      setSelectedID('');
+    }
   }
 
   // Produces dragging effect from mouse move/up
@@ -81,8 +91,9 @@ export default function SpacialGrid() {
       setIsMouseDragging(false);
 
       // Creates new element
-      setElementArr((prev) => [...prev, currElement.current!])
-      // currElement.current = null;
+      setElementArr((prev) => [...prev, currElement.current!]);
+      // Selects it
+      setSelectedID(currElement.current!.key);
     }
 
     if (isMouseDragging) {
@@ -132,6 +143,7 @@ export default function SpacialGrid() {
       colEnd,
       rowStart,
       rowEnd,
+      key : `${colStart}-${rowStart}`, // Initialized on creation
     };
 
     for (let i = colStart; i <= colEnd; i ++) {
@@ -142,12 +154,14 @@ export default function SpacialGrid() {
     }
   }
 
+  
   /* JSX */
   return (
     // Background grid: Visual layer
     <div
-      className='h-[250vh] flex relative overflow-hidden bg-bgdarkblue'
+      className='flex relative overflow-hidden bg-bgdarkblue'
       style={{
+        height: `${numVHTall}vh`,
         // Creates the dots
         backgroundImage: `radial-gradient(circle, var(--color-dots) 1px, transparent 1px)`,
         backgroundSize: `${gridBlockSize}px ${gridBlockSize}px`,
@@ -161,7 +175,7 @@ export default function SpacialGrid() {
         className='inset-0 absolute grid overflow-hidden pointer-events-none'
         style={{
           // Creates a css grid
-          gridTemplateColumns: `repeat(30, ${gridBlockSize}px)`,
+          gridTemplateColumns: `repeat(${numGridBlocksWide}, ${gridBlockSize}px)`,
           gridTemplateRows: `repeat(${overlayRows}, ${gridBlockSize}px)`
         }}
       >
@@ -169,7 +183,17 @@ export default function SpacialGrid() {
         {elementArr.map((element) => (
           <GeneratedBox 
             props={element}       
-            key={`${element.colStart}-${element.rowStart}`}
+            key={element.key}
+            // Directly pass in derived props seperately so they update
+            isSelected={selectedID === element.key}
+            handleSelect={(e : React.MouseEvent) => {
+              // Mousedown -> Registers ONLY in the child Generated Box element
+              e.stopPropagation();
+              setSelectedID(element.key);
+            }}
+            handleDeselect={() => setSelectedID('')}
+            blockSize={gridBlockSize}
+            gridRef={gridRef.current!}
           >
             
           </GeneratedBox>
@@ -181,7 +205,7 @@ export default function SpacialGrid() {
         // Creates the grid blocks that the dragbox overlaps with
         gridBlockArr.map((block)=>(
           <div
-            className="absolute bg-highlightbox animate-blockGrow"
+            className="absolute bg-gridblocks animate-blockGrow"
             style={{
               width: gridBlockSize,
               height: gridBlockSize,
@@ -197,7 +221,7 @@ export default function SpacialGrid() {
       {/* Dragbox, created if mouse is dragging, is invisible */}
       {isMouseDragging && (
         <div
-          className='absolute overflow-hidden pointer-events-none'
+          className='absolute overflow-hidden border-2 border-highlightbox border-dotted pointer-events-none'
           style={{
             // Pass in box props
             width, // Assumes + 'px'
