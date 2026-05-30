@@ -1,7 +1,9 @@
 'use client'
 import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
-import { XY, defaultXY, GeneratedBoxProps, numGridBlocksWide, numVHTall } from '../utils/spec';
+import Taskbar from './Taskbar';
+import { XY, defaultXY, GeneratedBoxProps, DefaultCompSpec, numGridBlocksWide, numVHTall } from '../utils/spec';
+import { DEFAULT_SPEC } from '../utils/defaultSpec';
 
 export default function SpacialGrid() {
   /* STATE/REF VARS */
@@ -23,6 +25,34 @@ export default function SpacialGrid() {
   const currElement = useRef<GeneratedBoxProps>(null);
   // Tracks which element is currently selected
   const [selectedID, setSelectedID] = useState<string | null>('');
+  // Interact Mode: off = editing/meta interaction, on = interact with components
+  const [interactMode, setInteractMode] = useState<boolean>(false);
+
+  // Toggling Interact Mode on deselects any selected box
+  const handleInteractModeChange = (on : boolean) => {
+    setInteractMode(on);
+    if (on) setSelectedID('');
+  }
+
+  // Shared, runtime-extendable registry of component types + customizations
+  const [defaultSpec, setDefaultSpec] = useState<DefaultCompSpec[]>(DEFAULT_SPEC);
+
+  // Append a brand new component type (LLM-generated) to the registry
+  const addNewCompName = (newComp : DefaultCompSpec) => {
+    setDefaultSpec((prev) => [...prev, newComp]);
+  }
+
+  // Append a new customization under an existing type; returns its new index
+  const addNewCompSpec = (name : string, customization : string) : number => {
+    const def = defaultSpec.find((d) => d.name === name);
+    const newIndex = def ? def.spec.specArr.length : 0;
+    setDefaultSpec((prev) => prev.map((d) =>
+      d.name === name
+        ? { ...d, spec: { ...d.spec, specArr: [...d.spec.specArr, customization] } }
+        : d
+    ));
+    return newIndex;
+  }
 
 
   /* LOGIC */
@@ -40,8 +70,27 @@ export default function SpacialGrid() {
     return ()=>{window.removeEventListener("resize", setGridSize);}
   }, []);
 
+  // Delete/Backspace removes the selected box (unless typing in a field)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      // Don't hijack typing in inputs/textareas (e.g. prompt or custom fields)
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (!selectedID) return; // nothing selected
+
+      e.preventDefault();
+      setElementArr((prev) => prev.filter((el) => el.key !== selectedID));
+      setSelectedID('');
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedID]);
+
   // Register mouse down event listener to grid
   const handleMouseDown = (e: React.MouseEvent) => {
+    // In interact mode the grid does no meta interaction (no create/deselect)
+    if (interactMode) return;
     // Routes behavior depending on if an element is highlighted
     if (selectedID === '') {
       // Remove offset of grid from window
@@ -157,15 +206,21 @@ export default function SpacialGrid() {
   
   /* JSX */
   return (
-    // Background grid: Visual layer
+    <>
+    {/* Top toolbar */}
+    <Taskbar interactMode={interactMode} onInteractModeChange={handleInteractModeChange} />
+
+    {/* Background grid: Visual layer. Interact mode -> white, no dots */}
     <div
-      className='flex relative overflow-hidden bg-bgdarkblue'
+      className={`flex relative overflow-hidden ${interactMode ? 'bg-white' : 'bg-bgdarkblue'}`}
       style={{
         height: `${numVHTall}vh`,
-        // Creates the dots
-        backgroundImage: `radial-gradient(circle, var(--color-dots) 1px, transparent 1px)`,
-        backgroundSize: `${gridBlockSize}px ${gridBlockSize}px`,
-        backgroundPosition: `-${gridBlockSize/2}px -${gridBlockSize/2}px`
+        // Creates the dots (hidden in interact mode)
+        ...(interactMode ? {} : {
+          backgroundImage: `radial-gradient(circle, var(--color-dots) 1px, transparent 1px)`,
+          backgroundSize: `${gridBlockSize}px ${gridBlockSize}px`,
+          backgroundPosition: `-${gridBlockSize/2}px -${gridBlockSize/2}px`
+        })
       }}
       onMouseDown={handleMouseDown}
       ref={gridRef}
@@ -191,9 +246,12 @@ export default function SpacialGrid() {
               e.stopPropagation();
               setSelectedID(element.key);
             }}
-            handleDeselect={() => setSelectedID('')}
             blockSize={gridBlockSize}
             gridRef={gridRef.current!}
+            interactMode={interactMode}
+            defaultSpec={defaultSpec}
+            addNewCompName={addNewCompName}
+            addNewCompSpec={addNewCompSpec}
           >
             
           </GeneratedBox>
@@ -233,5 +291,6 @@ export default function SpacialGrid() {
         </div>
       )}
     </div>
+    </>
   );
 }

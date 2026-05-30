@@ -21,20 +21,15 @@ export function useGetCode() {
   const [isGenerating, setIsGenerating] = useState(false);
   
   // Gets called when user sends prompt, function is cached with useCallback
-  const handleSend = useCallback(async (prompt: string) => {
+  const handleSend = useCallback(async (prompt: string, fresh: boolean = false) => {
     // Create new user message from prompt
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: "user",
       content: prompt,
     };
-    // Destructures previous messages for multi-turn interaction
-    let currentMessages : Message[] = [];
-    // prev is current message[], adds the new message
-    setMessages((prev) => {
-      currentMessages = [...prev, userMessage]; // Intercepts the new state
-      return currentMessages; // Set the new state on next render
-    }); 
+    // fresh = full regenerate from the spec (no prior history); else multi-turn
+    setMessages((prev) => (fresh ? [userMessage] : [...prev, userMessage]));
 
     setIsGenerating(true); // Sets isStreaming 
     setGeneratedCode(""); // Resets the generated code
@@ -47,8 +42,8 @@ export function useGetCode() {
         // Sends in the latest prompt along with message history
         body: JSON.stringify({
           prompt,
-          // Utilizes the messages state var
-          history: messages.map((m) => ({
+          // Full regenerate sends no history; otherwise use the message state
+          history: fresh ? [] : messages.map((m) => ({
             role: m.role,
             content: m.content,
           })),

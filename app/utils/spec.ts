@@ -16,6 +16,22 @@ export type GeneratedBoxProps = {
   key: string;
 }
 
+// Per-box: the chosen component type + which customizations are active
+export type CompSpec = {
+  name: string;
+  specArrIdx: number[]; // indices into the matching DefaultCompSpec's specArr
+}
+
+// A component-type preset in the shared registry (defaultSpec)
+export type DefaultCompSpec = {
+  name: string;
+  genInstructions: string; // general directions for the LLM for this type
+  spec: {
+    specArr: string[];          // all available customizations
+    defaultSpecArrIdx: number[]; // which are on by default
+  };
+}
+
 // Used in getCode to represent messages
 export interface Message {
   id: string;
