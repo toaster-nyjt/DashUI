@@ -8,12 +8,10 @@ import { XY } from '../utils/spec';
 
 export default function Preview({
   code,
-  isResizing = false, // Rebase after stopped resizing
-  isSideDragging = false, // Determines the scaling logic 
+  isSideDragging = false, // Determines the scaling logic
   boxSize // Dimensions of the box
 }: {
   code: string;
-  isResizing?: boolean;
   isSideDragging?: boolean;
   boxSize: XY // Dimensions in pix of Generated box
 }) {
@@ -43,23 +41,30 @@ export default function App() {
     "/GeneratedComponent.tsx": componentCode,
   };
 
-  // Baseline (the "100% zoom" reference)
-  const baseSize = useRef<XY>(boxSize); // Initially the dimensions
+  // Baseline = the "100% zoom" design resolution. scale = boxSize / baseSize.
+  const baseSize = useRef<XY>(boxSize);
+  // Zoom held constant across a side resize so reflow happens AT the current zoom.
+  const sideZoom = useRef(1);
+  const wasSideDragging = useRef(false);
 
-  // Rebases after resize
-  const wasResizing = useRef(false);
-  if (wasResizing.current && !isResizing) {
-    // Updates baseSize
-    baseSize.current = boxSize;
+  if (isSideDragging && !wasSideDragging.current) {
+    // Side-drag start: capture the current zoom level to hold during the reflow
+    sideZoom.current = baseSize.current.x ? boxSize.x / baseSize.current.x : 1;
   }
-  wasResizing.current = isResizing;
+  if (!isSideDragging && wasSideDragging.current) {
+    // Side-drag end: rebase so that same zoom persists with the new (reflowed) aspect
+    baseSize.current = { x: boxSize.x / sideZoom.current, y: boxSize.y / sideZoom.current };
+  }
+  wasSideDragging.current = isSideDragging;
 
-  // Side drag -> reflow (scale 1, content fills the new dimension via flex).
-  // Otherwise (window resize, corner drag) -> uniform zoom from the baseline.
-  const scale = !isSideDragging && baseSize.current && boxSize
-    ? boxSize.x / baseSize.current.x : 1;
-  // Pre-scale layout size: the baseline while zooming, the live box while reflowing.
-  const inner = isSideDragging ? boxSize : baseSize.current;
+  // Side -> reflow at the held zoom; otherwise (corner / window) -> uniform zoom from baseline.
+  const scale = isSideDragging
+    ? sideZoom.current
+    : (baseSize.current.x ? boxSize.x / baseSize.current.x : 1);
+  // Pre-scale layout size. inner * scale == boxSize, so it always fills the box.
+  const inner = isSideDragging
+    ? { x: boxSize.x / sideZoom.current, y: boxSize.y / sideZoom.current }
+    : baseSize.current;
 
   return (
     <div

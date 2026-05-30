@@ -3,8 +3,8 @@ import { Message } from "./spec";
 
 // Strip markdown code fences from generated code
 export function stripCodeFences(code: string): string {
-  // Remove opening fence: ```tsx, ```typescript, ```jsx, ```javascript, or just ```
-  let stripped = code.replace(/^```(?:tsx?|jsx?|typescript|javascript)?\s*\n?/i, "");
+  // Remove opening fence: ``` optionally followed by a language tag (tsx, json, ...)
+  let stripped = code.replace(/^```[a-z]*\s*\n?/i, "");
   // Remove closing fence: ```
   stripped = stripped.replace(/\n?```\s*$/i, "");
   return stripped;

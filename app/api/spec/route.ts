@@ -3,6 +3,7 @@
  * type name, using Claude. Returns JSON the client appends to defaultSpec.
  */
 import Anthropic from "@anthropic-ai/sdk";
+import { stripCodeFences } from "@/app/utils/helpers";
 
 const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
@@ -33,8 +34,7 @@ export async function POST(req: Request) {
 
   // Pull the text, strip any stray code fences, and parse the JSON
   const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
-  const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-  const parsed = JSON.parse(cleaned);
+  const parsed = JSON.parse(stripCodeFences(raw));
 
   // Wrap into the DefaultCompSpec shape
   return Response.json({

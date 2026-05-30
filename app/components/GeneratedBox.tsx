@@ -336,7 +336,6 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
           <Preview
             code={generatedCode}
             boxSize={boxSize}
-            isResizing={isResizing}
             isSideDragging={isSideDragging}
           />
         )}

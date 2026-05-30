@@ -23,13 +23,14 @@ Rules:
   - Design as responsively as possible so that attributes resize seamlessly with changes to the container size, and so it looks correct whether the box is small or large, or even weirdly proportioned. 
 - Make the component self-contained and visually appealing, don't have elements block each other.
 - Use modern React patterns (hooks, functional components)
+- IMPORTANT: Don't generate an attribute or customization if not explicitly told to do so!
 - IMPORTANT: Never use template literals (backticks with \${}) inside JSX attributes. Use string concatenation instead. For example, use key={"item-" + index} instead of key={\`item-\${index}\`}
 - IMPORTANT: Use hooks directly (useState, useEffect, etc.) - do NOT use React.useState or React.useEffect syntax
 
 Example output format:
 export default function GeneratedComponent() {
   return (
-    <div className="p-4">
+    <div classname="">
       {/* component content */}
     </div>
   );
