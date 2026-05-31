@@ -23,7 +23,7 @@ Rules:
   - Design as responsively as possible so that attributes resize seamlessly with changes to the container size, and so it looks correct whether the box is small or large, or even weirdly proportioned. 
 - Make the component self-contained and visually appealing, don't have elements block each other.
 - Use modern React patterns (hooks, functional components)
-- IMPORTANT: Don't generate an attribute or customization if not explicitly told to do so!
+- IMPORTANT: Don't generate an attribute or customization if not explicitly told to do so! Example: If generating a graph but not told to include a legend, don't include a legend.
 - IMPORTANT: Never use template literals (backticks with \${}) inside JSX attributes. Use string concatenation instead. For example, use key={"item-" + index} instead of key={\`item-\${index}\`}
 - IMPORTANT: Use hooks directly (useState, useEffect, etc.) - do NOT use React.useState or React.useEffect syntax
 
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 
   // Sends the messages to Claude's streaming API, returns stream obj immediately 
   const stream = await anthropic.messages.stream({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-6",
     max_tokens: 4096,
     system: SYSTEM_PROMPT,
     messages, // Shorthand for messages: messages

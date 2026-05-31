@@ -119,8 +119,12 @@ export function buildInstructions(compSpec: CompSpec, defaultSpec: DefaultCompSp
     .map((i) => def.spec.specArr[i])
     .filter(Boolean);
 
+  // Every customization the user did NOT choose, to be explicitly excluded.
+  const excluded = def.spec.specArr.filter((_, i) => !compSpec.specArrIdx.includes(i));
+
   let out = `Create a ${def.name}. ${def.genInstructions}`;
   if (active.length) out += ` Include these features: ${active.join('; ')}.`;
+  if (excluded.length) out += ` Do NOT include the following features under any circumstances — they have been deliberately excluded and must not appear in any form: ${excluded.join('; ')}.`;
   return out;
 }
 

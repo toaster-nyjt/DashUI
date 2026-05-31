@@ -1,11 +1,10 @@
 'use client'
 import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
-import Taskbar from './Taskbar';
 import { XY, defaultXY, GeneratedBoxProps, DefaultCompSpec, numGridBlocksWide, numVHTall } from '../utils/spec';
 import { DEFAULT_SPEC } from '../utils/defaultSpec';
 
-export default function SpacialGrid() {
+export default function SpacialGrid({ interactMode }: { interactMode: boolean }) {
   /* STATE/REF VARS */
   // Used for dragging logic
   const [isMouseDragging, setIsMouseDragging] = useState<boolean>(false);
@@ -25,14 +24,11 @@ export default function SpacialGrid() {
   const currElement = useRef<GeneratedBoxProps>(null);
   // Tracks which element is currently selected
   const [selectedID, setSelectedID] = useState<string | null>('');
-  // Interact Mode: off = editing/meta interaction, on = interact with components
-  const [interactMode, setInteractMode] = useState<boolean>(false);
 
-  // Toggling Interact Mode on deselects any selected box
-  const handleInteractModeChange = (on : boolean) => {
-    setInteractMode(on);
-    if (on) setSelectedID('');
-  }
+  // Entering interact mode deselects any selected box
+  useEffect(() => {
+    if (interactMode) setSelectedID('');
+  }, [interactMode]);
 
   // Shared, runtime-extendable registry of component types + customizations
   const [defaultSpec, setDefaultSpec] = useState<DefaultCompSpec[]>(DEFAULT_SPEC);
@@ -206,11 +202,7 @@ export default function SpacialGrid() {
   
   /* JSX */
   return (
-    <>
-    {/* Top toolbar */}
-    <Taskbar interactMode={interactMode} onInteractModeChange={handleInteractModeChange} />
-
-    {/* Background grid: Visual layer. Interact mode -> white, no dots */}
+    // Background grid: Visual layer. Interact mode -> white, no dots
     <div
       className={`flex relative overflow-hidden ${interactMode ? 'bg-white' : 'bg-bgdarkblue'}`}
       style={{
@@ -291,6 +283,5 @@ export default function SpacialGrid() {
         </div>
       )}
     </div>
-    </>
   );
 }

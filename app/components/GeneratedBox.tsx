@@ -1,7 +1,7 @@
-import { GeneratedBoxProps, numGridBlocksWide, XY, defaultXY, CompSpec, DefaultCompSpec } from '../utils/spec';
-import { useGetCode } from '../utils/helpers';
+import { GeneratedBoxProps, XY, defaultXY, CompSpec, DefaultCompSpec } from '../utils/spec';
+import { useGetCode } from '../utils/useGetCode';
 import { buildInstructions } from '../utils/defaultSpec';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import ComponentSelector from './ComponentSelector';
 import CustomizationSelector from './CustomizationSelector';
 import Preview from './Preview';
@@ -59,6 +59,11 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
   const [compSpec, setCompSpec] = useState<CompSpec>({ name: '', specArrIdx: [] });
   // True while the LLM generates a customization preset for a custom name
   const [isLoadingSpec, setIsLoadingSpec] = useState<boolean>(false);
+
+  // Refs + viewport position for the popup menu (kept on-screen). Starts offscreen.
+  const boxRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [popupPos, setPopupPos] = useState<XY>({ x: -9999, y: -9999 });
   // Ref of block position, used for mouse up after drag ends
   const blockPosLiveRef = useRef<XY>(null);
   // Store offset from the initial mouseDown to the top left corner of the box
@@ -182,10 +187,14 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
       const rect = gridRef.getBoundingClientRect();
       const localPos : XY = { x: e.clientX - rect.left, y: e.clientY - rect.top};
 
-      // When move -> Inject block pos with actual pixel values
+      // Box pixel size, used to clamp it within the grid bounds (no off-screen)
+      const boxW = blockToPix(blockDim.x + 2);
+      const boxH = blockToPix(blockDim.y + 2);
+
+      // When move -> Inject clamped pixel position so the box stays on the grid
       setBlockPos({
-        x: localPos.x - offset.current.x, 
-        y: localPos.y - offset.current.y
+        x: Math.max(0, Math.min(localPos.x - offset.current.x, rect.width - boxW)),
+        y: Math.max(0, Math.min(localPos.y - offset.current.y, rect.height - boxH))
       });
     }
     const handleMouseUp = (e: MouseEvent) => {
@@ -272,10 +281,50 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
     }
   }, [resizeDir])
 
-  // To flip the popup menu if needed
-  const shouldRenderRight = ((blockPos.x + blockDim.x) > numGridBlocksWide - (Math.ceil(320/blockSize)));
-  const shouldRenderUp = ((blockPos.y + blockDim.y) > Math.ceil((window.scrollY + window.innerHeight - 462)/blockSize) + 1);
-  
+  // Whether the popup menu should currently be shown
+  const showPopup = isSelected && !isMouseDragging && !isResizing && !interactMode;
+
+  // Position the popup beside the box (preferring the right, then left), and if
+  // there's no room beside it (e.g. a wide header) drop it below/above. Always
+  // clamped to stay fully on screen. useLayoutEffect (not useEffect) so the
+  // measure-and-place happens before paint — otherwise the popup flashes at its
+  // stale position for one frame before snapping into place.
+  useLayoutEffect(() => {
+    if (!showPopup) return;
+
+    const place = () => {
+      if (!boxRef.current || !popupRef.current) return;
+      const box = boxRef.current.getBoundingClientRect();
+      const pop = popupRef.current.getBoundingClientRect();
+      const gap = 8;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, hi));
+
+      let x: number, y: number;
+      if (box.right + gap + pop.width <= vw) {        // room on the right (preferred)
+        x = box.right + gap;
+        y = clamp(box.top, 0, vh - pop.height);
+      } else if (box.left - gap - pop.width >= 0) {   // else room on the left
+        x = box.left - gap - pop.width;
+        y = clamp(box.top, 0, vh - pop.height);
+      } else {                                         // no room beside -> below, else above
+        y = box.bottom + gap + pop.height <= vh ? box.bottom + gap : box.top - gap - pop.height;
+        x = clamp(box.left, 0, vw - pop.width);
+      }
+      setPopupPos({ x: clamp(x, 0, vw - pop.width), y: clamp(y, 0, vh - pop.height) });
+    };
+
+    place();
+    // Keep it attached/on-screen as the page scrolls or the window resizes
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => {
+      window.removeEventListener('scroll', place, true);
+      window.removeEventListener('resize', place);
+    };
+  }, [showPopup, compSpec, isLoadingSpec, blockPos, blockDim, blockSize]);
+
+
   // Conditional behavior depending on if its being dragged
   const boxDivProp = interactMode ? {
     // Interact mode: stay placed in the grid, no meta interaction. pointer-events-auto
@@ -315,8 +364,9 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
   
 
   return (
-    // Generated Box 
+    // Generated Box
     <div
+      ref={boxRef}
       {...boxDivProp}
     >
       {/* STYLING (two layers because shadows don't work with backdrop blur).
@@ -372,14 +422,13 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
         />
       ))}
 
-      {/* Popup menu: pick a type first, then customize once a type is chosen */}
-      {(isSelected && !isMouseDragging && !isResizing && !interactMode) && (
-        // Aligns it depending on how close the menu is to all four edges
+      {/* Popup menu: pick a type first, then customize once a type is chosen.
+          Positioned in viewport coords (see effect) to always stay on screen. */}
+      {showPopup && (
         <div
-          className={`absolute ${shouldRenderRight
-            ? (shouldRenderUp ? 'bottom-0 right-full mr-2' : 'top-0 right-full mr-2')
-            : (shouldRenderUp ? 'bottom-0 left-full ml-2' : 'top-0 left-full ml-2')
-          } z-50 transition-all`}
+          ref={popupRef}
+          className="fixed z-50"
+          style={{ top: popupPos.y, left: popupPos.x }}
           onMouseDown={(e) => e.stopPropagation()} // To prevent calling the parent box's handleSelect
         >
           {compSpec.name === '' ? (
