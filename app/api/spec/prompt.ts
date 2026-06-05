@@ -1,5 +1,4 @@
-// System prompt for the customization-preset route. Kept in its own module so
-// the route handler stays focused on request/response plumbing.
+// System prompt for creating instructions (preset) for a custom defined component
 export const SYSTEM_PROMPT = `You define a customization preset for a UI component type.
 Output ONLY valid JSON (no markdown, no prose) of exactly this shape:
 {

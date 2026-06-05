@@ -6,6 +6,8 @@ import {
 } from "@codesandbox/sandpack-react";
 import { XY } from '../utils/spec';
 
+
+// Controls zooming and scaling logic AFTER initial load in
 export default function Preview({
   code,
   isSideDragging = false, // Determines the scaling logic

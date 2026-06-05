@@ -1,9 +1,9 @@
 import { Grid2x2, Plus, Loader2 } from 'lucide-react'; // Icon lib
 import { useState } from 'react';
 
-// Popup menu that lets you pick the component type to generate.
-// Names come from the shared registry (defaultSpec); a custom name triggers
-// LLM preset generation upstream.
+// Popup menu that lets you pick the component to generate.
+// Names of customizations come from the shared registry (defaultSpec)
+// Custom name triggers LLM preset generation upstream.
 export default function ComponentSelector({ names, loading, onSend }
   : { names: string[]; loading: boolean; onSend: (name: string) => void }) {
 
@@ -17,6 +17,7 @@ export default function ComponentSelector({ names, loading, onSend }
       {/* Header section, pushes the title and icon far apart*/}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-white text-sm font-medium">Components</h3>
+        {/* If custom component generating -> Show loading wheel */}
         {loading
           ? <Loader2 size={18} className="text-white/60 animate-spin" />
           : <Grid2x2 size={18} className="text-white/60" />}
@@ -51,12 +52,12 @@ export default function ComponentSelector({ names, loading, onSend }
       <div className="flex gap-2">
         <input
           type="text"
-          value={customName}
+          value={customName} 
           onChange={(e) => setCustomName(e.target.value)}
           // Checks for enter
           onKeyDown={(e) => {
             if (e.key === 'Enter' && customName.trim()) {
-              onSend(customName.trim());
+              onSend(customName.trim()); 
               setCustomName('');
             }
           }}

@@ -2,14 +2,14 @@ import { Grid2x2, Eye, EyeOff, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { CompSpec, DefaultCompSpec } from '../utils/spec';
 
-// Popup menu (shown after a type is chosen) listing the type's customizations.
+// Popup menu (shown after component generated) listing the possible customizations specified within the default spec.
 // Active ones (in compSpec.specArrIdx) are "visible" (eye); the rest are off.
-export default function CustomizationSelector({ compSpec, defaultSpec, onToggle, onAddCustom }
+// Allows for user defined customization that also modifies default spec
+export default function CustomizationSelector({ compSpec, defaultSpec, onSend }
   : {
       compSpec: CompSpec;
       defaultSpec: DefaultCompSpec[];
-      onToggle: (toAdd: boolean, specNameIndex: number) => void;
-      onAddCustom: (customization: string) => void;
+      onSend: (toAdd: boolean, specName: string) => void;
     }) {
 
   // Text for generating a brand new customization
@@ -31,19 +31,20 @@ export default function CustomizationSelector({ compSpec, defaultSpec, onToggle,
       {/* All customizations, toggled with the eye icon */}
       <div className="space-y-2 mb-3">
         {specArr.map((name, index) => {
+          // Check for if each customization in specArr is active in the actual component
           const active = compSpec.specArrIdx.includes(index);
           return (
             <div key={index} className="flex items-center gap-2">
 
               <button
-                onMouseDown={() => onToggle(!active, index)}
+                onMouseDown={() => onSend(!active, name)}
                 className={`flex-1 bg-menubuttons hover:bg-menuhover rounded px-3 py-2 text-sm text-start ${active ? 'text-white/90' : 'text-white/40'}`}
               >
                 {name}
               </button>
 
               <button
-                onMouseDown={() => onToggle(!active, index)}
+                onMouseDown={() => onSend(!active, name)}
                 className="bg-menubuttons hover:bg-menuhover rounded p-2 text-white/60 hover:text-white/90 transition-colors"
               >
                 {active ? <Eye size={18} /> : <EyeOff size={18} />}
@@ -58,11 +59,11 @@ export default function CustomizationSelector({ compSpec, defaultSpec, onToggle,
       <div className="flex gap-2">
         <input
           type="text"
-          value={customSpec}
+          value={customSpec} 
           onChange={(e) => setCustomSpec(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && customSpec.trim()) {
-              onAddCustom(customSpec.trim());
+              onSend(true, customSpec.trim());
               setCustomSpec('');
             }
           }}
@@ -74,7 +75,7 @@ export default function CustomizationSelector({ compSpec, defaultSpec, onToggle,
         <button
           onMouseDown={() => {
             if (customSpec.trim()) {
-              onAddCustom(customSpec.trim());
+              onSend(true, customSpec.trim());
               setCustomSpec('');
             }
           }}

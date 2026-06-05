@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { CompSpec, DefaultCompSpec } from './spec';
 
 // Seed registry of highly-customizable UI component types. Runtime-extendable
-// (see addNewCompName / addNewCompSpec in SpatialGrid). "Research" refines this.
+// (see addNewCompName / addNewCompSpec in SpatialGrid). This could be a research optimization target 
 export const DEFAULT_SPEC: DefaultCompSpec[] = [
   {
     name: 'Kanban Board',
@@ -25,7 +25,7 @@ export const DEFAULT_SPEC: DefaultCompSpec[] = [
   {
     name: 'Data Table',
     genInstructions:
-      'Build a data table with a header row, zebra striping, and aligned columns. Include realistic sample rows.',
+      'Build a data table with a header row, zebra striping, and aligned columns. Include realistic sample rows. Use a "table-fixed w-full" table (never content-sized table-auto) and "truncate" long cell values so the table always fits its container width without horizontal overflow.',
     spec: {
       specArr: [
         'Sortable Columns',
@@ -110,25 +110,5 @@ export const DEFAULT_SPEC: DefaultCompSpec[] = [
   },
 ];
 
-// Pure: assemble the LLM instruction string from the current spec state.
-export function buildInstructions(compSpec: CompSpec, defaultSpec: DefaultCompSpec[]): string {
-  const def = defaultSpec.find((d) => d.name === compSpec.name);
-  if (!def) return `Create a ${compSpec.name || 'component'}.`;
 
-  const active = compSpec.specArrIdx
-    .map((i) => def.spec.specArr[i])
-    .filter(Boolean);
 
-  // Every customization the user did NOT choose, to be explicitly excluded.
-  const excluded = def.spec.specArr.filter((_, i) => !compSpec.specArrIdx.includes(i));
-
-  let out = `Create a ${def.name}. ${def.genInstructions}`;
-  if (active.length) out += ` Include these features: ${active.join('; ')}.`;
-  if (excluded.length) out += ` Do NOT include the following features under any circumstances — they have been deliberately excluded and must not appear in any form: ${excluded.join('; ')}.`;
-  return out;
-}
-
-// Thin hook over buildInstructions for components that render the live string.
-export function useInstructionsFromState(compSpec: CompSpec, defaultSpec: DefaultCompSpec[]): string {
-  return useMemo(() => buildInstructions(compSpec, defaultSpec), [compSpec, defaultSpec]);
-}

@@ -6,6 +6,7 @@ import { DEFAULT_SPEC } from '../utils/defaultSpec';
 
 export default function SpacialGrid({ interactMode }: { interactMode: boolean }) {
   /* STATE/REF VARS */
+
   // Used for dragging logic
   const [isMouseDragging, setIsMouseDragging] = useState<boolean>(false);
   // Initializes on mouse down -> Calculates box dimensions
@@ -25,33 +26,21 @@ export default function SpacialGrid({ interactMode }: { interactMode: boolean })
   // Tracks which element is currently selected
   const [selectedID, setSelectedID] = useState<string | null>('');
 
+
+  /* DEFAULT SPEC MODIFIERS */
+
+  // Shared, runtime-extendable registry of components + customizations
+  // Passed down to all boxes
+  const [defaultSpec, setDefaultSpec] = useState<DefaultCompSpec[]>(DEFAULT_SPEC);
+
+
+  /* MAIN LOGIC */
+
   // Entering interact mode deselects any selected box
   useEffect(() => {
     if (interactMode) setSelectedID('');
   }, [interactMode]);
 
-  // Shared, runtime-extendable registry of component types + customizations
-  const [defaultSpec, setDefaultSpec] = useState<DefaultCompSpec[]>(DEFAULT_SPEC);
-
-  // Append a brand new component type (LLM-generated) to the registry
-  const addNewCompName = (newComp : DefaultCompSpec) => {
-    setDefaultSpec((prev) => [...prev, newComp]);
-  }
-
-  // Append a new customization under an existing type; returns its new index
-  const addNewCompSpec = (name : string, customization : string) : number => {
-    const def = defaultSpec.find((d) => d.name === name);
-    const newIndex = def ? def.spec.specArr.length : 0;
-    setDefaultSpec((prev) => prev.map((d) =>
-      d.name === name
-        ? { ...d, spec: { ...d.spec, specArr: [...d.spec.specArr, customization] } }
-        : d
-    ));
-    return newIndex;
-  }
-
-
-  /* LOGIC */
   // Initial useEffect on mount
   useEffect(() => {
     // Calculates gridblock size based on screen width, after component mounts
@@ -242,8 +231,7 @@ export default function SpacialGrid({ interactMode }: { interactMode: boolean })
             gridRef={gridRef.current!}
             interactMode={interactMode}
             defaultSpec={defaultSpec}
-            addNewCompName={addNewCompName}
-            addNewCompSpec={addNewCompSpec}
+            setDefaultSpec={setDefaultSpec}
           >
             
           </GeneratedBox>

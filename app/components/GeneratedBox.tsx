@@ -1,6 +1,6 @@
 import { GeneratedBoxProps, XY, defaultXY, CompSpec, DefaultCompSpec } from '../utils/spec';
 import { useGetCode } from '../utils/useGetCode';
-import { buildInstructions } from '../utils/defaultSpec';
+import { buildInstructions } from '../utils/helpers';
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import ComponentSelector from './ComponentSelector';
 import CustomizationSelector from './CustomizationSelector';
@@ -18,8 +18,10 @@ const RESIZE_HANDLES = [
   { dir: 'se', cls: 'bottom-0 right-0 w-3 h-3',      cursor: 'nwse-resize' },
 ];
 
-// Created from drag interaction in Spacial Grid
-export default function GeneratedBox({ props, isSelected, handleSelect, blockSize, gridRef, interactMode, defaultSpec, addNewCompName, addNewCompSpec }
+// Created from drag interaction in Spacial Grid, 
+// Contains a bunch of low level visual layer transformations for the boxes,
+// and the main logic behind the prompt routing
+export default function GeneratedBox({ props, isSelected, handleSelect, blockSize, gridRef, interactMode, defaultSpec, setDefaultSpec}
   : {
       props : GeneratedBoxProps,
       isSelected : boolean,
@@ -28,9 +30,18 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
       gridRef : HTMLDivElement
       interactMode : boolean
       defaultSpec : DefaultCompSpec[]
-      addNewCompName : (newComp : DefaultCompSpec) => void
-      addNewCompSpec : (name : string, customization : string) => number
+      setDefaultSpec : React.Dispatch<React.SetStateAction<DefaultCompSpec[]>>
     }) {
+
+  /* DATA LAYER STATE VARS */
+
+  // The chosen component type + active customizations for this box
+  const [compSpec, setCompSpec] = useState<CompSpec>({ name: '', specArrIdx: [] });
+  // True while the LLM generates a customization preset for a custom component
+  const [isLoadingSpec, setIsLoadingSpec] = useState<boolean>(false);
+
+
+  /* VISUAL LAYER STATE VARS */
 
   // Get the width and height in blocks of the box (stateful so it can be resized)
   const [blockDim, setBlockDim] = useState<XY>({x: props.colEnd - props.colStart, y: props.rowEnd - props.rowStart});
@@ -54,11 +65,6 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
 
   const isResizing = resizeDir !== null;
   const isSideDragging = isResizing && resizeDir!.length === 1;
-
-  // The chosen component type + active customizations for this box
-  const [compSpec, setCompSpec] = useState<CompSpec>({ name: '', specArrIdx: [] });
-  // True while the LLM generates a customization preset for a custom name
-  const [isLoadingSpec, setIsLoadingSpec] = useState<boolean>(false);
 
   // Refs + viewport position for the popup menu (kept on-screen). Starts offscreen.
   const boxRef = useRef<HTMLDivElement>(null);
@@ -87,60 +93,87 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
     y: blockPos.y
   }
 
-  // Pick a component type: load its default customizations and generate. For a
-  // custom name (not in the registry), first generate its preset via the LLM.
+  /* MAIN COMPONENT GENERATION HANDLER */
+  // Finds and generates existing component in default or generates the DefaultCompSpec for a custom component, sets compSpec
   const handleUpdateNameAndSend = async (name : string) => {
-    let def = defaultSpec.find((d) => d.name === name);
-    let specList = defaultSpec;
+    let def = defaultSpec.find((d) => d.name === name) as DefaultCompSpec; 
+    let specList = defaultSpec; // To add in the new generated spec immediately to use list in handleSend without waiting for state setter
 
+    // If the name isn't in default spec list -> Custom name entered
     if (!def) {
-      setIsLoadingSpec(true);
+      setIsLoadingSpec(true); // Sets loading wheel
       try {
+        // Calls the spec custom component instructions API route
         const res = await fetch('/api/spec', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name }),
+          body: JSON.stringify({ name }), // Literally send the name of the custom component, could be "Fidget Spinner"
         });
         if (!res.ok) throw new Error('spec generation failed');
-        const created = await res.json() as DefaultCompSpec;
-        addNewCompName(created);            // add to the shared registry
-        def = created;
-        specList = [...defaultSpec, created]; // registry state is async; use locally now
+
+        // New spec created
+        const createdSpec = await res.json() as DefaultCompSpec;
+        setDefaultSpec((prev) => [...prev, createdSpec]); // add to the shared registry (queues state setter)
+        def = createdSpec;
+        specList = [...defaultSpec, createdSpec]; // update local list
+
       } catch (e) {
         console.error(e);
         setIsLoadingSpec(false);
         return;
       }
-      setIsLoadingSpec(false);
+
+      setIsLoadingSpec(false); // Unsets loading wheel
     }
 
-    const next : CompSpec = { name, specArrIdx: def.spec.defaultSpecArrIdx };
+    // Next spec state for this box
+    const next : CompSpec = { name, specArrIdx: def.spec.defaultSpecArrIdx }; // Initial active customizations get set to the default idxs
     setCompSpec(next);
-    handleSend(buildInstructions(next, specList), true); // full regenerate
+
+    // Calls code setter with rebuild instuction prompt, initiates new code gen stream
+    handleSend(buildInstructions(next, specList), true); 
   }
 
+  /* MAIN CUSTOMIZATION (SPEC) HANDLER */ 
   // Toggle a customization on/off, then full-regenerate
-  const handleUpdateSpecAndSend = (toAdd : boolean, specNameIndex : number) => {
-    const specArrIdx = toAdd
+  const handleUpdateSpecAndSend = (toAdd : boolean, specName : string) => {
+
+    // Get the index from default spec list of spec given its name if it exists
+    const specNameIndex = (defaultSpec.find((d) => d.name === compSpec.name) as DefaultCompSpec)
+      ?.spec.specArr.indexOf(specName);
+    
+    // Meaning user is adding a new customization under the current component
+    if (specNameIndex === -1) {
+      // Creates a local modified defaultSpec w/ custom spec used in both setting default spec state and buildInstructions
+      const specList = defaultSpec.map((d) =>
+      d.name === compSpec.name
+        ? { ...d, spec: { ...d.spec, specArr: [...d.spec.specArr, specName] } }
+        : d
+      );
+
+      // Calls setter for defaultSpec to append new customization
+      setDefaultSpec(specList);
+
+      const def = specList.find((d) => d.name === compSpec.name);
+      const index = def!.spec.specArr.length - 1;
+      const next : CompSpec = { ...compSpec, specArrIdx: [...compSpec.specArrIdx, index] };
+      setCompSpec(next); // Modifies compSpec
+
+      // Calls code setter with rebuild instuction prompt and new appended spec list, initiates new code gen stream
+      handleSend(buildInstructions(next, specList), true);
+      return;
+    }
+    
+    // Modifies compSpec to either include or exclude the customization in question
+    // using local specArrIdx to work around waiting for compSpec setter
+    const specArrIdx = toAdd 
       ? [...compSpec.specArrIdx, specNameIndex]
       : compSpec.specArrIdx.filter((i) => i !== specNameIndex);
     const next : CompSpec = { ...compSpec, specArrIdx };
     setCompSpec(next);
-    handleSend(buildInstructions(next, defaultSpec), true);
-  }
 
-  // Add a new customization under the current type, activate it, regenerate
-  const handleAddCustomSpec = (customization : string) => {
-    const index = addNewCompSpec(compSpec.name, customization);
-    const next : CompSpec = { ...compSpec, specArrIdx: [...compSpec.specArrIdx, index] };
-    setCompSpec(next);
-    // registry state is async, so augment locally for this build
-    const specList = defaultSpec.map((d) =>
-      d.name === compSpec.name
-        ? { ...d, spec: { ...d.spec, specArr: [...d.spec.specArr, customization] } }
-        : d
-    );
-    handleSend(buildInstructions(next, specList), true);
+    // Calls code setter with rebuild instuction prompt, initiates new code gen stream
+    handleSend(buildInstructions(next, defaultSpec), true); 
   }
 
   // To to set the selected key and initiate drag
@@ -434,15 +467,14 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
           {compSpec.name === '' ? (
             <ComponentSelector
               names={defaultSpec.map((d) => d.name)}
-              loading={isLoadingSpec}
-              onSend={handleUpdateNameAndSend} // pick type -> generate
+              loading={isLoadingSpec} // Passes down loading state
+              onSend={handleUpdateNameAndSend} // pick component -> generate
             />
           ) : (
             <CustomizationSelector
               compSpec={compSpec}
               defaultSpec={defaultSpec}
-              onToggle={handleUpdateSpecAndSend}   // (toAdd, index) -> regenerate
-              onAddCustom={handleAddCustomSpec}    // new customization -> regenerate
+              onSend={handleUpdateSpecAndSend}   // (toAdd, name) -> regenerate
             />
           )}
         </div>
