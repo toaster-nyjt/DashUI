@@ -407,7 +407,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
       {!interactMode && (
         <div className={`absolute inset-0 shadow-custom rounded-lg border-2 ${isSelected ? 'border-borderactive' : "border-borderinactive"}`}/>
       )}
-      <div className={`flex justify-center items-center size-full overflow-hidden z-10 rounded-lg ${interactMode ? '' : `backdrop-blur-sm border-2 ${isSelected ? 'border-borderactive' : "border-borderinactive"} bg-emptycomponent/10`}`}>
+      <div className={`flex justify-center items-center size-full overflow-hidden z-10 rounded-lg ${interactMode ? '' : `backdrop-blur-sm border-2 ${isSelected ? 'border-borderactive' : "border-borderinactive"} bg-emptycomponent/40`}`}>
         {isGenerating ? (
           <div className="flex justify-center items-center animate-vertical-shimmer size-full rounded-lg bg-neutral-900 border border-white/5">
             {/* Generating | Empty | Showing code preview */}

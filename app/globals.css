@@ -12,11 +12,11 @@
   --font-mono: var(--font-geist-mono);
 
   /* Custom */
-  --color-canvas: #f7f4ee;
-  --color-dots: #c9b89a66; 
+  --color-canvas: #f0e9dc;
+  --color-dots: #b8a583aa;
   --color-gridblocks: #6a728280;
   --color-highlightbox: #5b6b8c; 
-  --color-emptycomponent: #ffffffdc;
+  --color-emptycomponent: #6f6f6f95;
   --color-borderactive: #60a5fad0;
   --color-borderinactive: #60a5fa85;
   --color-menu: #2a2a2a;
@@ -46,17 +46,21 @@
 }
 
 .animate-vertical-shimmer {
-  /* Creates a vertical gradient: transparent -> subtle white bar -> transparent */
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  /* Makes the background canvas twice as tall as the element */
-  background-size: 100% 200%;
-  /* Cycles the animation continuously */
-  animation: vertical-shimmer 2.5s infinite linear;
+  /* A bright indigo sweep over a solid dark panel. Two layers: the animated
+     gradient band, then a solid base (so it doesn't depend on bg-neutral-900,
+     which the `background` shorthand would otherwise wipe out). */
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(129, 140, 248, 0) 0%,
+      rgba(129, 140, 248, 0.30) 50%,
+      rgba(129, 140, 248, 0) 100%
+    ),
+    #18181b;
+  /* Gradient layer is twice as tall (so the band can travel); base fills. */
+  background-size: 100% 200%, 100% 100%;
+  /* Faster cycle = more obviously "working" */
+  animation: vertical-shimmer 1.4s infinite linear;
 }
 
 @media (prefers-color-scheme: dark) {

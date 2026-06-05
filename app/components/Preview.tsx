@@ -8,6 +8,7 @@ import { XY } from '../utils/spec';
 
 
 // Controls zooming and scaling logic AFTER initial load in
+// Differentiates between side dragging (resizing) and corner dragging (true scaling)
 export default function Preview({
   code,
   isSideDragging = false, // Determines the scaling logic
