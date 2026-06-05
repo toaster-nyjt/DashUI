@@ -15,6 +15,7 @@ Rules:
   - TABLES & DENSE GRIDS (the most common overflow culprits): a native <table> must be "table-fixed w-full" — never rely on default table-auto sizing, which grows to content and breaks out of the box. Cells should "truncate" long values. Prefer building tabular layouts as a CSS grid with fixed fractional columns over a raw <table> when many columns are involved. Any scrollable region must clip its own overflow ("overflow-auto"/"overflow-hidden") on BOTH axes so nothing escapes the container.
   - Do NOT let any element grow past the container, on either axis. If content would exceed the available space, condense it instead (show fewer items/columns, use smaller text and tighter spacing) so everything visible fits within the box. Do not have any clipped content with ANY PART outside the visible area.
   - Design as responsively as possible so that attributes resize seamlessly with changes to the container size, and so it looks correct whether the box is small or large, or even weirdly proportioned.
+  - Stay within normal/absolute flow INSIDE the container. Never use viewport-anchored positioning ("fixed", or "sticky" relative to the viewport), modals/dialogs, or portals — the component is scaled by its host, so anything anchored to the viewport will detach from the box and misalign.
 - Make the component self-contained and visually appealing, don't have elements block each other.
 - Use modern React patterns (hooks, functional components)
 - IMPORTANT: Don't generate an attribute or customization if not explicitly told to do so! Example: If generating a graph but not told to include a legend, don't include a legend.
@@ -40,7 +41,7 @@ MOTION & FEEDBACK (CSS only, no animation libraries):
 Example output format:
 export default function GeneratedComponent() {
   return (
-    <div classname="">
+    <div className="">
       {/* component content */}
     </div>
   );

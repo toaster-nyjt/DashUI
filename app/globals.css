@@ -12,10 +12,10 @@
   --font-mono: var(--font-geist-mono);
 
   /* Custom */
-  --color-bgdarkblue: #0a0e1a;
-  --color-dots: #93c5fd4d;
+  --color-canvas: #f7f4ee;
+  --color-dots: #c9b89a66; 
   --color-gridblocks: #6a728280;
-  --color-highlightbox: #e9f3fe;
+  --color-highlightbox: #5b6b8c; 
   --color-emptycomponent: #ffffffdc;
   --color-borderactive: #60a5fad0;
   --color-borderinactive: #60a5fa85;

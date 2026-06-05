@@ -193,7 +193,7 @@ export default function SpacialGrid({ interactMode }: { interactMode: boolean })
   return (
     // Background grid: Visual layer. Interact mode -> white, no dots
     <div
-      className={`flex relative overflow-hidden ${interactMode ? 'bg-white' : 'bg-bgdarkblue'}`}
+      className={`flex relative overflow-hidden ${interactMode ? 'bg-white' : 'bg-canvas'}`}
       style={{
         height: `${numVHTall}vh`,
         // Creates the dots (hidden in interact mode)
