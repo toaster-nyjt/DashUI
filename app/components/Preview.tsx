@@ -34,6 +34,7 @@ export default function Preview({
 export default function App() {
   return (
     <div className="h-screen w-screen overflow-hidden ${bgColor}">
+      <style>{"*{min-width:0;min-height:0}"}</style>
       <GeneratedComponent />
     </div>
   );
@@ -103,7 +104,8 @@ export default function App() {
               "sp-wrapper": "!h-full !w-full",
               "sp-layout": "!h-full !w-full !border-0 !bg-transparent",
               "sp-preview": "!h-full !w-full",
-              "sp-preview-container": "!h-full !w-full",
+              "sp-preview-container": "!h-full !w-full",            
+              "sp-preview-iframe": "!h-full !w-full !min-h-0",
             },
           }}
         >

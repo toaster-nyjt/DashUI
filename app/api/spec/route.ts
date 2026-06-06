@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   // No stream, just return JSON string
   const msg = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 1024,
+    max_tokens: 16000,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: `Component type: ${name}` }],
   });

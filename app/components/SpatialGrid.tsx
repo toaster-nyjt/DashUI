@@ -1,10 +1,15 @@
 'use client'
 import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
-import { XY, defaultXY, GeneratedBoxProps, DefaultCompSpec, numGridBlocksWide, numVHTall } from '../utils/spec';
+import { XY, defaultXY, GeneratedBoxProps, DefaultCompSpec, Placement, numGridBlocksWide, numVHTall } from '../utils/spec';
 import { DEFAULT_SPEC } from '../utils/defaultSpec';
+import { validateLayout } from '../utils/helpers';
 
-export default function SpacialGrid({ interactMode }: { interactMode: boolean }) {
+// How many times to re-ask the layout route for a valid (gap-free) tiling
+const LAYOUT_RETRIES = 3;
+
+export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning }
+  : { interactMode: boolean; taskRequest: { prompt: string; id: number } | null; setIsDesigning: React.Dispatch<React.SetStateAction<boolean>> }) {
   /* STATE/REF VARS */
 
   // Used for dragging logic
@@ -34,7 +39,110 @@ export default function SpacialGrid({ interactMode }: { interactMode: boolean })
   const [defaultSpec, setDefaultSpec] = useState<DefaultCompSpec[]>(DEFAULT_SPEC);
 
 
-  /* MAIN LOGIC */
+  /* DASHBOARD GENERATOR (task prompt -> plan -> layout -> auto boxes) */
+
+  // Calls the layout route and re-asks (feeding back the validation error) until
+  // it returns a tiling that fully covers the window with no gaps/overlaps.
+  const fetchValidLayout = async (task: string, names: string[], cols: number, rows: number): Promise<Placement[] | null> => {
+    let previousError: string | undefined;
+    for (let attempt = 1; attempt <= LAYOUT_RETRIES; attempt++) {
+      try {
+        const res = await fetch('/api/layout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task, components: names, cols, rows, previousError }),
+        });
+        if (!res.ok) throw new Error(`request failed (${res.status})`);
+        const placements = await res.json() as Placement[];
+
+        const { ok, error } = validateLayout(placements, cols, rows);
+        if (ok) return placements;
+
+        previousError = error;
+        console.error(`Layout attempt ${attempt}/${LAYOUT_RETRIES} invalid: ${error}`);
+      } catch (e) {
+        previousError = e instanceof Error ? e.message : String(e);
+        console.error(`Layout attempt ${attempt}/${LAYOUT_RETRIES} errored:`, e);
+      }
+    }
+    console.error(`Layout failed after ${LAYOUT_RETRIES} attempts. Last error: ${previousError}`);
+    return null;
+  };
+
+  // Full pipeline: decompose the task into component specs, register them, lay
+  // them out across the visible window, then drop in self-generating boxes.
+  const runDashboardGeneration = async (task: string) => {
+    setIsDesigning(true);
+    try {
+      // 1. PLAN: task -> functionality-aware component presets
+      const planRes = await fetch('/api/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task }),
+      });
+      if (!planRes.ok) throw new Error(`plan request failed (${planRes.status})`);
+      const specs = await planRes.json() as DefaultCompSpec[];
+      if (!specs.length) throw new Error('planner returned no components');
+
+      // 2. Register the new presets. The awaited layout call below lets this
+      //    state commit before any boxes are created, so each box mounts with a
+      //    defaultSpec prop that already contains its spec (no /api/spec re-fetch).
+      setDefaultSpec((prev) => [...prev, ...specs]);
+
+      // 3. LAYOUT: tile the VISIBLE window (in block units) with the components.
+      const cols = numGridBlocksWide;
+      const rows = Math.max(1, Math.floor(window.innerHeight / (gridBlockSize || 1)));
+      let placements: Placement[] | null;
+
+      // If its a single component, place it centered at a quarter size of the window 
+      if (specs.length === 1) {
+        const w = Math.max(1, Math.floor(cols / 2));
+        const h = Math.max(1, Math.floor(rows / 2));
+        const colStart = Math.floor((cols - w) / 2) + 1; // 1-indexed, inclusive
+        const rowStart = Math.floor((rows - h) / 2) + 1;
+        placements = [{
+          name: specs[0].name,
+          colStart,
+          colEnd: colStart + w - 1,
+          rowStart,
+          rowEnd: rowStart + h - 1,
+        }];
+      // If multiple components, call layout route to fill the whole window with one box.
+      } else {
+        placements = await fetchValidLayout(task, specs.map((s) => s.name), cols, rows);
+      }
+      if (!placements) return; // exhausted retries; already logged
+
+      // 4. Drop in boxes carrying their assigned name -> each self-generates
+      // This is how the grid gets the auto generated component(s)
+      setElementArr((prev) => [
+        ...prev,
+        ...placements.map((p, i) => ({
+          colStart: p.colStart,
+          colEnd: p.colEnd,
+          rowStart: p.rowStart,
+          rowEnd: p.rowEnd,
+          key: `auto-${taskRequest!.id}-${i}`,
+          autoName: p.name, // Lets box know to self generate
+        })),
+      ]);
+    } catch (e) {
+      console.error('Dashboard generation error:', e);
+    } finally {
+      setIsDesigning(false);
+    }
+  };
+
+  // Run the generator whenever a new task is submitted from the Taskbar
+  useEffect(() => {
+    if (taskRequest && taskRequest.prompt.trim()) {
+      runDashboardGeneration(taskRequest.prompt.trim());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskRequest?.id]);
+
+
+  /* MAIN PHYSICAL/VISUAL LOGIC */
 
   // Entering interact mode deselects any selected box
   useEffect(() => {
@@ -198,7 +306,7 @@ export default function SpacialGrid({ interactMode }: { interactMode: boolean })
         height: `${numVHTall}vh`,
         // Creates the dots (hidden in interact mode)
         ...(interactMode ? {} : {
-          backgroundImage: `radial-gradient(circle, var(--color-dots) 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(circle, var(--color-dots) 1.5px, transparent 1px)`,
           backgroundSize: `${gridBlockSize}px ${gridBlockSize}px`,
           backgroundPosition: `-${gridBlockSize/2}px -${gridBlockSize/2}px`
         })

@@ -14,6 +14,19 @@ export type GeneratedBoxProps = {
   rowStart: number;
   rowEnd: number;
   key: string;
+  // Set by the dashboard generator: the box self-generates this component on
+  // mount (the registry already holds its spec). Undefined for manual boxes.
+  autoName?: string;
+}
+
+// One component's placement on the block grid (inclusive coords), returned by
+// the /api/layout route. Mirrors the col/row fields of GeneratedBoxProps.
+export type Placement = {
+  name: string;
+  colStart: number;
+  colEnd: number;
+  rowStart: number;
+  rowEnd: number;
 }
 
 // Per-box: the chosen component type + which customizations are active

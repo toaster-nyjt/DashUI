@@ -51,6 +51,8 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
 
   // Track box drag
   const [isMouseDragging, setIsMouseDragging] = useState<boolean>(false);
+  // Popup menu visibility, independent of selection to detect when a selected box is clicked on again (hide menus)
+  const [menuOpen, setMenuOpen] = useState<boolean>(true);
   // Persist and track coords of box, set initial values
   const [blockPos, setBlockPos] = useState<XY>({x: props.colStart, y: props.rowStart});
   // Resize: compass dir ('e','se',...) while resizing, null otherwise
@@ -94,12 +96,13 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
   }
 
   /* MAIN COMPONENT GENERATION HANDLER */
+
   // Finds and generates existing component in default or generates the DefaultCompSpec for a custom component, sets compSpec
   const handleUpdateNameAndSend = async (name : string) => {
     let def = defaultSpec.find((d) => d.name === name) as DefaultCompSpec; 
     let specList = defaultSpec; // To add in the new generated spec immediately to use list in handleSend without waiting for state setter
 
-    // If the name isn't in default spec list -> Custom name entered
+    // If the name isn't in default spec list -> Custom name entered -> Updates default spec
     if (!def) {
       setIsLoadingSpec(true); // Sets loading wheel
       try {
@@ -131,11 +134,13 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
     setCompSpec(next);
 
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
-    handleSend(buildInstructions(next, specList), true); 
+    // THIS IS WHERE ALL COMPONENT SPECS -> CODE
+    handleSend(buildInstructions(next, specList), true, boxSize);
   }
 
   /* MAIN CUSTOMIZATION (SPEC) HANDLER */ 
-  // Toggle a customization on/off, then full-regenerate
+
+  // Toggle a customization on or off, updates default spec for custom customizations, sets compSpec fully regenerates component
   const handleUpdateSpecAndSend = (toAdd : boolean, specName : string) => {
 
     // Get the index from default spec list of spec given its name if it exists
@@ -160,7 +165,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
       setCompSpec(next); // Modifies compSpec
 
       // Calls code setter with rebuild instuction prompt and new appended spec list, initiates new code gen stream
-      handleSend(buildInstructions(next, specList), true);
+      handleSend(buildInstructions(next, specList), true, boxSize);
       return;
     }
     
@@ -173,11 +178,34 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
     setCompSpec(next);
 
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
-    handleSend(buildInstructions(next, defaultSpec), true); 
+    handleSend(buildInstructions(next, defaultSpec), true, boxSize);
   }
+
+  /* AUTO GENERATION LOGIC (from dashboard generator) */
+
+  // A box created by the dashboard generator carries its assigned
+  // component name and generates itself once on mount. Its spec is already in the
+  // registry (the generator committed setDefaultSpec before creating boxes), so
+  useEffect(() => {
+    if (props.autoName) {
+      handleUpdateNameAndSend(props.autoName);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* MAIN PHYSICAL/VISUAL LOGIC */
+
+  // Reopen the menu whenever this box becomes the selected one (selecting it
+  // fresh or re-selecting after a deselect always shows the menu).
+  useEffect(() => {
+    if (isSelected) setMenuOpen(true);
+  }, [isSelected]);
 
   // To to set the selected key and initiate drag
   const handleMouseDown = (e : React.MouseEvent) => {
+    // Clicking the box while it's already selected toggles the menu closed;
+    // otherwise selecting it re-opens the menu via the effect above.
+    if (isSelected) setMenuOpen((prev) => !prev);
     handleSelect(e);
     setIsMouseDragging(true);
 
@@ -255,6 +283,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
       document.body.style.cursor = "";
       document.body.style.userSelect = '';
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMouseDragging])
 
   // Resize effect (mirrors the drag effect above)
@@ -312,10 +341,11 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
       document.removeEventListener('mouseup', handleResizeUp);
       document.body.style.userSelect = '';
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resizeDir])
 
-  // Whether the popup menu should currently be shown
-  const showPopup = isSelected && !isMouseDragging && !isResizing && !interactMode;
+  // Whether either of the popup menu should currently be shown
+  const showPopup = isSelected && menuOpen && !isMouseDragging && !isResizing && !interactMode;
 
   // Position the popup beside the box (preferring the right, then left), and if
   // there's no room beside it (e.g. a wide header) drop it below/above. Always
@@ -461,20 +491,22 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
         <div
           ref={popupRef}
           className="fixed z-50"
-          style={{ top: popupPos.y, left: popupPos.x }}
+          style={{ top: popupPos.y, left: popupPos.x }} // Logic behind the popup not being offscreen
           onMouseDown={(e) => e.stopPropagation()} // To prevent calling the parent box's handleSelect
         >
+          {/* Empty component ->  */}
           {compSpec.name === '' ? (
             <ComponentSelector
               names={defaultSpec.map((d) => d.name)}
               loading={isLoadingSpec} // Passes down loading state
-              onSend={handleUpdateNameAndSend} // pick component -> generate
+              onSend={handleUpdateNameAndSend} // pick component -> generate it -> populate Preview
             />
           ) : (
+            // Current component-specific customizations, shown after one populates the box
             <CustomizationSelector
               compSpec={compSpec}
               defaultSpec={defaultSpec}
-              onSend={handleUpdateSpecAndSend}   // (toAdd, name) -> regenerate
+              onSend={handleUpdateSpecAndSend} // (toAdd, name) -> regenerate w/ new customization spec
             />
           )}
         </div>

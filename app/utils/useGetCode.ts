@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useState } from "react";
-import { Message } from "./spec";
+import { Message, XY } from "./spec";
 import { stripCodeFences } from "./helpers";
 
 // API ROUTE CALLER, initializes state vars and the cached function that gets LLM
@@ -16,7 +16,7 @@ export function useGetCode() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Gets called when user sends prompt, function is cached with useCallback
-  const handleSend = useCallback(async (prompt: string, fresh: boolean = false) => {
+  const handleSend = useCallback(async (prompt: string, fresh: boolean = false, boxSize?: XY) => {
     // Create new user message from prompt
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -42,6 +42,8 @@ export function useGetCode() {
             role: m.role,
             content: m.content,
           })),
+          // Current pixel size of the box, so the route can size the prompt to it
+          boxSize,
         }),
       });
 
