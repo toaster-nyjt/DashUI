@@ -19,8 +19,8 @@ export default function Preview({
   boxSize: XY // Dimensions in pix of Generated box
 }) {
 
-  // Prepend React imports if not already present
-  const hasReactImport = code.includes("import") && code.includes("react");
+  // Prepend hook imports unless the code imports from "react".
+  const hasReactImport = /\bimport\b[^\n]*\bfrom\s*['"]react['"]/.test(code);
   const componentCode = hasReactImport
     ? code
     : `import { useState, useEffect, useRef, useMemo, useCallback } from "react";\n\n${code}`;
