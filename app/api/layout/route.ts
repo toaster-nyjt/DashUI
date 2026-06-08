@@ -6,7 +6,7 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { stripCodeFences } from "@/app/utils/helpers";
-import { SYSTEM_PROMPT } from "./prompt";
+import { LAYOUT_SYSTEM_PROMPT } from "../SKILLS";
 
 const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   const msg = await anthropic.messages.create({
     model: "claude-opus-4-8",
     max_tokens: 16000,
-    system: SYSTEM_PROMPT,
+    system: LAYOUT_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userContent }],
   });
 

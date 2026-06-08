@@ -5,7 +5,7 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { stripCodeFences } from "@/app/utils/helpers";
-import { SYSTEM_PROMPT } from "./prompt";
+import { PLAN_SYSTEM_PROMPT } from "../SKILLS";
 
 const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     max_tokens: 16000,
     thinking: { type: "adaptive" },
     output_config: { effort: "medium" },
-    system: SYSTEM_PROMPT,
+    system: PLAN_SYSTEM_PROMPT,
     messages: [{ role: "user", content: `Task: ${task}` }],
   });
 

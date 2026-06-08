@@ -6,7 +6,7 @@ import {
 } from "@codesandbox/sandpack-react";
 import { XY } from '../utils/spec';
 
-
+// Container for the Sandpack iframe
 // Controls zooming and scaling logic AFTER initial load in
 // Differentiates between side dragging (resizing) and corner dragging (true scaling)
 export default function Preview({
