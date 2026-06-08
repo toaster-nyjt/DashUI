@@ -1,6 +1,7 @@
-// Consolidated system prompts for the four-stage dashboard generation pipeline:
-//   plan -> layout -> generate (decompose task into components, then tile them on the grid, then emit component)
-//   spec  -> generate (build a customization preset, then emit component code)
+// Consolidated system prompts for the multi-stage UI generation pipelines:
+//   (Task-based prompt) -> plan -> spec -> layout -> generate (decompose task into components based on functionality, create specs, tile them on the grid, then emit component)
+//   (Preset component) -> generate (Use a component preset to emit component code)
+//   (Any component: Add / Remove customization) -> re-generate 
 
 // System prompt for the dashboard PLANNER: decomposes a user's task into one or
 // more component presets (DefaultCompSpec), each component's preset is generated 
