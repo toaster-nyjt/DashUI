@@ -19,7 +19,7 @@ export default function Home() {
       <Taskbar
         interactMode={interactMode}
         onInteractModeChange={setInteractMode}
-        onGenerate={(prompt) => setTaskRequest({ prompt, id: Date.now() })}
+        onGenerate={(prompt) => setTaskRequest({ prompt, id: Date.now() })} // id used for React's policy of having unique keys
         isDesigning={isDesigning}
       />
       <SpatialGrid interactMode={interactMode} taskRequest={taskRequest} setIsDesigning={setIsDesigning} />

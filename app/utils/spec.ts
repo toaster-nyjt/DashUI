@@ -21,13 +21,7 @@ export type GeneratedBoxProps = {
 
 // One component's placement on the block grid (inclusive coords), returned by
 // the /api/layout route. Mirrors the col/row fields of GeneratedBoxProps.
-export type Placement = {
-  name: string;
-  colStart: number;
-  colEnd: number;
-  rowStart: number;
-  rowEnd: number;
-}
+export type Placement = {name: string} & Omit<GeneratedBoxProps, "key" | "autoName">;
 
 // Per-box: the chosen component type + which customizations are active
 export type CompSpec = {

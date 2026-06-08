@@ -51,7 +51,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
 
   // Track box drag
   const [isMouseDragging, setIsMouseDragging] = useState<boolean>(false);
-  // Popup menu visibility, independent of selection to detect when a selected box is clicked on again (hide menus)
+  // Popup menu visibility, independent of selection (could be selected -> click component -> still selected with menu closed)
   const [menuOpen, setMenuOpen] = useState<boolean>(true);
   // Persist and track coords of box, set initial values
   const [blockPos, setBlockPos] = useState<XY>({x: props.colStart, y: props.rowStart});
@@ -203,8 +203,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
 
   // To to set the selected key and initiate drag
   const handleMouseDown = (e : React.MouseEvent) => {
-    // Clicking the box while it's already selected toggles the menu closed;
-    // otherwise selecting it re-opens the menu via the effect above.
+    // Cycles between open and closed if this box is selected and you click on it
     if (isSelected) setMenuOpen((prev) => !prev);
     handleSelect(e);
     setIsMouseDragging(true);
@@ -243,7 +242,9 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
 
   // Drag effect
   useEffect(()=>{
+    let didDrag = false; // Used to stop submenus opening after a drag
     const handleMouseMove = (e: MouseEvent) => {
+      didDrag = true;
       // Remove offset of grid from window
       const rect = gridRef.getBoundingClientRect();
       const localPos : XY = { x: e.clientX - rect.left, y: e.clientY - rect.top};
@@ -260,11 +261,12 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
     }
     const handleMouseUp = (e: MouseEvent) => {
       // Convert the pixel positions back into block positions after drag
-      setBlockPos({ 
+      setBlockPos({
         x: pixToBlock(blockPosLiveRef.current!.x),
         y: pixToBlock(blockPosLiveRef.current!.y)
       })
 
+      if (didDrag) setMenuOpen(false); // Prevent the cycling of open/closing the menu after drag -> Just close it
       setIsMouseDragging(false);
     }
     
@@ -422,7 +424,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
         gridColumn: `${blockPos.x} / ${blockPos.x + 1 + blockDim.x}`,
         gridRow: `${blockPos.y} / ${blockPos.y + 1 + blockDim.y}`
     },
-    onMouseDown: handleMouseDown
+    onMouseDown: handleMouseDown // Adds clicked-on logic
   }
   
 

@@ -173,6 +173,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
       if (!selectedID) return; // nothing selected
 
       e.preventDefault();
+      // Filters through and removes the box that has the key equal to the current selected id
       setElementArr((prev) => prev.filter((el) => el.key !== selectedID));
       setSelectedID('');
     };
@@ -180,7 +181,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedID]);
 
-  // Register mouse down event listener to grid
+  // Register mouse down event listener to grid (THIS IS FOR THE DOTTED DRAG BOX THAT CREATES THE GENERATED BOX)
   const handleMouseDown = (e: React.MouseEvent) => {
     // In interact mode the grid does no meta interaction (no create/deselect)
     if (interactMode) return;
@@ -205,7 +206,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
     }
   }
 
-  // Produces dragging effect from mouse move/up
+  // Produces dragging effect from mouse move/up (THIS IS FOR THE DOTTED DRAG BOX THAT CREATES THE GENERATED BOX)
   useEffect(() => {
 
     // Sets dimensions of the created box
@@ -285,7 +286,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
       colEnd,
       rowStart,
       rowEnd,
-      key : `${colStart}-${rowStart}`, // Initialized on creation
+      key : `${Date.now()}-${elementArr.length}`, // Initialized on creation
     };
 
     for (let i = colStart; i <= colEnd; i ++) {
