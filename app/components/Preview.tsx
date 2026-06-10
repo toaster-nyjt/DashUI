@@ -34,7 +34,6 @@ export default function Preview({
 export default function App() {
   return (
     <div className="h-screen w-screen overflow-hidden ${bgColor}">
-      <style>{"*{min-width:0;min-height:0}"}</style>
       <GeneratedComponent />
     </div>
   );
