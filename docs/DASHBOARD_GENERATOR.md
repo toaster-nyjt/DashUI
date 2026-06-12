@@ -21,9 +21,11 @@ iframe. Customizations toggle features per box.
 ### Codebase gotchas (read first)
 - **Modified Next.js.** `AGENTS.md`: "This is NOT the Next.js you know" — read
   `node_modules/next/dist/docs/` before writing Next-specific code. App Router.
-- Route handlers return `Response.json(...)`. Anthropic SDK; model
-  `claude-sonnet-4-6` (generate **streams**; plan/spec/layout are non-streaming).
-  API key env var: `CLAUDE_API_KEY`.
+- Route handlers return `Response.json(...)`. Anthropic SDK. Models split by
+  route: **plan** + **layout** run `claude-opus-4-8` (plan also sets adaptive
+  thinking + `effort: "medium"`); **spec** + **generate** run `claude-sonnet-4-6`.
+  **generate streams**; plan/spec/layout are non-streaming. API key env var:
+  `CLAUDE_API_KEY`. All system prompts live in `app/api/SKILLS.ts`.
 - Grid constants in `app/utils/spec.ts`: `numGridBlocksWide = 30`,
   `numVHTall = 250`. **The grid is 250vh — taller than the viewport.** "Visible
   window" for layout = `floor(window.innerHeight / gridBlockSize)` rows.
@@ -43,9 +45,12 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
    presets; decides single vs. multiple components.
 2. **REGISTER** — `setDefaultSpec(prev => [...prev, ...specs])`. The `await` in
    step 3 lets this commit *before* any box is created.
-3. **LAYOUT** — compute `cols = 30`, `rows = floor(innerHeight / gridBlockSize)`;
-   `fetchValidLayout` → `POST /api/layout {task, components, cols, rows, previousError}`
-   → `Placement[]`. Validated + retried (see §4, risk 3).
+3. **LAYOUT** — compute `cols = 30`, `rows = floor(innerHeight / gridBlockSize)`.
+   - **Single component:** skip the layout route — place it centered at a quarter
+     of the window (`floor(cols/2) × floor(rows/2)`).
+   - **Multiple components:** `fetchValidLayout` → `POST /api/layout
+     {task, components, cols, rows, previousError}` → `Placement[]`. Validated +
+     retried (see §4, risk 3).
 4. **PLACE** — `setElementArr(append)` boxes carrying `autoName` + coords.
 5. **SELF-GENERATE** — each `GeneratedBox` with `props.autoName` runs a mount
    effect → `handleUpdateNameAndSend(autoName)` → finds spec in registry →
@@ -56,14 +61,17 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
 ## 3. Files
 
 **New**
-- `app/api/plan/prompt.ts` + `route.ts` — planner (task → `DefaultCompSpec[]`).
-- `app/api/layout/prompt.ts` + `route.ts` — layout (specs + grid → `Placement[]`).
+- `app/api/plan/route.ts` — planner route (task → `DefaultCompSpec[]`).
+- `app/api/layout/route.ts` — layout route (specs + grid → `Placement[]`).
+- `app/api/SKILLS.ts` — **consolidated** system prompts for every route
+  (`PLAN_/LAYOUT_/SPEC_/GENERATE_SYSTEM_PROMPT`). The planner and layout prompts
+  were added here, not in per-route `prompt.ts` files.
 
 **Changed**
 - `app/utils/spec.ts` — added `autoName?: string` to `GeneratedBoxProps`; added `Placement` type.
 - `app/utils/helpers.ts` — added `validateLayout(placements, cols, rows)`.
 - `app/components/Taskbar.tsx` — `onGenerate` + Enter submit; input is
-  `disabled` and shows "Currently Designing…" while `isDesigning`.
+  `disabled` and shows "Currently Designing Layout…" while `isDesigning`.
 - `app/page.tsx` — owns `taskRequest` and `isDesigning` (lifted so Taskbar +
   grid share them).
 - `app/components/SpatialGrid.tsx` — `runDashboardGeneration`, `fetchValidLayout`;
@@ -99,7 +107,9 @@ exactly (adjacent boxes start at prev `End + 1`).
    coverage; `fetchValidLayout` retries up to `LAYOUT_RETRIES = 3`, feeding the
    validation error back as `previousError`; `console.error` on each failure;
    returns `null` (no boxes) if exhausted. **No deterministic packer** — user
-   preference. Works in **block units**, **visible window only**.
+   preference. Works in **block units**, **visible window only**. A **single**
+   component bypasses the route (and thus validation) — it's deterministically
+   centered at quarter-window size, so there's nothing to tile.
 4. **Always-new, colon-namespaced names** (`"Theme: Specific Component"`, e.g.
    `"Music Player: Now Playing Bar"`). The grid only *appends* to the registry,
    never replaces — avoids breaking positional `specArrIdx` and existing boxes.
@@ -150,10 +160,13 @@ exactly (adjacent boxes start at prev `End + 1`).
 
 ## 6. Related recent tweaks (not the generator, but touched)
 
-- **Generate prompt** (`app/api/generate/prompt.ts`) sizing rules added:
-  `min-w-0` (horizontal shrink), tables `table-fixed w-full`, "NO SHRINK FLOORS",
-  "RESPOND TO BOTH AXES INDEPENDENTLY", no viewport-anchored/`fixed`/modal/portal,
-  fixed `classname`→`className` typo.
+- **Generate prompt** (`GENERATE_SYSTEM_PROMPT` in `app/api/SKILLS.ts`) sizing
+  rules: `min-w-0` (horizontal shrink), tables `table-fixed w-full`, "NO SHRINK
+  FLOORS", "RESPOND TO BOTH AXES INDEPENDENTLY", "FILL THE CONTAINER" (no floating
+  content in dead space), "IGNORE PLACEMENT WORDS" (bar/sidebar/header describe the
+  box's canvas position, not internal anchoring), "NEVER SCROLL OR FOCUS THE PAGE",
+  legible stacked-text rows, no viewport-anchored/`fixed`/modal/portal, fixed
+  `classname`→`className` typo.
 - **Theme** (`app/globals.css`): `--color-bgdarkblue` renamed `--color-canvas`;
   darker canvas, stronger dots, brighter/faster loading shimmer; `--shadow-custom`
   fixed to use `color-mix` instead of the nonexistent `--color-borderactive-50`.

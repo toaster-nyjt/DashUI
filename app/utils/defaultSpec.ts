@@ -1,5 +1,4 @@
-import { useMemo } from 'react';
-import { CompSpec, DefaultCompSpec } from './spec';
+import { DefaultCompSpec } from './spec';
 
 // Seed registry of highly-customizable UI component types. Runtime-extendable
 // (see addNewCompName / addNewCompSpec in SpatialGrid). This could be a research optimization target 
