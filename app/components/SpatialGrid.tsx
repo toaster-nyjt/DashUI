@@ -43,14 +43,15 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
 
   // Calls the layout route and re-asks (feeding back the validation error) until
   // it returns a tiling that fully covers the window with no gaps/overlaps.
-  const fetchValidLayout = async (task: string, names: string[], cols: number, rows: number): Promise<Placement[] | null> => {
+  const fetchValidLayout = async (task: string, components: DefaultCompSpec[], cols: number, rows: number): Promise<Placement[] | null> => {
     let previousError: string | undefined;
     for (let attempt = 1; attempt <= LAYOUT_RETRIES; attempt++) {
       try {
         const res = await fetch('/api/layout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ task, components: names, cols, rows, previousError }),
+          // Send the FULL specs so layout has complete context
+          body: JSON.stringify({ task, components, cols, rows, previousError }),
         });
         if (!res.ok) throw new Error(`request failed (${res.status})`);
         const placements = await res.json() as Placement[];
@@ -109,7 +110,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
         }];
       // If multiple components, call layout route to fill the whole window with one box.
       } else {
-        placements = await fetchValidLayout(task, specs.map((s) => s.name), cols, rows);
+        placements = await fetchValidLayout(task, specs, cols, rows);
       }
       if (!placements) return; // exhausted retries; already logged
 

@@ -9,25 +9,26 @@ export function stripCodeFences(code: string): string {
   return stripped;
 }
 
-// Assembles the LLM instruction string from the current spec state of generated box and current default specs
-export function buildInstructions(compSpec: CompSpec, defaultSpec: DefaultCompSpec[]): string {
-  const def = defaultSpec.find((d) => d.name === compSpec.name); // Full spec found of compSpec's name in default spec
-  if (!def) return '67'; // Unreachable, for ts type safety
+// Layer between spec and the routes, essentially just does the deterministic array caluculations instead of passing it to the LLM
+// Seperates the spec field into explicit include and exclude lists
+export function resolveComponentSpec(compSpec: CompSpec, defaultSpec: DefaultCompSpec[]): string {
+  const def = defaultSpec.find((d) => d.name === compSpec.name); // Full spec for this box's chosen type
+  if (!def) return '{}'; // Unreachable, for ts type safety
 
-  // Map the indexes of active customizations to the actual names of the customizations
-  const active = compSpec.specArrIdx
+  // Indices of active customizations -> their names (features to implement)
+  const include = compSpec.specArrIdx
     .map((i) => def.spec.specArr[i])
     .filter(Boolean);
 
-  // Every customization the user did NOT choose, to be explicitly excluded.
-  const excluded = def.spec.specArr.filter((_, i) => !compSpec.specArrIdx.includes(i));
+  // Every customization NOT chosen -> deliberately excluded features
+  const exclude = def.spec.specArr.filter((_, i) => !compSpec.specArrIdx.includes(i));
 
-  let out = `Create a ${def.name}. ${def.genInstructions}`; // General scaffolding
-  // Tack on customization details
-  if (active.length) out += ` Include these features: ${active.join('; ')}.`;
-  if (excluded.length) out += ` Do NOT include the following features under any circumstances — they have been deliberately excluded and must not appear in any form: ${excluded.join('; ')}.`;
-
-  return out;
+  return JSON.stringify({
+    name: def.name,
+    genInstructions: def.genInstructions,
+    include,
+    exclude,
+  });
 }
 
 // Validates a layout-route result: every block of the cols x rows window must be

@@ -12,7 +12,7 @@ A spatial canvas where you drag to create boxes; each box picks a component type
 iframe. Customizations toggle features per box.
 
 - **Manual flow (pre-existing):** drag a box → pick a type in `ComponentSelector` /
-  toggle customizations in `CustomizationSelector` → `buildInstructions` →
+  toggle customizations in `CustomizationSelector` → `resolveComponentSpec` →
   `handleSend` → `/api/generate` streams the component code.
 - **Auto flow (the feature this doc covers):** type a high-level task in the
   bottom Taskbar → the app plans, lays out, and fills the visible window with
@@ -54,7 +54,7 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
 4. **PLACE** — `setElementArr(append)` boxes carrying `autoName` + coords.
 5. **SELF-GENERATE** — each `GeneratedBox` with `props.autoName` runs a mount
    effect → `handleUpdateNameAndSend(autoName)` → finds spec in registry →
-   `buildInstructions` → `handleSend` → `/api/generate` stream.
+   `resolveComponentSpec` → `handleSend` → `/api/generate` stream.
 
 ---
 
@@ -118,8 +118,9 @@ exactly (adjacent boxes start at prev `End + 1`).
 5. **Reuse `GeneratedBoxProps` / `Placement`**, not parallel shapes.
 6. **Functionality-critical customizations must be in `defaultSpecArrIdx`** (a
    planner-prompt rule) — because `handleUpdateNameAndSend` seeds `specArrIdx`
-   from `defaultSpecArrIdx`, and `buildInstructions` lists everything *not* active
-   as an explicit "do NOT include."
+   from `defaultSpecArrIdx`, and `resolveComponentSpec` puts everything *not*
+   active into the `exclude` list, which the generate route's
+   `COMPONENT_SPEC_PROTOCOL` enforces as "never render in any form."
 
 **Other decisions**
 - `reactStrictMode: false` stops dev from double-invoking the one-shot auto-gen
@@ -136,9 +137,9 @@ exactly (adjacent boxes start at prev `End + 1`).
 
 ## 5. Open items / caveats
 
-- `buildInstructions` emits e.g. `Create a Music Player: Now Playing Bar. …` —
-  the colon prefix rides into the generate prompt (acts as helpful context; strip
-  if undesired).
+- `resolveComponentSpec` emits the spec as JSON with e.g. `"name": "Music Player:
+  Now Playing Bar"` — the colon prefix rides into the generate prompt via the name
+  field (acts as helpful context; strip if undesired).
 - **Pre-existing lint errors** (newer react-hooks plugin, severity `error` but
   non-blocking):
   - `react-hooks/refs` — refs read/written during render (SpatialGrid drag-box

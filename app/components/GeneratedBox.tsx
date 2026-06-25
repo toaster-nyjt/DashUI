@@ -1,6 +1,6 @@
 import { GeneratedBoxProps, XY, defaultXY, CompSpec, DefaultCompSpec } from '../utils/spec';
 import { useGetCode } from '../utils/useGetCode';
-import { buildInstructions } from '../utils/helpers';
+import { resolveComponentSpec } from '../utils/helpers';
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import ComponentSelector from './ComponentSelector';
 import CustomizationSelector from './CustomizationSelector';
@@ -135,7 +135,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
 
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
     // THIS IS WHERE ALL COMPONENT SPECS -> CODE
-    handleSend(buildInstructions(next, specList), true, boxSize);
+    handleSend(resolveComponentSpec(next, specList), true, boxSize);
   }
 
   /* MAIN CUSTOMIZATION (SPEC) HANDLER */ 
@@ -149,7 +149,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
     
     // Meaning user is adding a new customization under the current component
     if (specNameIndex === -1) {
-      // Creates a local modified defaultSpec w/ custom spec used in both setting default spec state and buildInstructions
+      // Creates a local modified defaultSpec w/ custom spec used in both setting default spec state and resolveComponentSpec
       const specList = defaultSpec.map((d) =>
       d.name === compSpec.name
         ? { ...d, spec: { ...d.spec, specArr: [...d.spec.specArr, specName] } }
@@ -165,7 +165,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
       setCompSpec(next); // Modifies compSpec
 
       // Calls code setter with rebuild instuction prompt and new appended spec list, initiates new code gen stream
-      handleSend(buildInstructions(next, specList), true, boxSize);
+      handleSend(resolveComponentSpec(next, specList), true, boxSize);
       return;
     }
     
@@ -178,7 +178,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
     setCompSpec(next);
 
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
-    handleSend(buildInstructions(next, defaultSpec), true, boxSize);
+    handleSend(resolveComponentSpec(next, defaultSpec), true, boxSize);
   }
 
   /* AUTO GENERATION LOGIC (from dashboard generator) */
@@ -440,6 +440,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
         <div className={`absolute inset-0 shadow-custom rounded-lg border-2 ${isSelected ? 'border-borderactive' : "border-borderinactive"}`}/>
       )}
       <div className={`flex justify-center items-center size-full overflow-hidden z-10 rounded-lg ${interactMode ? '' : `backdrop-blur-sm border-2 ${isSelected ? 'border-borderactive' : "border-borderinactive"} bg-emptycomponent/40`}`}>
+        
         {isGenerating ? (
           <div className="flex justify-center items-center animate-vertical-shimmer size-full rounded-lg bg-neutral-900 border border-white/5">
             {/* Generating | Empty | Showing code preview */}
@@ -454,9 +455,10 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
             isSideDragging={isSideDragging}
           />
         )}
+
       </div>
 
-      {/* Meta mode: a transparent overlay above the preview captures clicks for
+      {/* A transparent overlay above the preview captures clicks for
           select/move, since the Sandpack iframe would otherwise swallow them.
           Absent in interact mode so the component itself is clickable. */}
       {!interactMode && (
@@ -496,7 +498,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
           style={{ top: popupPos.y, left: popupPos.x }} // Logic behind the popup not being offscreen
           onMouseDown={(e) => e.stopPropagation()} // To prevent calling the parent box's handleSelect
         >
-          {/* Empty component ->  */}
+          {/* Empty component -> Show component menu */}
           {compSpec.name === '' ? (
             <ComponentSelector
               names={defaultSpec.map((d) => d.name)}
@@ -504,7 +506,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
               onSend={handleUpdateNameAndSend} // pick component -> generate it -> populate Preview
             />
           ) : (
-            // Current component-specific customizations, shown after one populates the box
+            // Current component-specific customizations, shown after a component populates the box
             <CustomizationSelector
               compSpec={compSpec}
               defaultSpec={defaultSpec}

@@ -40,10 +40,10 @@ FIELD RULES:
 - defaultSpecArrIdx: a subset of 2-4 indices (0-based) into specArr that are enabled by default. Any customization REQUIRED for the component's core functionality MUST be included here — never leave a must-have feature merely available; turn it on.`;
 
 // System prompt for the LAYOUT planner: given a grid size and a list of component
-// names, tile the entire visible window with non-overlapping, gap-free rectangles.
+// specs, tile the entire visible window with non-overlapping, gap-free rectangles.
 export const LAYOUT_SYSTEM_PROMPT = `You arrange dashboard components into a grid that fills the visible window EXACTLY.
 
-You are given the grid size and a list of component names. Place every component as a rectangle of grid blocks.
+You are given the grid size and a list of component specs (client content — follow the COMPONENT SPEC PROTOCOL below to parse it). Place every component as a rectangle of grid blocks, keyed by its "name", using each spec's "genInstructions" to judge its role.
 
 COORDINATE SYSTEM:
 - The grid has COLS columns and ROWS rows, all 1-indexed.
@@ -58,12 +58,12 @@ HARD CONSTRAINTS (the arrangement is REJECTED and you will be asked again if any
 
 DESIGN:
 - If the user has specific layout requests, follow those exactly.
-- More important / primary components should get more area; arrange them in a sensible reading order for the task.
+- Use each component's "genInstructions" to judge how central it is to the task; more important / primary components should get more area; arrange them in a sensible reading order for the task.
 - Before answering, DOUBLE-CHECK the arithmetic: the sum over all components of (colEnd-colStart+1) * (rowEnd-rowStart+1) must equal COLS * ROWS exactly, with no overlaps and no gaps.
 
 OUTPUT: ONLY a JSON array (no markdown, no prose). Each element:
 { "name": string, "colStart": number, "colEnd": number, "rowStart": number, "rowEnd": number }
-Use each given component name exactly once.`;
+Use each component's "name" exactly once.`;
 
 // System prompt for creating instructions (preset) for a custom defined component
 // Basically the PLAN prompt but for standalone components, not task generated ones
@@ -81,7 +81,7 @@ Rules:
 - defaultSpecArrIdx: a sensible subset of indices into specArr (0-based) that should be enabled by default.`;
 
 // System prompt for component-generation (code string output), lots of strict restrictions to allow for rendering correctly within Sandpack
-export const GENERATE_SYSTEM_PROMPT = `You are an expert React developer. Generate a single React functional component based on the user's request.
+export const GENERATE_SYSTEM_PROMPT = `You are an expert React developer. Generate a single React functional component based on the user's request. The request is structured client content — follow the COMPONENT SPEC PROTOCOL (below) to parse it.
 
 RULES:
 - Output ONLY the React component code, no explanations or markdown
@@ -134,4 +134,19 @@ export default function GeneratedComponent() {
       {/* component content */}
     </div>
   );
+}`;
+
+// Shared protocol appended to the GENERATE and LAYOUT system prompts. Pure schema:
+// it describes the component-spec JSON the client sends (emitted by
+// resolveComponentSpec in app/utils/helpers.ts for generate; the planner specs for
+// layout). What to DO with it lives in each route's own system prompt.
+export const COMPONENT_SPEC_PROTOCOL = `
+
+COMPONENT SPEC PROTOCOL:
+Client content is JSON describing one or more component spec objects. A spec may include these fields (ignore any field not listed here):
+{
+  "name": string,            // the component's identity and on-screen label
+  "genInstructions": string, // how to build it / the functionality it serves
+  "include": string[],       // (generation only) features you MUST implement
+  "exclude": string[]        // (generation only) features turned OFF — never render them in any form, even partially
 }`;
