@@ -1,5 +1,6 @@
 // Consolidated system prompts for the multi-stage UI generation pipelines:
-//   (Task-based prompt) -> plan -> spec -> layout -> generate (decompose task into components based on functionality, create specs, tile them on the grid, then emit component)
+//   (Task-based prompt) -> plan -> layout -> generate (decompose task into components based on functionality and create specs, tile them on the grid, then emit component)
+//   (New component) -> spec (create a standalone spec without task context) -> generate 
 //   (Preset component) -> generate (Use a component preset to emit component code)
 //   (Any component: Add / Remove customization) -> re-generate 
 
@@ -65,6 +66,7 @@ OUTPUT: ONLY a JSON array (no markdown, no prose). Each element:
 Use each given component name exactly once.`;
 
 // System prompt for creating instructions (preset) for a custom defined component
+// Basically the PLAN prompt but for standalone components, not task generated ones
 export const SPEC_SYSTEM_PROMPT = `You define a customization preset for a UI component type.
 Output ONLY valid JSON (no markdown, no prose) of exactly this shape:
 {

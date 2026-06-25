@@ -136,8 +136,6 @@ exactly (adjacent boxes start at prev `End + 1`).
 
 ## 5. Open items / caveats
 
-- **Not run live end-to-end yet.** Exact-tiling layout is the riskiest part —
-  watch console for `Layout attempt N/3 invalid: …`.
 - `buildInstructions` emits e.g. `Create a Music Player: Now Playing Bar. …` —
   the colon prefix rides into the generate prompt (acts as helpful context; strip
   if undesired).
@@ -151,6 +149,8 @@ exactly (adjacent boxes start at prev `End + 1`).
     candidates.
 - Registry grows with prefixed entries; they also appear in the manual
   `ComponentSelector` dropdown (no filtering). Deferred.
+- **No cross-run dedup yet** (deliberately deferred; repeat identical themes can
+  collide and `.find()` grabs the first).
 - **Future: min-size-per-component.** Discussed approach — add optional
   `minBlockDim: XY` to `DefaultCompSpec`, clamp resize in `GeneratedBox`
   (`handleResizeUp`). Keep it a *container* constraint; do NOT put minimums in the
