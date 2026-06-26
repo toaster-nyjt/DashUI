@@ -48,7 +48,7 @@ export default function Taskbar({ interactMode, onInteractModeChange, onGenerate
         onChange={(e) => setPrompt(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
         disabled={isDesigning}
-        placeholder="Generate component or dashboard"
+        placeholder="Generate multi-component UI"
         className="w-[70%] rounded-lg bg-menubuttons px-4 py-3 text-sm text-white/90 outline-none placeholder:text-white/40 disabled:opacity-70 disabled:cursor-not-allowed"
       />
 

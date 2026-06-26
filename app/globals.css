@@ -19,10 +19,18 @@
   --color-emptycomponent: #6f6f6f95;
   --color-borderactive: #60a5fad0;
   --color-borderinactive: #60a5fa85;
+  --color-borderchild: #ffffff55; /* faint white baseline for unselected components inside a UI */
+  --color-bordergroup: #b794ffff; /* bold purple baseline outline for the root UI box */
+  --color-bordergroup-active: #BF00FF; /* brighter purple when the root is on the selection path */
+  --color-borderyellow: #facc15; /* activated nested-group (sub-parent) outline */
+  --color-bordergreen: #4ade80; /* activated leaf outline */
   --color-menu: #2a2a2a;
   --color-menubuttons: #3a3a3a;
   --color-menuhover: #4a4a4a;
   --shadow-custom: 0 0 20px color-mix(in srgb, var(--color-borderactive) 50%, transparent);
+  --shadow-glow-purple: 0 0 18px 3px color-mix(in srgb, var(--color-bordergroup-active) 65%, transparent);
+  --shadow-glow-yellow: inset 0 0 16px color-mix(in srgb, var(--color-borderyellow) 70%, transparent);
+  --shadow-glow-green: inset 0 0 14px color-mix(in srgb, var(--color-bordergreen) 75%, transparent);
 }
 
 

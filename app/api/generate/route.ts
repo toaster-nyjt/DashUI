@@ -2,7 +2,7 @@
  * Standard API route location that generates React components using Claude
  */
 import Anthropic from "@anthropic-ai/sdk";
-import { GENERATE_SYSTEM_PROMPT } from "../SKILLS";
+import { GENERATE_SYSTEM_PROMPT, COMPONENT_SPEC_PROTOCOL } from "../SKILLS";
 import { XY } from "@/app/utils/spec";
 
 const anthropic = new Anthropic({
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   const stream = await anthropic.messages.stream({
     model: "claude-sonnet-4-6",
     max_tokens: 16000,
-    system: GENERATE_SYSTEM_PROMPT + sizeNote, // Main instructions + per-box size context
+    system: GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL + sizeNote, // Main instructions + spec-JSON protocol + per-box size context
     messages, // Shorthand for messages: messages
   });
 

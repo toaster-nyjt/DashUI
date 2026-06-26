@@ -1,7 +1,9 @@
 # Dashboard Generator — Handoff Doc
 
-Context for continuing work on dash-ui's **task → dashboard** auto-generation feature.
-Written as a starting point for a new chat.
+Primary orientation doc for dash-ui. Its focus is the **task → dashboard**
+auto-generation feature, but it also documents the conventions and subsystems a
+new contributor needs before touching anything (the **component-spec contract**
+in §3 is now codebase-wide, not generator-only). Read §1 + §3 before writing code.
 
 ---
 
@@ -12,11 +14,14 @@ A spatial canvas where you drag to create boxes; each box picks a component type
 iframe. Customizations toggle features per box.
 
 - **Manual flow (pre-existing):** drag a box → pick a type in `ComponentSelector` /
-  toggle customizations in `CustomizationSelector` → `buildInstructions` →
+  toggle customizations in `CustomizationSelector` → `resolveComponentSpec` →
   `handleSend` → `/api/generate` streams the component code.
 - **Auto flow (the feature this doc covers):** type a high-level task in the
   bottom Taskbar → the app plans, lays out, and fills the visible window with
   self-generating boxes.
+
+Both flows converge on the same endpoint: a box's spec is resolved to JSON by
+`resolveComponentSpec` and streamed through `/api/generate` (see §3).
 
 ### Codebase gotchas (read first)
 - **Modified Next.js.** `AGENTS.md`: "This is NOT the Next.js you know" — read
@@ -26,76 +31,186 @@ iframe. Customizations toggle features per box.
   thinking + `effort: "medium"`); **spec** + **generate** run `claude-sonnet-4-6`.
   **generate streams**; plan/spec/layout are non-streaming. API key env var:
   `CLAUDE_API_KEY`. All system prompts live in `app/api/SKILLS.ts`.
-- Grid constants in `app/utils/spec.ts`: `numGridBlocksWide = 30`,
+- **Component-spec contract (§3).** Every route that *consumes* a component
+  receives the whole spec as JSON; a shared `COMPONENT_SPEC_PROTOCOL` string tells
+  the model how to parse it. Don't pass bare names or hand-built sentences.
+- Grid constants in `app/utils/spec.ts`: `numGridBlocksWide = 45`,
   `numVHTall = 250`. **The grid is 250vh — taller than the viewport.** "Visible
   window" for layout = `floor(window.innerHeight / gridBlockSize)` rows.
+- **Nested boxes / grouping is the latest major feature — see §8.** A generated
+  dashboard is now ONE parent "group" box that contains its components as nested
+  children; selection is a `selectionPath`; right-click ungroups. §2/§4/§5 are
+  annotated where §8 supersedes them.
 - `defaultSpec` is the shared component registry. `CompSpec.specArrIdx` is
   **positional** (indices into `specArr`) — fragile if a registry entry is replaced.
-- **State-commit-on-`await` is load-bearing** (see §4, risk 1).
+- **State-commit-on-`await` is load-bearing** (see §5, risk 1).
 - Use the Read tool (not `cat`/`grep`) as source of truth — terminal output garbles.
 
 ---
 
 ## 2. The auto-generation pipeline
 
-User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
-`SpatialGrid` effect (keyed on `taskRequest.id`) runs `runDashboardGeneration`:
+> **Updated by §8 (nested boxes).** The pipeline now produces ONE parent **group**
+> box containing the components as children, optionally targeted at a drawn box.
+> Grouping/targeting/sizing details are in §8; the route-level flow is below.
 
-1. **PLAN** — `POST /api/plan {task}` → `DefaultCompSpec[]`. Functionality-aware
-   presets; decides single vs. multiple components.
+User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
+`SpatialGrid` effect (keyed on `taskRequest.id`) runs `runDashboardGeneration(task, target)`:
+
+0. **BOUNDS + AREA** — compute the target region (a selected `isEmpty` box, else the
+   visible window) and its pixel size (`w/h × gridBlockSize`), *before* planning.
+1. **PLAN** — `POST /api/plan {task, width, height}` → `DefaultCompSpec[]`. The
+   planner scales component count to the available pixel area (§8).
 2. **REGISTER** — `setDefaultSpec(prev => [...prev, ...specs])`. The `await` in
    step 3 lets this commit *before* any box is created.
-3. **LAYOUT** — compute `cols = 30`, `rows = floor(innerHeight / gridBlockSize)`.
-   - **Single component:** skip the layout route — place it centered at a quarter
-     of the window (`floor(cols/2) × floor(rows/2)`).
+3. **LAYOUT** — tile the region interior `w × h`.
+   - **Single component:** skip the layout route — it **fills** the box (`1..w / 1..h`).
    - **Multiple components:** `fetchValidLayout` → `POST /api/layout
-     {task, components, cols, rows, previousError}` → `Placement[]`. Validated +
-     retried (see §4, risk 3).
-4. **PLACE** — `setElementArr(append)` boxes carrying `autoName` + coords.
-5. **SELF-GENERATE** — each `GeneratedBox` with `props.autoName` runs a mount
+     {task, components, cols=w, rows=h, previousError}` → `Placement[]` (LOCAL coords).
+     `components` is the **full `DefaultCompSpec[]`** (not names). Validated + retried.
+4. **PLACE** — `runDashboardGeneration` *returns* ONE parent group box (placements
+   become its `children`, carrying local coords + `autoName`); the effect appends it
+   to `elementArr`, replacing the targeted empty box if any. (§8)
+5. **SELF-GENERATE** — each leaf `GeneratedBox` with `props.autoName` runs a mount
    effect → `handleUpdateNameAndSend(autoName)` → finds spec in registry →
-   `buildInstructions` → `handleSend` → `/api/generate` stream.
+   `resolveComponentSpec` → `handleSend` → `/api/generate` stream.
 
 ---
 
-## 3. Files
+## 3. The component-spec contract  ← read this before touching routes/specs
 
-**New**
+**Standard:** any route that *consumes* component info takes the **whole spec as
+JSON**, never bare names or a hand-built instruction sentence. A single shared
+protocol string, `COMPONENT_SPEC_PROTOCOL` (in `app/api/SKILLS.ts`), documents the
+JSON schema; each consuming route **appends it to its system prompt**, and the
+route's base prompt says "follow the protocol to parse client content." The
+protocol is **pure schema** — what to *do* with the spec lives in each route's own
+system prompt.
+
+**`resolveComponentSpec(compSpec, defaultSpec)`** (`app/utils/helpers.ts`) is the
+single client-side resolver. It replaced the old `buildInstructions` (which built
+a prose sentence). It:
+- finds the box's `DefaultCompSpec` by name,
+- maps `compSpec.specArrIdx` → active feature names (`include`),
+- takes every *other* feature in `specArr` as `exclude`,
+- returns `JSON.stringify({ name, genInstructions, include, exclude })`.
+
+That JSON string is what `handleSend` sends as the user message to `/api/generate`.
+
+**Wiring per route:**
+- **generate** — `system = GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL +
+  sizeNote`; the user message *is* the `resolveComponentSpec` JSON. All three
+  `GeneratedBox` call sites pass `fresh = true`, so generation is single-shot from
+  the spec each time (no multi-turn history in this path).
+- **layout** — receives the full `DefaultCompSpec[]`; `system =
+  LAYOUT_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL`. Uses `name` + `genInstructions`
+  (to judge each component's role/size) and ignores other fields.
+- **plan** & **spec** are **exempt** — they *create* specs (from a task / a custom
+  name); there's no existing component to receive.
+
+**Why resolution stays client-side (and is NOT pushed into the protocol):** the
+index→name mapping is trivial but the *deterministic* part of the job. Moving it
+into the LLM (i.e. shipping `specArr` + active indices and asking the model to
+resolve them) would put off-by-one / miscount risk on the **no-thinking** generate
+path, with **no validation net** (unlike layout, which has `validateLayout`).
+`specArr` is also not bounded — the custom-customization feature appends to it
+([GeneratedBox] `handleUpdateSpecAndSend`), so arrays grow over a session. So the
+client does the reliable array math; the protocol owns only the schema + the
+include/exclude *semantics*. (This was the "Option A vs B" decision — **B** chosen:
+ship resolved `include`/`exclude`, not raw indices.)
+
+**`include`/`exclude` semantics** (ties to §5, risk 6): `include` = features to
+implement; `exclude` = every other feature in the spec, which must **never render
+in any form**. This is what enforces `GENERATE_SYSTEM_PROMPT`'s "don't add features
+you weren't asked for" rule for toggled-off customizations.
+
+---
+
+## 4. Files & codebase map
+
+**Component-spec refactor (most recent work)**
+- `app/utils/helpers.ts` — `resolveComponentSpec` (replaced `buildInstructions`);
+  also holds `stripCodeFences`, `validateLayout`.
+- `app/api/SKILLS.ts` — added shared `COMPONENT_SPEC_PROTOCOL`; `GENERATE_` and
+  `LAYOUT_SYSTEM_PROMPT` now point at it.
+- `app/api/generate/route.ts` / `app/api/layout/route.ts` — append the protocol;
+  layout takes full specs.
+- `app/components/GeneratedBox.tsx` — 3 call sites now use `resolveComponentSpec`.
+- `app/components/SpatialGrid.tsx` — `fetchValidLayout` sends `specs` (full), not
+  `specs.map(s => s.name)`.
+
+**Generator feature (earlier work)**
 - `app/api/plan/route.ts` — planner route (task → `DefaultCompSpec[]`).
 - `app/api/layout/route.ts` — layout route (specs + grid → `Placement[]`).
-- `app/api/SKILLS.ts` — **consolidated** system prompts for every route
-  (`PLAN_/LAYOUT_/SPEC_/GENERATE_SYSTEM_PROMPT`). The planner and layout prompts
-  were added here, not in per-route `prompt.ts` files.
-
-**Changed**
-- `app/utils/spec.ts` — added `autoName?: string` to `GeneratedBoxProps`; added `Placement` type.
-- `app/utils/helpers.ts` — added `validateLayout(placements, cols, rows)`.
-- `app/components/Taskbar.tsx` — `onGenerate` + Enter submit; input is
-  `disabled` and shows "Currently Designing Layout…" while `isDesigning`.
-- `app/page.tsx` — owns `taskRequest` and `isDesigning` (lifted so Taskbar +
-  grid share them).
-- `app/components/SpatialGrid.tsx` — `runDashboardGeneration`, `fetchValidLayout`;
-  new props `taskRequest`, `setIsDesigning`.
+- `app/utils/spec.ts` — `autoName?: string` on `GeneratedBoxProps`; `Placement` type.
+- `app/components/Taskbar.tsx` — `onGenerate` + Enter submit; disabled "Currently
+  Designing Layout…" while `isDesigning`.
+- `app/page.tsx` — owns `taskRequest` and `isDesigning` (lifted to share with grid).
+- `app/components/SpatialGrid.tsx` — `runDashboardGeneration`, `fetchValidLayout`.
 - `app/components/GeneratedBox.tsx` — auto-generate mount effect from `props.autoName`.
-- `next.config.ts` — `reactStrictMode: false` (see §4).
+- `next.config.ts` — `reactStrictMode: false` (see §5).
+
+**Per-file responsibility map (whole app)**
+- `app/page.tsx` — root; owns `interactMode`, `taskRequest`, `isDesigning`; renders
+  Taskbar + SpatialGrid.
+- `app/components/Taskbar.tsx` — bottom prompt bar (task submit) + Interact Mode toggle.
+- `app/components/SpatialGrid.tsx` — the canvas: drag-to-create boxes, grid-block
+  sizing, **`selectionPath`** selection, Delete/Backspace removal, **right-click
+  ungroup menu**, `markNonEmpty` / `syncBounds` / recursive `ungroup`; **owns the
+  `defaultSpec` registry**; runs the generator pipeline (§8).
+- `app/components/GeneratedBox.tsx` — one box, **recursive**: per-box `compSpec`
+  state, move-drag (root only), resize (manual leaf only), popup menu, the `autoName`
+  self-generate mount effect, and the **group children-grid vs. Preview** branch;
+  calls `resolveComponentSpec` → `handleSend` (§8).
+- `app/components/ComponentSelector.tsx` — popup to pick a registry type or type a
+  custom name (custom name → `/api/spec`).
+- `app/components/CustomizationSelector.tsx` — popup to toggle/add customizations
+  once a type is chosen.
+- `app/components/Preview.tsx` — Sandpack iframe host + host-side scaling logic.
+- `app/utils/spec.ts` — shared types + grid constants.
+- `app/utils/helpers.ts` — server-safe pure utils (importable by routes).
+- `app/utils/defaultSpec.ts` — `DEFAULT_SPEC` seed registry (Kanban, Data Table,
+  Stat Dashboard, Calendar, Chart Panel, Form).
+- `app/utils/useGetCode.ts` — `useGetCode` hook: streaming fetch to `/api/generate`,
+  message history, `generatedCode` / `isGenerating`.
+- `app/api/{plan,layout,spec,generate}/route.ts` — the four LLM routes.
 
 **Key types**
 ```ts
-GeneratedBoxProps = { colStart, colEnd, rowStart, rowEnd, key, autoName? }
+GeneratedBoxProps = { colStart, colEnd, rowStart, rowEnd, key, autoName?, children?, isChild?, isEmpty? } // children/isChild/isEmpty → §8
 DefaultCompSpec  = { name, genInstructions, spec: { specArr: string[], defaultSpecArrIdx: number[] } }
 CompSpec         = { name, specArrIdx: number[] }   // specArrIdx = positional indices into specArr
 Placement        = { name, colStart, colEnd, rowStart, rowEnd }
+
+// Wire shape emitted by resolveComponentSpec → /api/generate (see §3):
+{ name: string, genInstructions: string, include: string[], exclude: string[] }
 ```
 
 **Coordinate convention:** 1-indexed, **inclusive**. A box occupies
 `colStart..colEnd` and `rowStart..rowEnd`. Render maps via
 `gridColumn: blockPos.x / (blockPos.x + 1 + blockDim.x)` where
 `blockDim = colEnd - colStart`. Layout output must tile the `cols×rows` window
-exactly (adjacent boxes start at prev `End + 1`).
+exactly (adjacent boxes start at prev `End + 1`). **Nested children use coords LOCAL
+to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global — §8.**
+
+**Interaction model (non-obvious).** Two modes, shared from `page.tsx`:
+- **Meta-edit (default):** the grid handles create/select/move/resize. A
+  transparent overlay sits above each box's Sandpack iframe to capture clicks
+  (the iframe would otherwise swallow them); while dragging/resizing a full-viewport
+  "shield" div above all iframes keeps `mousemove`/`mouseup` reaching `document`.
+- **Interact mode:** overlays/borders drop away so the generated component itself
+  is interactive; the grid does no meta interaction.
+- **Selection / drill-in / right-click ungroup** is the nested-boxes interaction (§8):
+  selection is a `selectionPath`, you drill into a group to reach its components, and
+  right-click backs out or offers Ungroup.
+- **Preview scaling** (`Preview.tsx`): **side**-drag = reflow at a held zoom
+  (`sideZoom`), **corner**/window = uniform zoom from a captured `baseSize`. Props
+  can't cross the iframe boundary without remounting Sandpack, so all scaling is
+  host-side via a `transform: scale()` wrapper.
 
 ---
 
-## 4. Design decisions & reasoning (the "6 risks")
+## 5. Design decisions & reasoning (the "6 risks")
 
 1. **Async commit before self-gen.** `setDefaultSpec` is queued; the `await
    fetchValidLayout` between it and `setElementArr` guarantees the registry
@@ -107,9 +222,9 @@ exactly (adjacent boxes start at prev `End + 1`).
    coverage; `fetchValidLayout` retries up to `LAYOUT_RETRIES = 3`, feeding the
    validation error back as `previousError`; `console.error` on each failure;
    returns `null` (no boxes) if exhausted. **No deterministic packer** — user
-   preference. Works in **block units**, **visible window only**. A **single**
-   component bypasses the route (and thus validation) — it's deterministically
-   centered at quarter-window size, so there's nothing to tile.
+   preference. Works in **block units**, over the **target region** (a drawn box or
+   the visible window — §8). A **single** component bypasses the route (and thus
+   validation) — it **fills** the region, so there's nothing to tile.
 4. **Always-new, colon-namespaced names** (`"Theme: Specific Component"`, e.g.
    `"Music Player: Now Playing Bar"`). The grid only *appends* to the registry,
    never replaces — avoids breaking positional `specArrIdx` and existing boxes.
@@ -118,8 +233,9 @@ exactly (adjacent boxes start at prev `End + 1`).
 5. **Reuse `GeneratedBoxProps` / `Placement`**, not parallel shapes.
 6. **Functionality-critical customizations must be in `defaultSpecArrIdx`** (a
    planner-prompt rule) — because `handleUpdateNameAndSend` seeds `specArrIdx`
-   from `defaultSpecArrIdx`, and `buildInstructions` lists everything *not* active
-   as an explicit "do NOT include."
+   from `defaultSpecArrIdx`, and `resolveComponentSpec` puts everything *not*
+   active into the `exclude` list, which the generate route's
+   `COMPONENT_SPEC_PROTOCOL` enforces as "never render in any form."
 
 **Other decisions**
 - `reactStrictMode: false` stops dev from double-invoking the one-shot auto-gen
@@ -134,19 +250,19 @@ exactly (adjacent boxes start at prev `End + 1`).
 
 ---
 
-## 5. Open items / caveats
+## 6. Open items / caveats
 
-- `buildInstructions` emits e.g. `Create a Music Player: Now Playing Bar. …` —
-  the colon prefix rides into the generate prompt (acts as helpful context; strip
-  if undesired).
+- `resolveComponentSpec` emits the spec as JSON with e.g. `"name": "Music Player:
+  Now Playing Bar"` — the colon prefix rides into the generate prompt via the name
+  field (acts as helpful context; strip if undesired).
 - **Pre-existing lint errors** (newer react-hooks plugin, severity `error` but
   non-blocking):
   - `react-hooks/refs` — refs read/written during render (SpatialGrid drag-box
     render path; GeneratedBox `blockPosLiveRef`/`resizeRectLive` mirror-in-render).
     These are real smells; ideally move ref touches into effects/handlers.
-  - `react-hooks/set-state-in-effect` — pre-existing `interactMode` effect + the 2
-    new effects (auto-gen, task-trigger). Intentional → suppress-with-rationale
-    candidates.
+  - `react-hooks/set-state-in-effect` — several intentional effects (interactMode,
+    auto-gen, task-trigger, menu-reopen, isEmpty report, defaultSpec dev-log).
+    Intentional → suppress-with-rationale candidates.
 - Registry grows with prefixed entries; they also appear in the manual
   `ComponentSelector` dropdown (no filtering). Deferred.
 - **No cross-run dedup yet** (deliberately deferred; repeat identical themes can
@@ -155,10 +271,16 @@ exactly (adjacent boxes start at prev `End + 1`).
   `minBlockDim: XY` to `DefaultCompSpec`, clamp resize in `GeneratedBox`
   (`handleResizeUp`). Keep it a *container* constraint; do NOT put minimums in the
   generate prompt (reintroduces the shrink-floor → overflow → clip chain).
+- **Future: preserve generated code across ungroup (nested boxes).** Ungrouping a
+  generated group (`ungroup` in `SpatialGrid`) currently remounts each freed leaf,
+  which re-runs its `autoName` mount effect and re-streams from `/api/generate`.
+  To keep the already-generated output, fetch each child's code out of its Sandpack
+  frame and inject it into the box's props/code so the freed box renders it directly
+  instead of regenerating. (Accepted as remount-for-now during the nested-boxes work.)
 
 ---
 
-## 6. Related recent tweaks (not the generator, but touched)
+## 7. Related recent tweaks (not the generator, but touched)
 
 - **Generate prompt** (`GENERATE_SYSTEM_PROMPT` in `app/api/SKILLS.ts`) sizing
   rules: `min-w-0` (horizontal shrink), tables `table-fixed w-full`, "NO SHRINK
@@ -172,3 +294,106 @@ exactly (adjacent boxes start at prev `End + 1`).
   fixed to use `color-mix` instead of the nonexistent `--color-borderactive-50`.
 - **`defaultSpec.ts`** Data Table `genInstructions` got explicit
   `table-fixed`/truncate guidance.
+
+---
+
+## 8. Nested boxes, path selection & grouping (latest major feature)
+
+A generated dashboard is no longer N sibling boxes — it's **one parent "group" box**
+in `elementArr` that *contains* its components as nested children. This section
+supersedes the flat-box assumptions in §2/§4/§5 where they conflict.
+
+### Data model (`app/utils/spec.ts`)
+`GeneratedBoxProps` gained three fields:
+- `children?: GeneratedBoxProps[]` — present on a **group**; the box renders these
+  instead of a Preview. Children hold coords **LOCAL** to the parent (`1..w / 1..h`).
+- `isChild?: boolean` — true for any box spawned inside a parent (any depth). The one
+  top-level box in `elementArr` leaves it false → only it drags + shows the purple
+  outline. `isRoot = !isChild`.
+- `isEmpty?: boolean` — a manually-drawn box starts `true`; flips `false` the first
+  time it generates (`markNonEmpty`, fired by an `isGenerating` effect). Lets
+  targeting know it's a drop-target.
+
+### Parent-as-grid rendering (`GeneratedBox`)
+A group renders its content area as an inner CSS grid sized to its block dims with
+**`repeat(w/h, minmax(0,1fr))`** tracks, mapping each child to a recursive
+`<GeneratedBox isChild>`. `1fr` tracks make children scale with the box (and with
+`blockSize` on window resize) for free — no pixel math, no resize machinery. Because
+the inner tracks equal `blockSize`, a nested child renders **pixel-identical** to
+sitting on the main grid (the parent grid is just a re-rooted coordinate frame). A
+leaf (no children) renders the Preview + `autoName` self-gen exactly as before.
+
+### Selection is a PATH, not a single id
+`SpatialGrid` replaced `selectedID` with **`selectionPath: string[]`** (keys from the
+top-level box down to the deepest drilled-in box; `[]` = nothing). Each `GeneratedBox`
+gets its own `path` + the global `selectionPath` and derives `onPath` (its path is a
+prefix → selection runs through it) and `isFocus` (path ends exactly at it → shows its
+menu). A variable-length path is required because a tree selection is a *path*, not a
+point — N nesting levels need N "which child here?" slots (2 scalars cap at depth 2).
+
+### Drill-in interaction
+- Click an unselected group → selects it (purple). Click a child → **drills in**.
+- The shield is the **overlay `pointer-events` toggle** (`overlayActive`): a group's
+  overlay catches clicks until it's selected, then goes `pointer-events-none` so
+  clicks fall to its children's overlays (one level at a time). A **leaf overlay is
+  ALWAYS active** in meta-edit mode — it must always shield its Sandpack iframe
+  (gating it on focus was a bug: drilling into one leaf exposed all the others).
+- **Drill commits on mouseUP, not mousedown.** A child records its path in a
+  module-level `pendingDrillPath` on mousedown; the root commits it in its drag
+  `handleMouseUp` **only if `didDrag` is false**. (Drilling on mousedown flashed the
+  child's selection/menu during a group-move. The child can't use its own mouseup —
+  the drag-shield eats it; only the root's `document` mouseup fires.)
+- **Drag + purple outline are root-only** (`isRoot`). A child's mousedown bubbles to
+  the root (no `stopPropagation`) so a body-drag moves the whole group; children ride
+  along because they're laid out inside it.
+
+### Right-click context menu (`SpatialGrid.handleContextMenu`)
+- Drilled in (intermediary/leaf selected) → **clears** the path (backs out).
+- Just the root group selected → pops an **"Ungroup" button** at the cursor, over a
+  full-workspace **shield** (`absolute inset-0`, follows resize) that absorbs any
+  other mouse event (dismiss) so the click can't select/deselect a box.
+- All box/grid mousedown handlers early-return on `e.button !== 0`, so right-click
+  never leaks into selection/drag; `contextmenu` bubbles to the grid independently.
+
+### Ungroup (recursive)
+`ungroup(parent)` → `flattenToGlobal` recursively promotes **every leaf** to a
+top-level `elementArr` box at **GLOBAL** coords (`localCoord + each ancestor's origin
+offset − 1`), `isChild` cleared. Freed leaves drop onto the main grid (already render
+via `gridColumn`). They **remount and re-generate** for now — see §6 (code-hoist).
+
+### Position sync (`syncBounds`) — load-bearing for ungroup
+A box's live position lives only in `GeneratedBox` state after creation. On drag/
+resize end, a top-level box calls **`syncBounds(key, bounds)`** to write its new
+coords back to `elementArr`, so `ungroup` (and anything reading the coords) uses where
+it IS, not where it spawned. Without this, ungrouping a *moved* UI teleported its
+components back to the original spot.
+
+### Empty-box targeting
+`runDashboardGeneration(task, target)` takes a **target box** (a selected `isEmpty`
+box, found in the effect via `selectionPath[0]`). It places the parent at the
+target's bounds and tiles its `w×h` interior; the effect **replaces** the empty box.
+No target → fills the visible window. Single-component now **fills** the box (it used
+to center at quarter-window — pointless with a wrapper).
+
+### Plan route knows the available area
+`runDashboardGeneration` computes the target's pixel size (`w/h × gridBlockSize`) and
+sends `{ task, width, height }` to `/api/plan`. `PLAN_SYSTEM_PROMPT` now leads with
+"**RESPECT THE AVAILABLE AREA** — only create a new component if there's enough pixel
+space for it and every other to stay legible; small area → single component."
+(layout reasons in block units, generate in px, plan now also gets px.)
+
+### Styling roles (selection-path colored)
+Borders/glows are by role and brighten + thicken + glow when `onPath` (tokens in
+`globals.css`; `leafBorderCls` / `groupOutlineCls` in `GeneratedBox`):
+- **root group** → purple baseline; brighter purple + outward halo when active.
+- **nested sub-group** → white baseline; yellow + inset glow when active (future depth).
+- **leaf** → faint-white baseline; green + inset glow when active.
+- **manual box** → blue active/inactive (unchanged).
+Components inside a UI are **square** (`rounded-none`); the root's content wrapper is a
+`rounded-lg overflow-hidden` **mask** that rounds only the UI's outer silhouette.
+Sandpack's own radius is zeroed via `!rounded-none` on the `sp-*` classes
+(`Preview.tsx`). Resize handles are hidden while a box `isGenerating`.
+
+### Dev helper
+`logDefaultSpec(defaultSpec)` (`helpers.ts`, dev-only) JSON-dumps the full registry;
+`SpatialGrid` calls it in a `[defaultSpec]` effect (mount + every change).

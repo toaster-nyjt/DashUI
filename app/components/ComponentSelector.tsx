@@ -16,7 +16,7 @@ export default function ComponentSelector({ names, loading, onSend }
 
       {/* Header section, pushes the title and icon far apart*/}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white text-sm font-medium">Components</h3>
+        <h3 className="text-white text-sm font-medium">Single Component UI</h3>
         {/* If custom component generating -> Show loading wheel */}
         {loading
           ? <Loader2 size={18} className="text-white/60 animate-spin" />

@@ -12,7 +12,13 @@ const anthropic = new Anthropic({
 });
 
 export async function POST(req: Request) {
-  const { task } = await req.json();
+  // width/height = the available pixel area the dashboard will occupy. The planner
+  // scales component count to it (only splitting when there's room for each piece).
+  const { task, width, height } = await req.json();
+
+  const sizeNote = (width && height)
+    ? `\nAvailable area: ${Math.round(width)}px wide by ${Math.round(height)}px tall. Make ALL decisions relative to this space — only create multiple components if each gets enough pixel area to be legible and useful; in a small area, prefer a single focused component.`
+    : "";
 
   const msg = await anthropic.messages.create({
     model: "claude-opus-4-8", // most capable model for component functionality decomposition
@@ -20,7 +26,7 @@ export async function POST(req: Request) {
     thinking: { type: "adaptive" },
     output_config: { effort: "medium" },
     system: PLAN_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: `Task: ${task}` }],
+    messages: [{ role: "user", content: `Task: ${task}${sizeNote}` }],
   });
 
   // Reasoning stays in `thinking` blocks, so the text block(s) are just the JSON.

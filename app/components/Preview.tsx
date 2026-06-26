@@ -100,11 +100,14 @@ export default function App() {
               "https://cdn.tailwindcss.com",
             ],
             classes: {
-              "sp-wrapper": "!h-full !w-full",
-              "sp-layout": "!h-full !w-full !border-0 !bg-transparent",
-              "sp-preview": "!h-full !w-full",
-              "sp-preview-container": "!h-full !w-full",            
-              "sp-preview-iframe": "!h-full !w-full !min-h-0",
+              // !rounded-none zeroes out Sandpack's own layout border-radius so the
+              // preview is square — the GeneratedBox wrapper owns all corner rounding
+              // (square for nested components, the root masks the UI's outer corners).
+              "sp-wrapper": "!h-full !w-full !rounded-none",
+              "sp-layout": "!h-full !w-full !border-0 !bg-transparent !rounded-none",
+              "sp-preview": "!h-full !w-full !rounded-none",
+              "sp-preview-container": "!h-full !w-full !rounded-none",
+              "sp-preview-iframe": "!h-full !w-full !min-h-0 !rounded-none",
             },
           }}
         >
