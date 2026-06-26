@@ -72,3 +72,11 @@ export function validateLayout(placements: Placement[], cols: number, rows: numb
 
   return { ok: true };
 }
+
+// Dev-only: dump the full current component registry (defaultSpec) to the console
+// with ALL fields, so you can watch it grow as the planner / custom-spec route
+// append presets.
+export function logDefaultSpec(defaultSpec: DefaultCompSpec[]): void {
+  if (process.env.NODE_ENV === "production") return; // dev log only
+  console.log(`[defaultSpec] ${defaultSpec.length} component(s):`, JSON.stringify(defaultSpec, null, 2));
+}

@@ -18,19 +18,36 @@ const RESIZE_HANDLES = [
   { dir: 'se', cls: 'bottom-0 right-0 w-3 h-3',      cursor: 'nwse-resize' },
 ];
 
+// Cross-instance scratch for drill-on-mouseup: a child records its path here on
+// mousedown; the ROOT box reads it in its drag mouseup and commits the drill ONLY
+// if no drag happened — so moving the UI never briefly flashes a child selection.
+// Safe as a single module-level value because only one box interaction can be in
+// flight at a time, and it's cleared at the end of every interaction.
+let pendingDrillPath: string[] | null = null;
+
 // Created from drag interaction in Spacial Grid, 
 // Contains a bunch of low level visual layer transformations for the boxes,
 // and the main logic behind the prompt routing
-export default function GeneratedBox({ props, isSelected, handleSelect, blockSize, gridRef, interactMode, defaultSpec, setDefaultSpec}
+export default function GeneratedBox({ props, path, selectionPath, setSelectionPath, blockSize, gridRef, interactMode, defaultSpec, setDefaultSpec, isChild = false, markNonEmpty, syncBounds }
   : {
       props : GeneratedBoxProps,
-      isSelected : boolean,
-      handleSelect : (e : React.MouseEvent)=>void,
+      // This box's path from its top-level root, e.g. [rootKey] or [rootKey, childKey].
+      path : string[],
+      // The globally selected path (owned by SpatialGrid).
+      selectionPath : string[],
+      setSelectionPath : React.Dispatch<React.SetStateAction<string[]>>,
       blockSize : number
       gridRef : HTMLDivElement
       interactMode : boolean
       defaultSpec : DefaultCompSpec[]
       setDefaultSpec : React.Dispatch<React.SetStateAction<DefaultCompSpec[]>>
+      // True for any box rendered inside a parent (any depth). Only the root (false) drags.
+      isChild? : boolean
+      // Targeting groundwork: a box reports when it first generates (no longer empty).
+      markNonEmpty? : (key : string) => void
+      // Persist a moved/resized box's new block coords back to elementArr (top-level
+      // only) so consumers like ungroup read where it IS, not where it spawned.
+      syncBounds? : (key : string, b : { colStart : number; colEnd : number; rowStart : number; rowEnd : number }) => void
     }) {
 
   /* DATA LAYER STATE VARS */
@@ -67,6 +84,43 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
 
   const isResizing = resizeDir !== null;
   const isSideDragging = isResizing && resizeDir!.length === 1;
+
+  /* NESTING + PATH-BASED SELECTION */
+
+  // The one top-level box per group (lives in elementArr). Only it drags + gets
+  // the purple outline. Anything spawned inside a parent has isChild = true.
+  const isRoot = !isChild;
+  // A parent/group when it carries children (render them instead of a Preview).
+  const hasChildren = !!props.children?.length;
+  // On the selected path: this box's full path is a prefix of the selected path.
+  const onPath = path.length <= selectionPath.length && path.every((k, i) => selectionPath[i] === k);
+  // The focus (deepest selected) when the selected path ends exactly at this box.
+  const isFocus = onPath && selectionPath.length === path.length;
+
+  // Corner treatment: components INSIDE a UI (children) are square; the root and
+  // manual boxes are rounded. The root's content wrapper masks the UI's outer
+  // corners (rounded + overflow-hidden), so the square children get clipped to a
+  // rounded silhouette while internal divisions stay sharp.
+  const roundCls = isChild ? 'rounded-none' : 'rounded-lg';
+
+  // SELECTION-PATH STYLING. Every box on the selection path is "activated":
+  // brighter color, a glow, and a slightly thicker border. Color is by role —
+  // root UI = purple, nested sub-group = yellow, leaf = green; a standalone manual
+  // box keeps blue. Groups draw their outline on a top overlay (groupOutlineCls);
+  // leaves draw it on the box layers (leafBorderCls) + an inset glow when active.
+  const leafBorderCls = isRoot
+    ? (onPath ? 'border-2 border-borderactive' : 'border-2 border-borderinactive') // manual box: blue
+    : (onPath ? 'border-2 border-bordergreen' : 'border border-borderchild');      // UI leaf: green / white
+  const groupOutlineCls = isRoot
+    ? (onPath ? 'border-4 border-bordergroup-active shadow-glow-purple' : 'border-[3px] border-bordergroup')
+    : (onPath ? 'border-[3px] border-borderyellow shadow-glow-yellow' : 'border-2 border-borderchild');
+
+  // Which box's overlay catches a click AND shields the Sandpack iframe beneath it.
+  // A LEAF overlay is ALWAYS active in meta-edit mode — otherwise its iframe becomes
+  // interactive once the focus moves off its parent. Drill-in is governed by GROUP
+  // overlays: a group catches clicks until it's selected, then goes click-through so
+  // the clicks fall to its children's overlays (one level at a time).
+  const overlayActive = hasChildren ? !onPath : true;
 
   // Refs + viewport position for the popup menu (kept on-screen). Starts offscreen.
   const boxRef = useRef<HTMLDivElement>(null);
@@ -193,24 +247,35 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Targeting groundwork: the first time this box generates it stops being an
+  // empty drop-target. Only top-level boxes live in elementArr, so only they report.
+  useEffect(() => {
+    if (isGenerating && isRoot) markNonEmpty?.(props.key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGenerating]);
+
   /* MAIN PHYSICAL/VISUAL LOGIC */
 
   // Reopen the menu whenever this box becomes the selected one (selecting it
   // fresh or re-selecting after a deselect always shows the menu).
   useEffect(() => {
-    if (isSelected) setMenuOpen(true);
-  }, [isSelected]);
+    if (isFocus) setMenuOpen(true);
+  }, [isFocus]);
 
-  // To to set the selected key and initiate drag
+  // Mousedown handler for the ROOT box (its outer div + its own overlay). A
+  // child's overlay does NOT stopPropagation, so a click inside a selected group
+  // also bubbles here — that's how a body-drag moves the whole group while a
+  // child stays clickable (drag vs. drill-in is resolved on mouseup by didDrag).
   const handleMouseDown = (e : React.MouseEvent) => {
-    // Cycles between open and closed if this box is selected and you click on it
-    if (isSelected) setMenuOpen((prev) => !prev);
-    handleSelect(e);
-    setIsMouseDragging(true);
+    if (e.button !== 0) return;                      // left button only; right-click = grid context menu
+    e.stopPropagation();                            // keep the grid from deselecting/creating
+    if (!onPath) setSelectionPath(path);            // select this root (skipped if a child of it was clicked)
+    if (isFocus && !hasChildren) setMenuOpen((prev) => !prev); // re-click a focused leaf toggles its menu
+    setIsMouseDragging(true);                       // arm a (root-only) drag
 
     // Remove offset of grid from window
     const rect = gridRef.getBoundingClientRect();
-    const localPos : XY = { x: e.clientX - rect.left, y: e.clientY - rect.top}; 
+    const localPos : XY = { x: e.clientX - rect.left, y: e.clientY - rect.top};
 
     // Set the offset in pixels
     offset.current = {
@@ -223,6 +288,16 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
         x: localPos.x - offset.current.x,
         y: localPos.y - offset.current.y
     });
+  }
+
+  // Mousedown handler for a CHILD's click-overlay: drill the selection into this
+  // child. Deliberately does NOT stopPropagation so it bubbles to the root's
+  // handler, arming a potential group-move that mouseup resolves.
+  const handleChildDown = (e : React.MouseEvent) => {
+    if (e.button !== 0) return; // left button only; right-click = grid context menu
+    // Record the pending drill; the root commits it on MOUSEUP if it wasn't a drag.
+    // (Drilling on mousedown made a group-move briefly flash the child's selection.)
+    pendingDrillPath = path;
   }
 
   // Start a resize from a handle; dir is a compass string like 'e','se','n'
@@ -261,12 +336,26 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
     }
     const handleMouseUp = (e: MouseEvent) => {
       // Convert the pixel positions back into block positions after drag
-      setBlockPos({
+      const newPos = {
         x: pixToBlock(blockPosLiveRef.current!.x),
         y: pixToBlock(blockPosLiveRef.current!.y)
-      })
+      };
+      setBlockPos(newPos);
 
-      if (didDrag) setMenuOpen(false); // Prevent the cycling of open/closing the menu after drag -> Just close it
+      if (didDrag) {
+        setMenuOpen(false); // Prevent the cycling of open/closing the menu after drag -> Just close it
+        // A body-drag on a group is a MOVE, not a drill-in: snap the selection
+        // back to this root so a child clicked to start the drag isn't left focused.
+        if (hasChildren) setSelectionPath(path);
+        // Persist the new position to elementArr so ungroup (and anything reading
+        // the box's coords) uses where it is NOW, not where it spawned. A move keeps
+        // size, so blockDim is unchanged.
+        if (isRoot) syncBounds?.(props.key, { colStart: newPos.x, colEnd: newPos.x + blockDim.x, rowStart: newPos.y, rowEnd: newPos.y + blockDim.y });
+      } else if (pendingDrillPath) {
+        // A click (no drag) on a child -> commit the drill NOW, on mouseup.
+        setSelectionPath(pendingDrillPath);
+      }
+      pendingDrillPath = null; // always clear the scratch at the end of the interaction
       setIsMouseDragging(false);
     }
     
@@ -328,10 +417,14 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
     const handleResizeUp = () => {
       // Snap the live pixel rect back to block units, then exit resize mode
       const r = resizeRectLive.current!;
-      setBlockPos({ x: pixToBlock(r.left), y: pixToBlock(r.top) });
-      setBlockDim({ x: pixToBlockDim(r.width), y: pixToBlockDim(r.height) });
+      const newPos = { x: pixToBlock(r.left), y: pixToBlock(r.top) };
+      const newDim = { x: pixToBlockDim(r.width), y: pixToBlockDim(r.height) };
+      setBlockPos(newPos);
+      setBlockDim(newDim);
       setResizeDir(null);
       setResizeRect(null);
+      // Keep elementArr's coords in sync with the resized box (top-level only).
+      if (isRoot) syncBounds?.(props.key, { colStart: newPos.x, colEnd: newPos.x + newDim.x, rowStart: newPos.y, rowEnd: newPos.y + newDim.y });
     }
 
     document.addEventListener('mousemove', handleResizeMove);
@@ -346,8 +439,9 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resizeDir])
 
-  // Whether either of the popup menu should currently be shown
-  const showPopup = isSelected && menuOpen && !isMouseDragging && !isResizing && !interactMode;
+  // Whether either of the popup menu should currently be shown. Only the focused
+  // (deepest selected) LEAF shows it — a group is a container, not a component.
+  const showPopup = isFocus && !hasChildren && menuOpen && !isMouseDragging && !isResizing && !interactMode;
 
   // Position the popup beside the box (preferring the right, then left), and if
   // there's no room beside it (e.g. a wide header) drop it below/above. Always
@@ -418,13 +512,15 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
         height: blockToPix(blockDim.y + 2)
     },
   } : {
-    // If not dragged, snap to grid and display in grid
+    // If not dragged, snap to grid and display in grid. Only the root wires
+    // onMouseDown (drag/select); a child's clicks arrive via its overlay, which
+    // bubbles up to here for group-move.
     className : 'relative pointer-events-auto',
     style : {
         gridColumn: `${blockPos.x} / ${blockPos.x + 1 + blockDim.x}`,
         gridRow: `${blockPos.y} / ${blockPos.y + 1 + blockDim.y}`
     },
-    onMouseDown: handleMouseDown // Adds clicked-on logic
+    onMouseDown: isRoot ? handleMouseDown : undefined // Adds clicked-on logic (root only)
   }
   
 
@@ -435,16 +531,49 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
       {...boxDivProp}
     >
       {/* STYLING (two layers because shadows don't work with backdrop blur).
-          Borders/shadow/frosting are hidden in interact mode for a clean look. */}
+          Borders/shadow/frosting are hidden in interact mode for a clean look. A
+          group drops the frosting (children show through) and draws its purple
+          outline ON TOP (below). Nested components carry no glow so internal
+          divisions stay crisp; the group's border lives in the top overlay. */}
       {!interactMode && (
-        <div className={`absolute inset-0 shadow-custom rounded-lg border-2 ${isSelected ? 'border-borderactive' : "border-borderinactive"}`}/>
+        <div className={`absolute inset-0 ${(isRoot && !hasChildren) ? 'shadow-custom' : ''} ${roundCls} ${hasChildren ? '' : leafBorderCls}`}/>
       )}
-      <div className={`flex justify-center items-center size-full overflow-hidden z-10 rounded-lg ${interactMode ? '' : `backdrop-blur-sm border-2 ${isSelected ? 'border-borderactive' : "border-borderinactive"} bg-emptycomponent/40`}`}>
-        
-        {isGenerating ? (
+      {/* For a group, this content wrapper is the rounding MASK: rounded +
+          overflow-hidden clips the square children so only the UI's outermost
+          corners round off. */}
+      <div className={`flex justify-center items-center size-full overflow-hidden z-10 ${roundCls} ${(interactMode || hasChildren) ? '' : `backdrop-blur-sm ${leafBorderCls} bg-emptycomponent/40`}`}>
+
+        {hasChildren ? (
+          // Parent (group): an inner CSS grid that fills this box. 1fr tracks
+          // scale with the box (and with blockSize on window resize), so nested
+          // children render pixel-identical to sitting on the main grid.
+          <div
+            className="grid size-full"
+            style={{
+              gridTemplateColumns: `repeat(${blockDim.x + 1}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${blockDim.y + 1}, minmax(0, 1fr))`,
+            }}
+          >
+            {props.children!.map((child) => (
+              <GeneratedBox
+                key={child.key}
+                props={child}
+                isChild={true}
+                path={[...path, child.key]}
+                selectionPath={selectionPath}
+                setSelectionPath={setSelectionPath}
+                blockSize={blockSize}
+                gridRef={gridRef}
+                interactMode={interactMode}
+                defaultSpec={defaultSpec}
+                setDefaultSpec={setDefaultSpec}
+              />
+            ))}
+          </div>
+        ) : isGenerating ? (
           <div className="flex justify-center items-center animate-vertical-shimmer size-full rounded-lg bg-neutral-900 border border-white/5">
             {/* Generating | Empty | Showing code preview */}
-            <span>generating...</span> 
+            <span>generating...</span>
           </div>
         ) : (generatedCode == "") ? (
           <span>empty</span>
@@ -458,13 +587,30 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
 
       </div>
 
+      {/* Group outline drawn ON TOP of the children (above the mask) so it traces
+          the rounded UI silhouette and isn't covered by the corner components.
+          Brighter + thicker + glowing when the group is on the selection path.
+          Click-through so it never blocks selection/drill-in. */}
+      {!interactMode && hasChildren && (
+        <div className={`absolute inset-0 z-20 ${roundCls} ${groupOutlineCls} pointer-events-none`}/>
+      )}
+
+      {/* Activated leaf: an inset glow ring on top of the preview (the green
+          border lives on the box layers; this adds the "glow"). Inset so it stays
+          contained and never bleeds over neighbouring components. Click-through. */}
+      {!interactMode && isChild && !hasChildren && onPath && (
+        <div className={`absolute inset-0 z-20 ${roundCls} pointer-events-none shadow-glow-green`}/>
+      )}
+
       {/* A transparent overlay above the preview captures clicks for
-          select/move, since the Sandpack iframe would otherwise swallow them.
-          Absent in interact mode so the component itself is clickable. */}
+          select/move/drill-in, since the Sandpack iframe would otherwise swallow
+          them. pointer-events toggles by overlayActive: a group yields this
+          surface to its children once selected; a nested leaf catches clicks only
+          once its parent is the focus. Absent in interact mode. */}
       {!interactMode && (
         <div
-          onMouseDown={handleMouseDown}
-          className="absolute inset-0 z-10 cursor-grab"
+          onMouseDown={isChild ? handleChildDown : handleMouseDown}
+          className={`absolute inset-0 z-10 ${isRoot ? 'cursor-grab' : 'cursor-pointer'} ${overlayActive ? 'pointer-events-auto' : 'pointer-events-none'}`}
         />
       )}
 
@@ -479,8 +625,9 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
       )}
 
       {/* Resize handles (sides reflow, corners zoom). Stop propagation so they
-          don't trigger the box move-drag or grid deselect. */}
-      {(isSelected && !isMouseDragging) && RESIZE_HANDLES.map((h) => (
+          don't trigger the box move-drag or grid deselect. Only a selected
+          standalone manual box resizes — groups and children never do. */}
+      {(onPath && !isMouseDragging && isRoot && !hasChildren && !isGenerating) && RESIZE_HANDLES.map((h) => (
         <div
           key={h.dir}
           onMouseDown={(e) => handleResizeDown(e, h.dir)}
@@ -496,7 +643,7 @@ export default function GeneratedBox({ props, isSelected, handleSelect, blockSiz
           ref={popupRef}
           className="fixed z-50"
           style={{ top: popupPos.y, left: popupPos.x }} // Logic behind the popup not being offscreen
-          onMouseDown={(e) => e.stopPropagation()} // To prevent calling the parent box's handleSelect
+          onMouseDown={(e) => e.stopPropagation()} // Don't let popup clicks reselect/drag the box
         >
           {/* Empty component -> Show component menu */}
           {compSpec.name === '' ? (

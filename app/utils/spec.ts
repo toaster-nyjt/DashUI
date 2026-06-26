@@ -17,6 +17,18 @@ export type GeneratedBoxProps = {
   // Set by the dashboard generator: the box self-generates this component on
   // mount (the registry already holds its spec). Undefined for manual boxes.
   autoName?: string;
+  // NESTING: a parent (group) box carries its children here. Children hold
+  // coords LOCAL to this box (1..w / 1..h), placed in the parent's inner grid.
+  // Absent on leaf boxes (which render a Preview from autoName instead).
+  children?: GeneratedBoxProps[];
+  // True for any box spawned INSIDE a parent (at any nesting depth). The one
+  // top-level box in elementArr leaves this false — it alone gets drag + the
+  // purple group outline.
+  isChild?: boolean;
+  // Targeting groundwork: a manually-created box starts empty and flips false
+  // the first time it generates (see GeneratedBox isGenerating effect). Lets
+  // SpatialGrid tell whether a selected box is an empty drop-target.
+  isEmpty?: boolean;
 }
 
 // One component's placement on the block grid (inclusive coords), returned by
@@ -48,7 +60,7 @@ export interface Message {
 }
 
 // Determines block density in grid
-export const numGridBlocksWide = 30;
+export const numGridBlocksWide = 45;
 
 // Determines height of grid (in vh)
 export const numVHTall = 250;

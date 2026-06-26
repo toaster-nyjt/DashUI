@@ -3,7 +3,7 @@ import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
 import { XY, defaultXY, GeneratedBoxProps, DefaultCompSpec, Placement, numGridBlocksWide, numVHTall } from '../utils/spec';
 import { DEFAULT_SPEC } from '../utils/defaultSpec';
-import { validateLayout } from '../utils/helpers';
+import { validateLayout, logDefaultSpec } from '../utils/helpers';
 
 // How many times to re-ask the layout route for a valid (gap-free) tiling
 const LAYOUT_RETRIES = 3;
@@ -28,8 +28,14 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
   const [elementArr, setElementArr] = useState<GeneratedBoxProps[]>([]);
   // Tracks the currently generated element
   const currElement = useRef<GeneratedBoxProps>(null);
-  // Tracks which element is currently selected
-  const [selectedID, setSelectedID] = useState<string | null>('');
+  // The currently selected path: keys from the top-level box down to the deepest
+  // drilled-in box. Empty = nothing selected. Variable-length so nested groups
+  // can be drilled into to any depth (selectionPath[0] is always the top-level box).
+  const [selectionPath, setSelectionPath] = useState<string[]>([]);
+
+  // Right-click context menu over the selected root group: an "Ungroup" button at
+  // the cursor (grid-relative coords) + which root it targets. null = closed.
+  const [ungroupMenu, setUngroupMenu] = useState<{ x: number; y: number; rootKey: string } | null>(null);
 
 
   /* DEFAULT SPEC MODIFIERS */
@@ -37,6 +43,11 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
   // Shared, runtime-extendable registry of components + customizations
   // Passed down to all boxes
   const [defaultSpec, setDefaultSpec] = useState<DefaultCompSpec[]>(DEFAULT_SPEC);
+
+  // Dev: print the component registry on mount and whenever it changes.
+  useEffect(() => {
+    logDefaultSpec(defaultSpec);
+  }, [defaultSpec]);
 
 
   /* DASHBOARD GENERATOR (task prompt -> plan -> layout -> auto boxes) */
@@ -72,14 +83,29 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
 
   // Full pipeline: decompose the task into component specs, register them, lay
   // them out across the visible window, then drop in self-generating boxes.
-  const runDashboardGeneration = async (task: string) => {
+  const runDashboardGeneration = async (task: string, target: GeneratedBoxProps | null): Promise<GeneratedBoxProps | null> => {
     setIsDesigning(true);
     try {
-      // 1. PLAN: task -> functionality-aware component presets
+      // 0. TARGET BOUNDS + PIXEL AREA: generate WITHIN a selected empty box if there
+      //    is one; otherwise fill the whole VISIBLE window. Computed FIRST so the
+      //    planner can scale its decisions to the actual available pixel area. The
+      //    parent box occupies these bounds; the layout tiles its w x h interior in
+      //    LOCAL coords (1..w / 1..h), which drop straight into the parent's inner grid.
+      const colStart = target ? target.colStart : 1;
+      const rowStart = target ? target.rowStart : 1;
+      const colEnd = target ? target.colEnd : numGridBlocksWide;
+      const rowEnd = target ? target.rowEnd : Math.max(1, Math.floor(window.innerHeight / (gridBlockSize || 1)));
+      const w = colEnd - colStart + 1;
+      const h = rowEnd - rowStart + 1;
+      const widthPx = Math.round(w * gridBlockSize);   // available pixel area for the planner
+      const heightPx = Math.round(h * gridBlockSize);
+
+      // 1. PLAN: task + available pixel area -> functionality-aware presets. The
+      //    planner only splits into multiple components if the area justifies it.
       const planRes = await fetch('/api/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task }),
+        body: JSON.stringify({ task, width: widthPx, height: heightPx }),
       });
       if (!planRes.ok) throw new Error(`plan request failed (${planRes.status})`);
       const specs = await planRes.json() as DefaultCompSpec[];
@@ -90,64 +116,99 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
       //    defaultSpec prop that already contains its spec (no /api/spec re-fetch).
       setDefaultSpec((prev) => [...prev, ...specs]);
 
-      // 3. LAYOUT: tile the VISIBLE window (in block units) with the components.
-      const cols = numGridBlocksWide;
-      const rows = Math.max(1, Math.floor(window.innerHeight / (gridBlockSize || 1)));
-      let placements: Placement[] | null;
+      // 3. LAYOUT: tile the box interior (w x h).
+      const placements: Placement[] | null = specs.length === 1
+        // Single component -> fill the whole box (nothing to tile/validate).
+        ? [{ name: specs[0].name, colStart: 1, colEnd: w, rowStart: 1, rowEnd: h }]
+        // Multiple -> ask the layout route to tile the box interior (w x h).
+        : await fetchValidLayout(task, specs, w, h);
+      if (!placements) return null; // exhausted retries; already logged
 
-      // If its a single component, place it centered at a quarter size of the window 
-      if (specs.length === 1) {
-        const w = Math.max(1, Math.floor(cols / 2));
-        const h = Math.max(1, Math.floor(rows / 2));
-        const colStart = Math.floor((cols - w) / 2) + 1; // 1-indexed, inclusive
-        const rowStart = Math.floor((rows - h) / 2) + 1;
-        placements = [{
-          name: specs[0].name,
-          colStart,
-          colEnd: colStart + w - 1,
-          rowStart,
-          rowEnd: rowStart + h - 1,
-        }];
-      // If multiple components, call layout route to fill the whole window with one box.
-      } else {
-        placements = await fetchValidLayout(task, specs, cols, rows);
-      }
-      if (!placements) return; // exhausted retries; already logged
+      // 4. Wrap the placements as CHILDREN of ONE parent (group) box. Each child
+      //    keeps its local coords + autoName and self-generates on mount.
+      const parentKey = `group-${taskRequest!.id}`;
+      const children: GeneratedBoxProps[] = placements.map((p, i) => ({
+        colStart: p.colStart,
+        colEnd: p.colEnd,
+        rowStart: p.rowStart,
+        rowEnd: p.rowEnd,
+        key: `${parentKey}-child-${i}`,
+        autoName: p.name, // Lets the leaf box know to self-generate
+        isChild: true,
+      }));
 
-      // 4. Drop in boxes carrying their assigned name -> each self-generates
-      // This is how the grid gets the auto generated component(s)
-      setElementArr((prev) => [
-        ...prev,
-        ...placements.map((p, i) => ({
-          colStart: p.colStart,
-          colEnd: p.colEnd,
-          rowStart: p.rowStart,
-          rowEnd: p.rowEnd,
-          key: `auto-${taskRequest!.id}-${i}`,
-          autoName: p.name, // Lets box know to self generate
-        })),
-      ]);
+      // The parent occupies the target bounds (drawn box or full window); the
+      // effect appends it to elementArr (replacing the targeted empty box).
+      return { colStart, colEnd, rowStart, rowEnd, key: parentKey, children };
     } catch (e) {
       console.error('Dashboard generation error:', e);
+      return null;
     } finally {
       setIsDesigning(false);
     }
   };
 
-  // Run the generator whenever a new task is submitted from the Taskbar
+  // Run the generator whenever a new task is submitted from the Taskbar, then
+  // append the single parent box it produced (the push is the separate step,
+  // outside runDashboardGeneration, per the design).
   useEffect(() => {
     if (taskRequest && taskRequest.prompt.trim()) {
-      runDashboardGeneration(taskRequest.prompt.trim());
+      // Generate INTO a selected empty box if there is one, else fill the window.
+      const target = elementArr.find((el) => el.key === selectionPath[0] && el.isEmpty) ?? null;
+      runDashboardGeneration(taskRequest.prompt.trim(), target)
+        .then((parent) => {
+          if (!parent) return;
+          // Replace the targeted empty box (if any) with the generated group.
+          setElementArr((prev) => [...prev.filter((el) => el.key !== target?.key), parent]);
+          if (target) setSelectionPath([]);
+        });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskRequest?.id]);
+
+
+  /* SELECTION-DRIVEN HELPERS (empty tracking + ungroup) */
+
+  // Targeting groundwork: a box reports the first time it generates -> it's no
+  // longer an empty drop-target. Only top-level boxes live in elementArr.
+  const markNonEmpty = (key: string) =>
+    setElementArr((prev) => prev.map((el) => (el.key === key ? { ...el, isEmpty: false } : el)));
+
+  // Persist a moved/resized top-level box's new block coords back to elementArr, so
+  // consumers like ungroup use its CURRENT position, not where it spawned. (A box's
+  // live position otherwise lives only in GeneratedBox state after creation.)
+  const syncBounds = (key: string, b: { colStart: number; colEnd: number; rowStart: number; rowEnd: number }) =>
+    setElementArr((prev) => prev.map((el) => (el.key === key ? { ...el, ...b } : el)));
+
+  // Recursively flatten a group: every leaf descendant becomes a top-level box at
+  // GLOBAL coords (local coords + each ancestor's accumulated origin offset), with
+  // isChild cleared so it rejoins the main grid.
+  const flattenToGlobal = (box: GeneratedBoxProps, baseCol: number, baseRow: number): GeneratedBoxProps[] => {
+    const g = {
+      colStart: box.colStart + baseCol, colEnd: box.colEnd + baseCol,
+      rowStart: box.rowStart + baseRow, rowEnd: box.rowEnd + baseRow,
+    };
+    if (!box.children?.length) return [{ ...box, ...g, isChild: false, children: undefined }];
+    // This box's children are local to its origin -> base for them is its global origin - 1.
+    return box.children.flatMap((c) => flattenToGlobal(c, g.colStart - 1, g.rowStart - 1));
+  };
+
+  // Ungroup a top-level group: replace it in elementArr with its flattened leaves.
+  // (Freed leaves remount and re-generate for now — see the doc's open items.)
+  // Triggered by the right-click "Ungroup" button (below).
+  const ungroup = (parent: GeneratedBoxProps) => {
+    if (!parent.children?.length) return;
+    const freed = parent.children.flatMap((c) => flattenToGlobal(c, parent.colStart - 1, parent.rowStart - 1));
+    setElementArr((prev) => [...prev.filter((el) => el.key !== parent.key), ...freed]);
+    setSelectionPath([]);
+  };
 
 
   /* MAIN PHYSICAL/VISUAL LOGIC */
 
   // Entering interact mode deselects any selected box
   useEffect(() => {
-    if (interactMode) setSelectedID('');
+    if (interactMode) setSelectionPath([]);
   }, [interactMode]);
 
   // Initial useEffect on mount
@@ -164,33 +225,37 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
     return ()=>{window.removeEventListener("resize", setGridSize);}
   }, []);
 
-  // Delete/Backspace removes the selected box (unless typing in a field)
+  // Delete/Backspace removes the selected top-level box (unless typing in a field).
+  // Acts on the top-level box (selectionPath[0]) — a group is removed whole.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
       // Don't hijack typing in inputs/textareas (e.g. prompt or custom fields)
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
-      if (!selectedID) return; // nothing selected
+      if (!selectionPath.length) return; // nothing selected
 
       e.preventDefault();
-      // Filters through and removes the box that has the key equal to the current selected id
-      setElementArr((prev) => prev.filter((el) => el.key !== selectedID));
-      setSelectedID('');
+      // Filters through and removes the top-level box matching the selection
+      const rootKey = selectionPath[0];
+      setElementArr((prev) => prev.filter((el) => el.key !== rootKey));
+      setSelectionPath([]);
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedID]);
+  }, [selectionPath]);
 
   // Register mouse down event listener to grid (THIS IS FOR THE DOTTED DRAG BOX THAT CREATES THE GENERATED BOX)
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Only the left button does meta interaction; right-click is the context menu.
+    if (e.button !== 0) return;
     // In interact mode the grid does no meta interaction (no create/deselect)
     if (interactMode) return;
     // Routes behavior depending on if an element is highlighted
-    if (selectedID === '') {
+    if (selectionPath.length === 0) {
       // Remove offset of grid from window
       const rect = gridRef.current!.getBoundingClientRect();
-      const localPos : XY = { x: e.clientX - rect.left, y: e.clientY - rect.top}; 
+      const localPos : XY = { x: e.clientX - rect.left, y: e.clientY - rect.top};
 
       // Updates the ref var to location of mouseDown
       initMousePosition.current = localPos;
@@ -202,10 +267,28 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
       setIsMouseDragging(true);
     }
     else {
-      // Clears any selected id
-      setSelectedID('');
+      // Clears the current selection
+      setSelectionPath([]);
     }
   }
+
+  // Right-click context menu. Drilled in (intermediary/leaf selected) -> back out
+  // (clear the path). Just the root GROUP selected -> pop an "Ungroup" button at the
+  // cursor. Anything else -> clear. Always suppresses the native browser menu.
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if (interactMode) return;
+    e.preventDefault();
+    const root = selectionPath.length === 1
+      ? elementArr.find((el) => el.key === selectionPath[0])
+      : null;
+    if (root?.children?.length) {
+      const rect = gridRef.current!.getBoundingClientRect();
+      setUngroupMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top, rootKey: root.key });
+    } else {
+      setSelectionPath([]); // drilled in, or a non-group selection -> back out
+      setUngroupMenu(null);
+    }
+  };
 
   // Produces dragging effect from mouse move/up (THIS IS FOR THE DOTTED DRAG BOX THAT CREATES THE GENERATED BOX)
   useEffect(() => {
@@ -237,7 +320,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
       // Creates new element
       setElementArr((prev) => [...prev, currElement.current!]);
       // Selects it
-      setSelectedID(currElement.current!.key);
+      setSelectionPath([currElement.current!.key]);
     }
 
     if (isMouseDragging) {
@@ -288,6 +371,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
       rowStart,
       rowEnd,
       key : `${Date.now()}-${elementArr.length}`, // Initialized on creation
+      isEmpty: true, // Manual boxes start empty (a drop-target) until they generate
     };
 
     for (let i = colStart; i <= colEnd; i ++) {
@@ -314,6 +398,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
         })
       }}
       onMouseDown={handleMouseDown}
+      onContextMenu={handleContextMenu}
       ref={gridRef}
     >
       {/* Overlay grid: Functional layer */}
@@ -327,23 +412,22 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
       >
         {/* Generated Boxes */}
         {elementArr.map((element) => (
-          <GeneratedBox 
-            props={element}       
+          <GeneratedBox
+            props={element}
             key={element.key}
-            // Directly pass in derived props seperately so they update
-            isSelected={selectedID === element.key}
-            handleSelect={(e : React.MouseEvent) => {
-              // Mousedown -> Registers ONLY in the child Generated Box element
-              e.stopPropagation();
-              setSelectedID(element.key);
-            }}
+            // Path-based selection: a top-level box's path is just its own key.
+            path={[element.key]}
+            selectionPath={selectionPath}
+            setSelectionPath={setSelectionPath}
             blockSize={gridBlockSize}
             gridRef={gridRef.current!}
             interactMode={interactMode}
             defaultSpec={defaultSpec}
             setDefaultSpec={setDefaultSpec}
+            markNonEmpty={markNonEmpty}
+            syncBounds={syncBounds}
           >
-            
+
           </GeneratedBox>
         ))}
       </div>
@@ -379,6 +463,34 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
           }}
         >
         </div>
+      )}
+
+      {/* Right-click ungroup menu. A shield over the WHOLE workspace absorbs any
+          other mouse event (dismissing the menu) so the click can't select or
+          deselect a box; inset-0 follows the grid's size on resize automatically.
+          The Ungroup button sits above it at the cursor. */}
+      {ungroupMenu && (
+        <>
+          <div
+            className="absolute inset-0 z-40"
+            onMouseDown={(e) => { e.stopPropagation(); setUngroupMenu(null); }}
+            onWheel={() => setUngroupMenu(null)}
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setUngroupMenu(null); }}
+          />
+          <button
+            type="button"
+            className="absolute z-50 rounded-lg border border-white/10 bg-menu px-4 py-2 text-sm text-white/90 shadow-2xl hover:bg-menuhover"
+            style={{ left: ungroupMenu.x, top: ungroupMenu.y }}
+            onMouseDown={(e) => {
+              e.stopPropagation(); // don't let the shield/grid see this click
+              const root = elementArr.find((el) => el.key === ungroupMenu.rootKey);
+              if (root) ungroup(root);
+              setUngroupMenu(null);
+            }}
+          >
+            Ungroup
+          </button>
+        </>
       )}
     </div>
   );

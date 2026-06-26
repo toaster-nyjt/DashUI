@@ -23,9 +23,9 @@ export default function CustomizationSelector({ compSpec, defaultSpec, onSend }
     <div className="bg-menu rounded-lg p-4 shadow-2xl border border-white/10 w-80">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white text-sm font-medium">Customizations</h3>
-        <Grid2x2 size={18} className="text-white/60" />
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <h3 className="text-white text-sm font-medium truncate">Customize - {compSpec.name}</h3>
+        <Grid2x2 size={18} className="text-white/60 shrink-0" />
       </div>
 
       {/* All customizations, toggled with the eye icon */}

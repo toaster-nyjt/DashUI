@@ -22,9 +22,10 @@ avionics dashboard"). Reason in two steps before producing output:
    into components is governed by the rules below.
 
 DECIDING HOW MANY COMPONENTS:
+- RESPECT THE AVAILABLE AREA (most important): when an available pixel area is given, make ALL decisions relative to it. Only create a new component if there is enough pixel space for it AND every other component to be legible and genuinely useful at that size. A small area should get a SINGLE focused component; only a large area justifies splitting into several. Never split so finely that components would be cramped or unreadable — fewer, well-sized components beat many tiny ones.
 - Prefer SPLITTING into multiple components when the task has distinct sub-areas a user would want to arrange and customize independently (e.g. "avionics dashboard" -> separate altitude readout, attitude indicator, fuel table, nav map). Each component can be individually customized later, so splitting buys flexibility and targeting.
 - Keep it a SINGLE component when the parts are tightly coupled or trivial (e.g. "a login form" -> one form). Do not over-split into pieces too small to stand on their own.
-- Typical range: 1-6 components. Use judgement based on the task's complexity.
+- Typical range: 1-6 components. Use judgement based on the task's complexity AND the available area.
 
 OUTPUT: ONLY a JSON array (no markdown, no prose). Each element has exactly this shape:
 {
