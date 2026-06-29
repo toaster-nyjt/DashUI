@@ -2,7 +2,7 @@
 // creative brief for the art director) and the GENERATE prompt (as key directive
 // for the component generator). Edit this one string to shift the aesthetic target
 // for all generated UIs.
-export const KEY_DIRECTION = `BE CREATIVE! Follow design best practices, but design as if you are the winner of the iF DESIGN AWARD and the Red Dot Design Award. LOTS OF ANIMATIONS! Be bold, be flashy, be INTERESTING!!!`;
+export const KEY_DIRECTION = `BE CREATIVE! USE CREATIVE DESIGN THINKING! Follow design best practices, but design as if you are the ten time winner of the iF DESIGN AWARD and the Red Dot Design Award, and you are making a digital artpiece. LOTS OF ANIMATIONS! Be BOLD, be FLASHY, be UNIQUE, and above all else be INTERESTING!!!`;
 
 // Consolidated system prompts for the multi-stage UI generation pipelines:
 //   (Task-based prompt) -> plan -> layout -> generate (decompose task into components based on functionality and create specs, tile them on the grid, then emit component)
@@ -20,11 +20,10 @@ checkout page"). Reason in two steps before producing output:
 
 1. FUNCTIONALITY MAP — first decide what the UI must let the user DO: the
    concrete capabilities the task requires (e.g. "I want to listen to music" -> play,
-   pause and seek the current track, browse and reorder the queue, search the library, control volume).
+   pause and seek the current track, visualize the current track and info, browse and reorder the queue, search the library, control volume).
    Be thorough so no essential capability is missing.
 2. COMPONENT MAPPING — then map those capabilities to the component(s) that deliver
-   them. Every capability must be covered by a component, and every component must
-   trace back to a real capability (no decorative filler). How to group capabilities
+   them. Every capability must be covered by a component, and allow purely visual/decorative/aethetic elements. How to group capabilities
    into components is governed by the rules below.
 
 DECIDING HOW MANY COMPONENTS:
@@ -87,6 +86,9 @@ Rules:
 - specArr: 6-8 short, distinct, OPTIONAL UI customizations/features for this component. Title Case, 1-4 words each.
 - defaultSpecArrIdx: a sensible subset of indices into specArr (0-based) that should be enabled by default.`;
 
+// Max-performance + self-QA preamble, PREPENDED to the GENERATE system prompt.
+export const GENERATE_QA_DIRECTIVE = `This is a production UI component that real users will see and interact with — treat it as portfolio-grade work and produce your best output, not the minimum that satisfies the request. Reason through the layout, visual hierarchy, state, and responsive behavior before writing any code; then, before finalizing, review the result and fix anything that violates the rules below.`;
+
 // System prompt for component-generation (code string output), lots of strict restrictions to allow for rendering correctly within Sandpack
 export const GENERATE_SYSTEM_PROMPT = `You are an expert React developer and designer. Generate a single React functional component based on the user's request. The request is structured client content — follow the COMPONENT SPEC PROTOCOL (below) to parse it.
 
@@ -115,6 +117,7 @@ RULES:
   - NEVER SCROLL OR FOCUS THE PAGE: do not call scrollIntoView(), window.scrollTo / scrollBy, or .focus() / autoFocus (not on mount, and never on a timer or animation loop), and do not assign element.scrollTop to chase moving content. This component is ONE tile inside a larger scrollable canvas — any of these calls scrolls the whole host page and fights the user, yanking the window and trapping their scroll. THIS IS NOT A BAN ON ANIMATION: animate freely with CSS transitions/animations, transforms (translateX/Y, scale, opacity), or by re-rendering React state on an interval. A ticker, marquee, carousel, or auto-advancing list MUST move via transform/opacity/state changes, never by scrolling an element into view.
 - Make the component self-contained, don't have elements block each other.
 - INTERACTION AND DECORATION: a purely visual/display/stylized/aesthetic component is MORE THAN WELCOME — build it well and don't bolt fake controls onto something that is meant to just show information or aesthetics. But when a component's role carries explicit potential for interaction — anything a user would click, type into, drag, toggle, select, search, filter, sort, reorder, play/pause, or navigate — it MUST give every such control real, working React state and handlers so it genuinely responds to the user, never a static, decorative mockup of a control. (This governs whether the interactive elements you DO render actually work — it is NOT license to add features outside the include list.) Again, purely visual components are more than welcome.
+- FOR PURE VISUAL COMPONENTS: Go all out. 
 - Use modern React patterns (hooks, functional components)
 - IMPORTANT: Don't generate an attribute or customization if not explicitly told to do so! Example: If generating a graph but not told to include a legend, don't include a legend.
 - IMPORTANT: Never use template literals (backticks with \${}) inside JSX attributes. Use string concatenation instead. For example, use key={"item-" + index} instead of key={\`item-\${index}\`}
@@ -122,7 +125,7 @@ RULES:
 - IMPORTANT: Use hooks directly (useState, useEffect, etc.) - do NOT use React.useState or React.useEffect syntax
 
 <important>
-DESIGN: Follow VISUAL GUIDELINES section for specific low-level styling protocol. However, for KEY DIRECTION, YOU MUST GENERATE THE COMPONENT WITH EXACTLY WITH RESPECT TO THE FOLLOWING HIGH LEVEL DIRECTIVE: ${KEY_DIRECTION}
+DESIGN: Follow VISUAL GUIDELINES section for specific low-level styling protocol. However, for KEY DIRECTION, YOU MUST GENERATE THE COMPONENT EXACTLY WITH RESPECT TO THE FOLLOWING HIGH LEVEL DIRECTIVE: ${KEY_DIRECTION} THIS IS THE SINGLE MOST IMPORTANT RULE.
 </important>
 
 Example output format:

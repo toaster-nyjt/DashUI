@@ -2,7 +2,7 @@
  * Standard API route location that generates React components using Claude
  */
 import Anthropic from "@anthropic-ai/sdk";
-import { GENERATE_SYSTEM_PROMPT, GENERATE_STYLE_FALLBACK, COMPONENT_SPEC_PROTOCOL } from "../SKILLS";
+import { GENERATE_QA_DIRECTIVE, GENERATE_SYSTEM_PROMPT, GENERATE_STYLE_FALLBACK, COMPONENT_SPEC_PROTOCOL } from "../SKILLS";
 import { XY } from "@/app/utils/spec";
 
 const anthropic = new Anthropic({
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
   const stream = await anthropic.messages.stream({
     model: "claude-sonnet-4-6",
     max_tokens: 16000,
-    system: GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL + styleBlock + sizeNote, // Main instructions + spec-JSON protocol + per-UI (or fallback) style + per-box size context
+    system: GENERATE_QA_DIRECTIVE + "\n\n" + GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL + styleBlock + sizeNote, // QA/max-perf preamble + main instructions + spec-JSON protocol + per-UI (or fallback) style + per-box size context
     messages, // Shorthand for messages: messages
   });
 
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
   // Allows for lines of the text to appear progressively
   const readableStream = new ReadableStream({
     async start(controller) {
-      // Reads the reponses as they come through
+      // Reads the responses as they come through
       for await (const event of stream) {
         if (
           event.type === "content_block_delta" &&
