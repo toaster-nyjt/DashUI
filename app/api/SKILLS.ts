@@ -140,16 +140,9 @@ export default function GeneratedComponent() {
 // components, or any single standalone box).
 export const GENERATE_STYLE_FALLBACK = `
 
-DESIGN DIRECTION:
-- Commit to ONE cohesive visual identity and do not mix styles. Choose the one that best fits the request, e.g.: luxury dark analytics cockpit, industrial productivity system, editorial command interface, minimal control panel, or kinetic modular dashboard.
+DESIGN DIRECTION: (mandatory creative brief — this governs the whole output): ${KEY_DIRECTION}
+- Commit to ONE cohesive visual identity and do not mix styles.
 - The result should read like real, production-grade software — spatially structured, interaction-first, and cohesive — not a rough mockup. Sample/placeholder content is welcome to make it feel real.
-
-COLOR PALETTE (strict, dark):
-- Base background: zinc-950. Surfaces: zinc-900 / zinc-800. Borders: zinc-800 / zinc-700.
-- Text: zinc-100 (primary), zinc-300 (secondary), zinc-500 (muted).
-- Accent: indigo ONLY (e.g. indigo-600 fills, indigo-400 text/borders), used sparingly for emphasis and primary actions.
-- Semantic colors: green / amber / red ONLY to convey state (success / warning / danger).
-- Do NOT use: light themes, white or light-gray backgrounds, pastel palettes, gradients as the primary surface, or arbitrary off-palette colors.
 
 MOTION & FEEDBACK (CSS only, no animation libraries):
 - Every interactive element has a clear hover state.

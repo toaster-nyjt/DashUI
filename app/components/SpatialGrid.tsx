@@ -8,8 +8,9 @@ import { validateLayout, logDefaultSpec, resolveComponentSpec } from '../utils/h
 // How many times to re-ask the layout route for a valid (gap-free) tiling
 const LAYOUT_RETRIES = 3;
 
-export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning, setHasEmptyTarget }
-  : { interactMode: boolean; taskRequest: { prompt: string; id: number } | null; setIsDesigning: React.Dispatch<React.SetStateAction<boolean>>; setHasEmptyTarget: React.Dispatch<React.SetStateAction<boolean>> }) {
+export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning, setHasEmptyTarget, canvasWidth, setCanvasWidth }
+  : { interactMode: boolean; taskRequest: { prompt: string; id: number } | null; setIsDesigning: React.Dispatch<React.SetStateAction<boolean>>; setHasEmptyTarget: React.Dispatch<React.SetStateAction<boolean>>;
+      canvasWidth: number; setCanvasWidth: React.Dispatch<React.SetStateAction<number>> }) {
   /* STATE/REF VARS */
 
   // Used for dragging logic
@@ -24,10 +25,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   const gridRef = useRef<HTMLDivElement>(null); 
   // To enable its calculation within a useEffect
   const [gridBlockSize, setGridBlockSize] = useState<number>(0);
-  // Canvas pixel width (= viewport width at 100% zoom), set explicitly so a browser
-  // zoom is NOT re-fitted away: on zoom the canvas keeps its px width and the document
-  // provides a viewport-anchored horizontal scrollbar (see DASHBOARD_GENERATOR.md §6).
-  const [canvasWidth, setCanvasWidth] = useState<number>(0);
+  
   // Tracks created elements
   const [elementArr, setElementArr] = useState<GeneratedBoxProps[]>([]);
   // Tracks the currently generated element

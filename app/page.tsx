@@ -19,6 +19,10 @@ export default function Home() {
   // with the single-box blue highlight, that a submitted task will fill that box.
   const [hasEmptyTarget, setHasEmptyTarget] = useState<boolean>(false);
 
+  // Grid's pixel width (measured by the grid). Shared so the Taskbar centers/sizes off
+  // the same value and stays aligned with the grid's center on a tab/pane resize.
+  const [canvasWidth, setCanvasWidth] = useState<number>(0);
+
   return (
     <>
       <Taskbar
@@ -27,8 +31,9 @@ export default function Home() {
         onGenerate={(prompt) => setTaskRequest({ prompt, id: Date.now() })} // id used for React's policy of having unique keys
         isDesigning={isDesigning}
         targeting={hasEmptyTarget}
+        canvasWidth={canvasWidth}
       />
-      <SpatialGrid interactMode={interactMode} taskRequest={taskRequest} setIsDesigning={setIsDesigning} setHasEmptyTarget={setHasEmptyTarget} />
+      <SpatialGrid interactMode={interactMode} taskRequest={taskRequest} setIsDesigning={setIsDesigning} setHasEmptyTarget={setHasEmptyTarget} canvasWidth={canvasWidth} setCanvasWidth={setCanvasWidth} />
     </>
   );
 }

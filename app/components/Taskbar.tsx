@@ -22,12 +22,14 @@ function Switch({ checked, onChange, disabled = false }
 }
 
 // Top toolbar: prompt bar + mode switches (separates editing from interaction)
-export default function Taskbar({ interactMode, onInteractModeChange, onGenerate, isDesigning, targeting }
+export default function Taskbar({ interactMode, onInteractModeChange, onGenerate, isDesigning, targeting, canvasWidth }
   : { interactMode : boolean; onInteractModeChange : (v : boolean) => void; onGenerate : (prompt : string) => void; isDesigning : boolean;
       // True when a selected empty box is an active generation target — the bar wears
       // the same blue highlight a selected single-component box gets, to signal that a
       // submitted task will fill that box rather than the window.
-      targeting : boolean }) {
+      targeting : boolean;
+      // Grid's pixel width; the bar centers/sizes off it so it tracks the grid's center.
+      canvasWidth : number }) {
 
   // Local prompt text for the dashboard generator
   const [prompt, setPrompt] = useState('');
@@ -44,7 +46,11 @@ export default function Taskbar({ interactMode, onInteractModeChange, onGenerate
   // submenus (popups/ungroup menu, ≥ z-40): the bar covers box decorations but
   // every submenu still renders above it.
   return (
-    <div className={`fixed bottom-12 left-1/2 -translate-x-1/2 w-[60%] z-35 flex min-w-100 items-center gap-4 rounded-3xl border-2 bg-menu px-4 py-2 transition-all ${targeting ? 'border-borderactive ring-2 ring-borderactive/50 shadow-custom' : 'border-white/10 shadow-lg'}`}>
+    <div
+      // Centered on the grid (left = canvasWidth/2) and sized to 60% of it, so the bar
+      // tracks the grid's center instead of the viewport's. Falls back to viewport % pre-measure.
+      style={{ left: canvasWidth ? canvasWidth / 2 : '50%', width: canvasWidth ? canvasWidth * 0.6 : '60%' }}
+      className={`fixed bottom-12 -translate-x-1/2 z-35 flex min-w-100 items-center gap-4 rounded-3xl border-2 bg-menu px-4 py-2 transition-all ${targeting ? 'border-borderactive ring-2 ring-borderactive/50 shadow-custom' : 'border-white/10 shadow-lg'}`}>
 
       {/* Text bar — Enter submits the task to the dashboard generator. While a
           dashboard is generating the field is disabled (which also blocks any
