@@ -27,10 +27,11 @@ Both flows converge on the same endpoint: a box's spec is resolved to JSON by
 - **Modified Next.js.** `AGENTS.md`: "This is NOT the Next.js you know" — read
   `node_modules/next/dist/docs/` before writing Next-specific code. App Router.
 - Route handlers return `Response.json(...)`. Anthropic SDK. Models split by
-  route: **plan** + **layout** run `claude-opus-4-8` (plan also sets adaptive
-  thinking + `effort: "medium"`); **spec** + **generate** run `claude-sonnet-4-6`.
-  **generate streams**; plan/spec/layout are non-streaming. API key env var:
-  `CLAUDE_API_KEY`. All system prompts live in `app/api/SKILLS.ts`.
+  route: **plan** + **layout** + **style** run `claude-opus-4-8` (plan also sets
+  adaptive thinking + `effort: "medium"`); **spec** + **generate** run
+  `claude-sonnet-4-6`. **generate streams**; plan/spec/layout/style are
+  non-streaming. API key env var: `CLAUDE_API_KEY`. All system prompts live in
+  `app/api/SKILLS.ts`.
 - **Component-spec contract (§3).** Every route that *consumes* a component
   receives the whole spec as JSON; a shared `COMPONENT_SPEC_PROTOCOL` string tells
   the model how to parse it. Don't pass bare names or hand-built sentences.
@@ -61,8 +62,14 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
    visible window) and its pixel size (`w/h × gridBlockSize`), *before* planning.
 1. **PLAN** — `POST /api/plan {task, width, height}` → `DefaultCompSpec[]`. The
    planner scales component count to the available pixel area (§8).
-2. **REGISTER** — `setDefaultSpec(prev => [...prev, ...specs])`. The `await` in
-   step 3 lets this commit *before* any box is created.
+1b. **STYLE** — `POST /api/style {task, components}` → `{ style: string }` — ONE
+   coherent visual identity for this whole UI (§9). `components` is the planner
+   specs *resolved* through `resolveComponentSpec` (active set = each preset's
+   `defaultSpecArrIdx`), so the styler sees the same protocol view the generator
+   will. Always called on the auto path.
+2. **REGISTER** — `setDefaultSpec(prev => [...prev, ...specs])` **and**
+   `setStyleSpec(prev => ({ ...prev, [taskRequest.id]: style }))`. The `await` in
+   step 3 lets both commit *before* any box is created.
 3. **LAYOUT** — tile the region interior `w × h`.
    - **Single component:** skip the layout route — it **fills** the box (`1..w / 1..h`).
    - **Multiple components:** `fetchValidLayout` → `POST /api/layout
@@ -173,11 +180,12 @@ you weren't asked for" rule for toggled-off customizations.
   Stat Dashboard, Calendar, Chart Panel, Form).
 - `app/utils/useGetCode.ts` — `useGetCode` hook: streaming fetch to `/api/generate`,
   message history, `generatedCode` / `isGenerating`.
-- `app/api/{plan,layout,spec,generate}/route.ts` — the four LLM routes.
+- `app/api/{plan,style,layout,spec,generate}/route.ts` — the five LLM routes
+  (`style` → one coherent visual identity per generated UI, §9).
 
 **Key types**
 ```ts
-GeneratedBoxProps = { colStart, colEnd, rowStart, rowEnd, key, autoName?, children?, isChild?, isEmpty? } // children/isChild/isEmpty → §8
+GeneratedBoxProps = { colStart, colEnd, rowStart, rowEnd, key, autoName?, children?, isChild?, isEmpty?, styleID? } // children/isChild/isEmpty → §8; styleID → §9
 DefaultCompSpec  = { name, genInstructions, spec: { specArr: string[], defaultSpecArrIdx: number[] } }
 CompSpec         = { name, specArrIdx: number[] }   // specArrIdx = positional indices into specArr
 Placement        = { name, colStart, colEnd, rowStart, rowEnd }
@@ -335,9 +343,21 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
   rules: `min-w-0` (horizontal shrink), tables `table-fixed w-full`, "NO SHRINK
   FLOORS", "RESPOND TO BOTH AXES INDEPENDENTLY", "FILL THE CONTAINER" (no floating
   content in dead space), "IGNORE PLACEMENT WORDS" (bar/sidebar/header describe the
-  box's canvas position, not internal anchoring), "NEVER SCROLL OR FOCUS THE PAGE",
-  legible stacked-text rows, no viewport-anchored/`fixed`/modal/portal, fixed
-  `classname`→`className` typo.
+  box's canvas position, not internal anchoring), legible stacked-text rows, no
+  viewport-anchored/`fixed`/modal/portal, fixed `classname`→`className` typo.
+  - **Scrolling policy (`SCROLLING — FIT FIRST, THEN HIDE THE BAR`).** Hierarchy:
+    fit all content by right-sizing/condensing to a *legible* size → only if it still
+    won't fit, give the specific overflowing region its own `overflow-auto`/`-y-auto`
+    → that region MUST hide its bar (`[scrollbar-width:none] [&::-webkit-scrollbar]:hidden`).
+    Never a visible scrollbar; never crush or clip to avoid scrolling. This REPLACED
+    the old "condense INSTEAD of scrolling" / never-scroll framing. The page-scroll
+    ban ("NEVER SCROLL OR FOCUS THE PAGE": no `scrollIntoView`/`window.scrollTo`/
+    `.focus`) is a SEPARATE rule, still in force. Mirrored in `sizeNote`
+    (`generate/route.ts`).
+  - **JSX braces non-negotiable.** Any attribute value that isn't a plain quoted
+    string MUST be braced — `className={"a " + cond}`, never `className="a " + cond`
+    (a syntax error). Sits beside the no-template-literals-in-JSX rule; added after a
+    real malformed-output `SyntaxError`.
 - **Theme** (`app/globals.css`): `--color-bgdarkblue` renamed `--color-canvas`;
   darker canvas, stronger dots, brighter/faster loading shimmer; `--shadow-custom`
   fixed to use `color-mix` instead of the nonexistent `--color-borderactive-50`.
@@ -459,3 +479,53 @@ Sandpack's own radius is zeroed via `!rounded-none` on the `sp-*` classes
 ### Dev helper
 `logDefaultSpec(defaultSpec)` (`helpers.ts`, dev-only) JSON-dumps the full registry;
 `SpatialGrid` calls it in a `[defaultSpec]` effect (mount + every change).
+
+---
+
+## 9. Per-UI style registry (coherent styling across a generated dashboard)
+
+Every component in a generated UI is produced by a **separate, single-shot**
+`/api/generate` call with no knowledge of its siblings — so left alone they drift
+apart visually. The **style registry** gives one generated dashboard a single shared
+visual identity that every one of its components is generated against.
+
+### The STYLE route (`app/api/style/route.ts`)
+- Runs **after PLAN, before LAYOUT** in `runDashboardGeneration` (§2 step 1b). Always
+  called on the auto path; lets errors fall to the pipeline's outer `catch`.
+- Input: `{ task, components }` where `components` is the planner specs **resolved
+  through `resolveComponentSpec`** (active set = each preset's `defaultSpecArrIdx`),
+  i.e. the same `{name, genInstructions, include, exclude}` protocol view the
+  generator gets per component. `system = STYLE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL`.
+- Output: `{ style: string }` — free-form prose/bullets (NOT JSON), a complete
+  visual-style spec (identity, palette, typography, spacing, motion).
+- Model: `claude-opus-4-8` (design-stage, like plan/layout). Non-streaming.
+- `STYLE_SYSTEM_PROMPT` is intentionally a **starting point** — leads with "Use your
+  styling skills for coherency and ease of use"; expect to tune it.
+
+### The registry (`SpatialGrid`)
+- `styleSpec: Record<number, string>` — `styleID` (= `taskRequest.id`) → that UI's
+  style string. Committed alongside `defaultSpec` (same state-commit-on-`await`
+  guarantee, §5 risk 1), so a box finds its style at mount.
+- Threaded down to every `GeneratedBox` (like `defaultSpec`); a group passes it to
+  its children recursively.
+
+### Threading the style into generation
+- `GeneratedBoxProps.styleID?` is set on every **child** of a generated group to
+  `taskRequest.id`. Survives ungroup (the leaf keeps its `styleID`, and `styleSpec`
+  persists in `SpatialGrid`), so freed/re-generated leaves stay on-style.
+- `GeneratedBox.resolveStyle(styleID?)` returns `styleSpec[styleID]` (or `undefined`).
+  The auto-gen mount effect calls `handleUpdateNameAndSend(autoName, props.styleID)`;
+  **both** generation paths (name+send and customization toggle) pass
+  `resolveStyle(...)` into `handleSend(prompt, true, boxSize, style)`, which forwards
+  `style` to `/api/generate`.
+- **Fallback by absence:** a manual box has no `styleID` → `style` is `undefined` →
+  the generate route applies `GENERATE_STYLE_FALLBACK` instead. There is NO failure
+  fallback inside the auto pipeline; the fallback exists purely for style-less boxes.
+
+### Generate prompt split (`SKILLS.ts`)
+The style sections (DESIGN DIRECTION / COLOR PALETTE / MOTION & FEEDBACK) were
+**extracted** out of `GENERATE_SYSTEM_PROMPT` into a standalone `GENERATE_STYLE_FALLBACK`.
+`generate/route.ts` builds `system = GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL
++ styleBlock + sizeNote`, where `styleBlock` is the per-UI `style` (when present) or
+`GENERATE_STYLE_FALLBACK` (when not). The base prompt keeps all structural/sizing
+rules + the example output format.

@@ -2,7 +2,7 @@
  * Standard API route location that generates React components using Claude
  */
 import Anthropic from "@anthropic-ai/sdk";
-import { GENERATE_SYSTEM_PROMPT, COMPONENT_SPEC_PROTOCOL } from "../SKILLS";
+import { GENERATE_SYSTEM_PROMPT, GENERATE_STYLE_FALLBACK, COMPONENT_SPEC_PROTOCOL } from "../SKILLS";
 import { XY } from "@/app/utils/spec";
 
 const anthropic = new Anthropic({
@@ -14,11 +14,22 @@ const anthropic = new Anthropic({
 export async function POST(req: Request) {
   // Destructures the resulting obj promise. boxSize = current pixel dimensions of
   // the box this component renders into, so the model can size logic to it.
-  const { prompt, history, boxSize } = await req.json() as {
+  const { prompt, history, boxSize, style } = await req.json() as {
     prompt: string;
     history?: Anthropic.MessageParam[];
     boxSize?: XY;
+    // Per-UI visual style (from the STYLE route) shared by every component of a
+    // generated dashboard. When absent, fall back to the default style block.
+    style?: string;
   };
+
+  // A box that belongs to a generated UI carries that UI's coherent style; use it
+  // in place of the default style direction so all its components match. Anything
+  // without a style (manual boxes, custom components, single standalone boxes)
+  // gets the fallback.
+  const styleBlock = style
+    ? `\n\nVISUAL GUIDELINES — follow these guidelines so this component matches the rest of its dashboard:\n${style}`
+    : GENERATE_STYLE_FALLBACK;
 
   // Tell the model the concrete dimensions it's designing for. Still responsive
   // (the box can be resized), but this anchors the initial layout to the real shape.
@@ -41,7 +52,7 @@ export async function POST(req: Request) {
   const stream = await anthropic.messages.stream({
     model: "claude-sonnet-4-6",
     max_tokens: 16000,
-    system: GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL + sizeNote, // Main instructions + spec-JSON protocol + per-box size context
+    system: GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL + styleBlock + sizeNote, // Main instructions + spec-JSON protocol + per-UI (or fallback) style + per-box size context
     messages, // Shorthand for messages: messages
   });
 

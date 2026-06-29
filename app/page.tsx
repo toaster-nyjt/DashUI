@@ -14,6 +14,11 @@ export default function Home() {
   // True while the grid is planning/laying out a dashboard.
   const [isDesigning, setIsDesigning] = useState<boolean>(false);
 
+  // True when a selected box is an empty generation target (same condition the grid
+  // uses to target a UI into a drawn box). Lifted here so the Taskbar can signal,
+  // with the single-box blue highlight, that a submitted task will fill that box.
+  const [hasEmptyTarget, setHasEmptyTarget] = useState<boolean>(false);
+
   return (
     <>
       <Taskbar
@@ -21,8 +26,9 @@ export default function Home() {
         onInteractModeChange={setInteractMode}
         onGenerate={(prompt) => setTaskRequest({ prompt, id: Date.now() })} // id used for React's policy of having unique keys
         isDesigning={isDesigning}
+        targeting={hasEmptyTarget}
       />
-      <SpatialGrid interactMode={interactMode} taskRequest={taskRequest} setIsDesigning={setIsDesigning} />
+      <SpatialGrid interactMode={interactMode} taskRequest={taskRequest} setIsDesigning={setIsDesigning} setHasEmptyTarget={setHasEmptyTarget} />
     </>
   );
 }

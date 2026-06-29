@@ -3,13 +3,13 @@ import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
 import { XY, defaultXY, GeneratedBoxProps, DefaultCompSpec, Placement, numGridBlocksWide, numVHTall } from '../utils/spec';
 import { DEFAULT_SPEC } from '../utils/defaultSpec';
-import { validateLayout, logDefaultSpec } from '../utils/helpers';
+import { validateLayout, logDefaultSpec, resolveComponentSpec } from '../utils/helpers';
 
 // How many times to re-ask the layout route for a valid (gap-free) tiling
 const LAYOUT_RETRIES = 3;
 
-export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning }
-  : { interactMode: boolean; taskRequest: { prompt: string; id: number } | null; setIsDesigning: React.Dispatch<React.SetStateAction<boolean>> }) {
+export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning, setHasEmptyTarget }
+  : { interactMode: boolean; taskRequest: { prompt: string; id: number } | null; setIsDesigning: React.Dispatch<React.SetStateAction<boolean>>; setHasEmptyTarget: React.Dispatch<React.SetStateAction<boolean>> }) {
   /* STATE/REF VARS */
 
   // Used for dragging logic
@@ -42,11 +42,17 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
   const [ungroupMenu, setUngroupMenu] = useState<{ x: number; y: number; rootKey: string } | null>(null);
 
 
-  /* DEFAULT SPEC MODIFIERS */
+  /* SPEC MODIFIERS */
 
   // Shared, runtime-extendable registry of components + customizations
   // Passed down to all boxes
   const [defaultSpec, setDefaultSpec] = useState<DefaultCompSpec[]>(DEFAULT_SPEC);
+
+  // Per-UI style registry: taskRequest.id (styleID) -> the coherent visual style
+  // produced for that whole generated dashboard. Every box of a generated UI
+  // carries its styleID and looks its style up here, so independently generated
+  // components share one identity. Passed down to all boxes (like defaultSpec).
+  const [styleSpec, setStyleSpec] = useState<Record<number, string>>({});
 
   // Dev: print the component registry on mount and whenever it changes.
   useEffect(() => {
@@ -115,10 +121,28 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
       const specs = await planRes.json() as DefaultCompSpec[];
       if (!specs.length) throw new Error('planner returned no components');
 
-      // 2. Register the new presets. The awaited layout call below lets this
-      //    state commit before any boxes are created, so each box mounts with a
-      //    defaultSpec prop that already contains its spec (no /api/spec re-fetch).
+      // 1b. STYLE: derive ONE coherent visual style for this whole UI from its
+      //     components, so every box generates with a matching identity. The styler
+      //     gets the specs RESOLVED to the same { name, genInstructions, include,
+      //     exclude } protocol shape the generator sees per component (active set =
+      //     each preset's defaults). Always called for an auto-gen UI; only manual
+      //     boxes (no styleID) skip a style and get the generate route's fallback.
+      const resolvedSpecs = specs.map((s) =>
+        JSON.parse(resolveComponentSpec({ name: s.name, specArrIdx: s.spec.defaultSpecArrIdx }, specs)));
+      const styleRes = await fetch('/api/style', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task, components: resolvedSpecs }),
+      });
+      if (!styleRes.ok) throw new Error(`style request failed (${styleRes.status})`);
+      const style = (await styleRes.json()).style as string;
+
+      // 2. Register the new presets + this UI's style. The awaited layout call
+      //    below lets this state commit before any boxes are created, so each box
+      //    mounts with a defaultSpec prop that already contains its spec (no
+      //    /api/spec re-fetch) and a styleSpec that already holds its style.
       setDefaultSpec((prev) => [...prev, ...specs]);
+      setStyleSpec((prev) => ({ ...prev, [taskRequest!.id]: style }));
 
       // 3. LAYOUT: tile the box interior (w x h).
       const placements: Placement[] | null = specs.length === 1
@@ -139,6 +163,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
         key: `${parentKey}-child-${i}`,
         autoName: p.name, // Lets the leaf box know to self-generate
         isChild: true,
+        styleID: taskRequest!.id, // Key into styleSpec -> this UI's shared style
       }));
 
       // The parent occupies the target bounds (drawn box or full window); the
@@ -152,13 +177,25 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
     }
   };
 
+  // The selected box, if it's an empty generation target: a task submitted now will
+  // FILL this box instead of the window. This single derived value drives both the
+  // actual targeting (task effect below) and the Taskbar's blue "targeting" highlight.
+  const emptyTarget = elementArr.find((el) => el.key === selectionPath[0] && el.isEmpty) ?? null;
+
+  // Mirror "an empty box is targeted" up to the Taskbar so it can show the same blue
+  // highlight a selected single-component box gets, signalling where the UI will land.
+  useEffect(() => {
+    setHasEmptyTarget(!!emptyTarget);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!emptyTarget]);
+
   // Run the generator whenever a new task is submitted from the Taskbar, then
   // append the single parent box it produced (the push is the separate step,
   // outside runDashboardGeneration, per the design).
   useEffect(() => {
     if (taskRequest && taskRequest.prompt.trim()) {
       // Generate INTO a selected empty box if there is one, else fill the window.
-      const target = elementArr.find((el) => el.key === selectionPath[0] && el.isEmpty) ?? null;
+      const target = emptyTarget;
       runDashboardGeneration(taskRequest.prompt.trim(), target)
         .then((parent) => {
           if (!parent) return;
@@ -290,12 +327,20 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
     }
   }
 
-  // Right-click context menu. Drilled in (intermediary/leaf selected) -> back out
-  // (clear the path). Just the root GROUP selected -> pop an "Ungroup" button at the
-  // cursor. Anything else -> clear. Always suppresses the native browser menu.
+  // Right-click context menu. Selected EMPTY box -> delete it (same as the Delete
+  // key). Drilled in (intermediary/leaf selected) -> back out (clear the path). Just
+  // the root GROUP selected -> pop an "Ungroup" button at the cursor. Anything else ->
+  // clear. Always suppresses the native browser menu.
   const handleContextMenu = (e: React.MouseEvent) => {
     if (interactMode) return;
     e.preventDefault();
+    // A selected empty box is a throwaway drop-target — right-click discards it.
+    if (emptyTarget) {
+      setElementArr((prev) => prev.filter((el) => el.key !== emptyTarget.key));
+      setSelectionPath([]);
+      setUngroupMenu(null);
+      return;
+    }
     const root = selectionPath.length === 1
       ? elementArr.find((el) => el.key === selectionPath[0])
       : null;
@@ -445,6 +490,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
             interactMode={interactMode}
             defaultSpec={defaultSpec}
             setDefaultSpec={setDefaultSpec}
+            styleSpec={styleSpec}
             markNonEmpty={markNonEmpty}
             syncBounds={syncBounds}
           >

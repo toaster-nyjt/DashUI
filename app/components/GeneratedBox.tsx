@@ -28,7 +28,7 @@ let pendingDrillPath: string[] | null = null;
 // Created from drag interaction in Spacial Grid, 
 // Contains a bunch of low level visual layer transformations for the boxes,
 // and the main logic behind the prompt routing
-export default function GeneratedBox({ props, path, selectionPath, setSelectionPath, blockSize, gridRef, interactMode, defaultSpec, setDefaultSpec, isChild = false, markNonEmpty, syncBounds }
+export default function GeneratedBox({ props, path, selectionPath, setSelectionPath, blockSize, gridRef, interactMode, defaultSpec, setDefaultSpec, styleSpec, isChild = false, markNonEmpty, syncBounds }
   : {
       props : GeneratedBoxProps,
       // This box's path from its top-level root, e.g. [rootKey] or [rootKey, childKey].
@@ -41,6 +41,10 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       interactMode : boolean
       defaultSpec : DefaultCompSpec[]
       setDefaultSpec : React.Dispatch<React.SetStateAction<DefaultCompSpec[]>>
+      // Per-UI style registry (styleID -> style). A box of a generated UI looks up
+      // its style here by props.styleID; manual boxes have no styleID and get the
+      // generate route's fallback style.
+      styleSpec : Record<number, string>
       // True for any box rendered inside a parent (any depth). Only the root (false) drags.
       isChild? : boolean
       // Targeting groundwork: a box reports when it first generates (no longer empty).
@@ -155,8 +159,13 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
 
   /* MAIN COMPONENT GENERATION HANDLER */
 
+  // Look up this box's coherent UI style (if it belongs to a generated dashboard).
+  // undefined for manual boxes -> the generate route applies its fallback style.
+  const resolveStyle = (styleID? : number) =>
+    styleID !== undefined ? styleSpec[styleID] : undefined;
+
   // Finds and generates existing component in default or generates the DefaultCompSpec for a custom component, sets compSpec
-  const handleUpdateNameAndSend = async (name : string) => {
+  const handleUpdateNameAndSend = async (name : string, styleID? : number) => {
     let def = defaultSpec.find((d) => d.name === name) as DefaultCompSpec; 
     let specList = defaultSpec; // To add in the new generated spec immediately to use list in handleSend without waiting for state setter
 
@@ -192,8 +201,9 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
     setCompSpec(next);
 
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
-    // THIS IS WHERE ALL COMPONENT SPECS -> CODE
-    handleSend(resolveComponentSpec(next, specList), true, boxSize);
+    // THIS IS WHERE ALL COMPONENT SPECS -> CODE. style (if any) keeps this box visually
+    // coherent with the rest of its generated UI.
+    handleSend(resolveComponentSpec(next, specList), true, boxSize, resolveStyle(styleID));
   }
 
   /* MAIN CUSTOMIZATION (SPEC) HANDLER */ 
@@ -223,7 +233,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       setCompSpec(next); // Modifies compSpec
 
       // Calls code setter with rebuild instuction prompt and new appended spec list, initiates new code gen stream
-      handleSend(resolveComponentSpec(next, specList), true, boxSize);
+      handleSend(resolveComponentSpec(next, specList), true, boxSize, resolveStyle(props.styleID));
       return;
     }
     
@@ -236,17 +246,17 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
     setCompSpec(next);
 
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
-    handleSend(resolveComponentSpec(next, defaultSpec), true, boxSize);
+    handleSend(resolveComponentSpec(next, defaultSpec), true, boxSize, resolveStyle(props.styleID));
   }
 
   /* AUTO GENERATION LOGIC (from dashboard generator) */
 
   // A box created by the dashboard generator carries its assigned
   // component name and generates itself once on mount. Its spec is already in the
-  // registry (the generator committed setDefaultSpec before creating boxes), so
+  // registry (the generator committed setDefaultSpec before creating boxes)
   useEffect(() => {
     if (props.autoName) {
-      handleUpdateNameAndSend(props.autoName);
+      handleUpdateNameAndSend(props.autoName, props.styleID);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -573,6 +583,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
                 interactMode={interactMode}
                 defaultSpec={defaultSpec}
                 setDefaultSpec={setDefaultSpec}
+                styleSpec={styleSpec}
               />
             ))}
           </div>

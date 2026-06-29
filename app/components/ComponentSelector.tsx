@@ -63,7 +63,7 @@ export default function ComponentSelector({ names, loading, onSend }
           }}
           // To stop it from bubbling up to Generated Box
           onMouseDown={(e) => e.stopPropagation()}
-          placeholder="Custom component..."
+          placeholder="Custom UI..."
           className="flex-1 bg-menubuttons rounded px-3 py-2 text-white/90 text-sm outline-none placeholder:text-white/30"
         />
 
