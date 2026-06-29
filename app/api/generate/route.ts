@@ -27,8 +27,8 @@ export async function POST(req: Request) {
     (aspect ratio ${(boxSize.x / boxSize.y).toFixed(2)}). Drive ALL layout, sizing, and density decisions in relation to these dimensions
     — choose horizontal vs. vertical arrangement, how many items/columns fit, and text sizes based on this actual width and height.
     The component as a whole MUST fit the box — nothing spills past its edges and it NEVER scrolls the host page. Fill the full width AND the full height (lay the body out as a flex column whose main region is "flex-1").
-    When there is more content than comfortably fits in ${Math.round(boxSize.y)}px of height, FIRST condense so it fits at a legible size: tighten spacing/gaps, shrink text and cards, reduce per-item padding, or show fewer items.
-    If a list or feed still has more items than fit LEGIBLY, you MAY give that region its own internal scroll ("overflow-y-auto") rather than crushing rows until text collides — use your judgement. Never clip text mid-glyph at an edge, and keep every row's stacked lines from overlapping.`
+    When there is more content than comfortably fits in ${Math.round(boxSize.y)}px of height, FIRST try to fit it by condensing to a still-legible size: tighten spacing/gaps, shrink text and cards, reduce per-item padding, or show fewer items — but never crush past legibility.
+    Only if a list or feed STILL has more items than fit legibly, give that region its own internal scroll ("overflow-y-auto") with its scrollbar HIDDEN ("[scrollbar-width:none] [&::-webkit-scrollbar]:hidden") rather than crushing rows until text collides. Never render a visible scrollbar, never clip text mid-glyph at an edge, and keep every row's stacked lines from overlapping.`
     : "";
 
   // History is persistent -> Supports multi-turn interactions

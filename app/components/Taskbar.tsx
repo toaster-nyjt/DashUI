@@ -36,8 +36,11 @@ export default function Taskbar({ interactMode, onInteractModeChange, onGenerate
     setPrompt('');
   };
 
+  // z-[35] sits between box chrome (borders/resize handles, ≤ z-30) and the
+  // submenus (popups/ungroup menu, ≥ z-40): the bar covers box decorations but
+  // every submenu still renders above it.
   return (
-    <div className="fixed bottom-12 left-1/2 -translate-x-1/2 w-[60%] z-20 flex min-w-100 items-center gap-4 rounded-3xl border border-white/10 bg-menu px-4 py-2 shadow-lg">
+    <div className="fixed bottom-12 left-1/2 -translate-x-1/2 w-[60%] z-35 flex min-w-100 items-center gap-4 rounded-3xl border border-white/10 bg-menu px-4 py-2 shadow-lg">
 
       {/* Text bar — Enter submits the task to the dashboard generator. While a
           dashboard is generating the field is disabled (which also blocks any

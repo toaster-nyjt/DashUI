@@ -64,22 +64,19 @@ export default function App() {
   const scale = isSideDragging
     ? sideZoom.current
     : (baseSize.current.x ? boxSize.x / baseSize.current.x : 1);
-  // Pre-scale layout size. inner * scale == boxSize, so it always fills the box.
-  const inner = isSideDragging
-    ? { x: boxSize.x / sideZoom.current, y: boxSize.y / sideZoom.current }
-    : baseSize.current;
 
   return (
     <div
       className="h-full w-full overflow-hidden"
       style={{ backgroundColor: "var(--bg-secondary)" }}
     >
-      {/* Laid out at `inner`, then scaled. transformOrigin pins it to the
-          top-left so the scaled content lines up with the box. */}
+      {/* (100/scale)% then scaled by `scale` fills the wrapper exactly (plain 100%
+          at scale 1). Filling the wrapper lets the leaf seam-bleed reach the bled
+          edge — see DASHBOARD_GENERATOR.md §6. transformOrigin pins it top-left. */}
       <div
         style={{
-          width: inner ? inner.x : "100%",
-          height: inner ? inner.y : "100%",
+          width: (100 / scale) + "%",
+          height: (100 / scale) + "%",
           transform: "scale(" + scale + ")",
           transformOrigin: "top left",
         }}

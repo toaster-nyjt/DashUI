@@ -22,8 +22,12 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
   const boxPosition = useRef<XY>(defaultXY);
   // To get the relative x and y position of cursor if grid becomes embedded
   const gridRef = useRef<HTMLDivElement>(null); 
-  // To enable its calculation within a useEffect 
+  // To enable its calculation within a useEffect
   const [gridBlockSize, setGridBlockSize] = useState<number>(0);
+  // Canvas pixel width (= viewport width at 100% zoom), set explicitly so a browser
+  // zoom is NOT re-fitted away: on zoom the canvas keeps its px width and the document
+  // provides a viewport-anchored horizontal scrollbar (see DASHBOARD_GENERATOR.md §6).
+  const [canvasWidth, setCanvasWidth] = useState<number>(0);
   // Tracks created elements
   const [elementArr, setElementArr] = useState<GeneratedBoxProps[]>([]);
   // Tracks the currently generated element
@@ -100,7 +104,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
       const widthPx = Math.round(w * gridBlockSize);   // available pixel area for the planner
       const heightPx = Math.round(h * gridBlockSize);
 
-      // 1. PLAN: task + available pixel area -> functionality-aware presets. The
+      // 1. PLAN: task + available pixel area -> functionality and space aware. The
       //    planner only splits into multiple components if the area justifies it.
       const planRes = await fetch('/api/plan', {
         method: 'POST',
@@ -170,19 +174,23 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
   /* SELECTION-DRIVEN HELPERS (empty tracking + ungroup) */
 
   // Targeting groundwork: a box reports the first time it generates -> it's no
-  // longer an empty drop-target. Only top-level boxes live in elementArr.
+  // longer an empty drop-target for multi-component UI call. Only top-level boxes live in elementArr.
   const markNonEmpty = (key: string) =>
     setElementArr((prev) => prev.map((el) => (el.key === key ? { ...el, isEmpty: false } : el)));
 
   // Persist a moved/resized top-level box's new block coords back to elementArr, so
-  // consumers like ungroup use its CURRENT position, not where it spawned. (A box's
-  // live position otherwise lives only in GeneratedBox state after creation.)
+  // any consumer reading from elementArr uses its CURRENT position, not where it
+  // spawned. (A box's live position otherwise lives only in GeneratedBox state after
+  // creation.) Two consumers depend on this: ungroup (flattening a moved group to
+  // global coords) and empty-box targeting (runDashboardGeneration places the new UI
+  // at a target box's bounds). Runs for ALL top-level boxes incl. manual ones — a
+  // manual empty box can be moved/resized before being used as a generation target.
   const syncBounds = (key: string, b: { colStart: number; colEnd: number; rowStart: number; rowEnd: number }) =>
     setElementArr((prev) => prev.map((el) => (el.key === key ? { ...el, ...b } : el)));
 
   // Recursively flatten a group: every leaf descendant becomes a top-level box at
   // GLOBAL coords (local coords + each ancestor's accumulated origin offset), with
-  // isChild cleared so it rejoins the main grid.
+  // isChild cleared so it rejoins the main grid. Used in ungroup
   const flattenToGlobal = (box: GeneratedBoxProps, baseCol: number, baseRow: number): GeneratedBoxProps[] => {
     const g = {
       colStart: box.colStart + baseCol, colEnd: box.colEnd + baseCol,
@@ -194,7 +202,6 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
   };
 
   // Ungroup a top-level group: replace it in elementArr with its flattened leaves.
-  // (Freed leaves remount and re-generate for now — see the doc's open items.)
   // Triggered by the right-click "Ungroup" button (below).
   const ungroup = (parent: GeneratedBoxProps) => {
     if (!parent.children?.length) return;
@@ -213,16 +220,27 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
 
   // Initial useEffect on mount
   useEffect(() => {
-    // Calculates gridblock size based on screen width, after component mounts
-    const setGridSize = () => {  
-      if (!gridRef.current) return;
-      setGridBlockSize((gridRef.current!.getBoundingClientRect().width)/numGridBlocksWide);
-    }
+    // Track devicePixelRatio to tell a real window resize (dpr unchanged) apart from a
+    // browser zoom (dpr changes). On zoom we DON'T re-fit — the browser magnifies the
+    // canvas natively and the document scrolls — so the resize listener no longer
+    // instantly cancels the zoom (the old flicker-back-to-100%).
+    let lastDpr = window.devicePixelRatio;
+
+    // Recompute block size + canvas width from the viewport (window-resize path).
+    const setGridSize = () => {
+      const w = document.documentElement.clientWidth;
+      setCanvasWidth(w);
+      setGridBlockSize(w / numGridBlocksWide);
+    };
     setGridSize();
 
-    // Such that if window is resized the size recalculates
-    window.addEventListener("resize", setGridSize);
-    return ()=>{window.removeEventListener("resize", setGridSize);}
+    const onResize = () => {
+      const dpr = window.devicePixelRatio;
+      if (dpr !== lastDpr) { lastDpr = dpr; return; } // browser zoom -> leave the canvas alone
+      setGridSize();                                  // true window resize -> re-fit
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   // Delete/Backspace removes the selected top-level box (unless typing in a field).
@@ -389,6 +407,9 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning 
     <div
       className={`flex relative overflow-hidden ${interactMode ? 'bg-white' : 'bg-canvas'}`}
       style={{
+        // Explicit px width (falls back to 100% pre-measure). Wider than the viewport
+        // when zoomed in -> the document scrolls horizontally instead of clipping.
+        width: canvasWidth ? `${canvasWidth}px` : '100%',
         height: `${numVHTall}vh`,
         // Creates the dots (hidden in interact mode)
         ...(interactMode ? {} : {

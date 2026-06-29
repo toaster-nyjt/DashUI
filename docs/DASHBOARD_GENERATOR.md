@@ -206,7 +206,9 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
 - **Preview scaling** (`Preview.tsx`): **side**-drag = reflow at a held zoom
   (`sideZoom`), **corner**/window = uniform zoom from a captured `baseSize`. Props
   can't cross the iframe boundary without remounting Sandpack, so all scaling is
-  host-side via a `transform: scale()` wrapper.
+  host-side via a `transform: scale()` wrapper. The pre-scale layer is sized
+  `(100/scale)%` of the wrapper so the iframe fills it exactly — this also lets the
+  leaf `seamBleed` overlap reach the bled edge (see §6 inter-leaf seam fix).
 
 ---
 
@@ -265,6 +267,53 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
     Intentional → suppress-with-rationale candidates.
 - Registry grows with prefixed entries; they also appear in the manual
   `ComponentSelector` dropdown (no filtering). Deferred.
+- **Inter-leaf seam fix (`seamBleed`).** In interact mode a thin ~1px gray hairline
+  could appear between adjacent leaf tiles inside a group. Diagnosis: `blockSize =
+  gridWidth / 45` is fractional, so two adjacent leaf cells share a boundary that
+  lands *mid-device-pixel* (worse on fractional-DPR Windows scaling, and it shifts
+  with scroll/position — so the seam flickers in and out). That boundary device pixel
+  ends up ~50% covered by the component (`zinc-950` = RGB 9,9,11) and ~50% by the
+  canvas behind it (`bg-white` in interact mode), blending to RGB(132,132,133) =
+  `#848485` — exactly `(255+9)/2`, confirmed with a color picker. It only shows in
+  interact mode: meta mode's per-leaf 1px borders inset the content and cover the
+  boundary (and the bars there are by design), which is also why every tile appears
+  to "grow ~1px" when you switch meta→interact (the border inset goes away).
+  - **Why not the earlier attempts:** painting the wrapper a fixed dark color (the
+    undefined `var(--bg-secondary)`) would only *hide* it and breaks under dynamic
+    styling; making the pre-scale layer `(100/scale)%` alone didn't help because the
+    seam is *between* leaf iframes at the cell boundary, not inner-div underfill;
+    device-pixel snapping `blockSize` is a moving target across DPR + scroll.
+  - **The fix (deterministic, DPR-independent):** make each interact-mode leaf tile
+    *overlap* its neighbour by 1px so the boundary pixel is always fully covered by
+    the **component's own pixels** (dynamic-styling-safe — no fixed color). Two
+    coordinated pieces: (1) `GeneratedBox` sets the leaf content wrapper to
+    `calc(100% + 1px)` square via `seamBleed = interactMode && isChild &&
+    !hasChildren` — it bleeds right/bottom past the cell (the leaf's outer grid-item
+    div doesn't clip; the root group's `overflow-hidden` content mask clips the
+    outermost bleed so the silhouette stays clean); (2) `Preview` fills that wrapper
+    exactly (`width/height: (100/scale)%`) so the iframe's pixels actually reach the
+    bled edge — without this the extra 1px is transparent and covers nothing. Cost: a
+    leaf's bottom/right neighbour loses ~1px of edge content under the overlap —
+    invisible at tile scale. Excluded for manual standalone boxes (`isChild` false)
+    and groups (`hasChildren`), which don't tile.
+- **Browser zoom vs. window resize (`devicePixelRatio` guard).** The canvas sizes
+  itself by measuring the viewport and re-fitting `gridBlockSize = width / 45` on every
+  `resize` event. Browser zoom (Ctrl +/-) shrinks the *CSS-pixel* viewport AND fires
+  `resize`, so the listener used to re-fit and instantly cancel the zoom — the browser
+  magnified everything for one frame, then React re-pinned the grid to a constant
+  physical size: a visible flicker back to 100%. Fix: the resize handler tracks
+  `window.devicePixelRatio` (changes on zoom, not on a window resize) and **skips the
+  re-fit when dpr changed**, so zoom is left to the browser's native magnification.
+  - To make the magnified (zoomed-in) canvas *scrollable* rather than clipped, the
+    canvas now has an **explicit px width** (`canvasWidth`, = viewport width at 100%)
+    instead of `width:100%`. When zoomed in it's wider than the viewport, so the
+    **document** scrolls horizontally — its scrollbar is viewport-anchored. (A plain
+    `overflow-x-auto` on the canvas does NOT work: the canvas is 250vh tall so the bar
+    lands off-screen at its bottom, and the inner `absolute inset-0 overflow-hidden`
+    overlay clips the boxes before any scroll container sees them.)
+  - `setGridSize` measures `document.documentElement.clientWidth` (not the canvas div,
+    which now has an explicit width — measuring it would be circular) and sets both
+    `canvasWidth` and `gridBlockSize` from it.
 - **No cross-run dedup yet** (deliberately deferred; repeat identical themes can
   collide and `.find()` grabs the first).
 - **Future: min-size-per-component.** Discussed approach — add optional
@@ -361,12 +410,25 @@ top-level `elementArr` box at **GLOBAL** coords (`localCoord + each ancestor's o
 offset − 1`), `isChild` cleared. Freed leaves drop onto the main grid (already render
 via `gridColumn`). They **remount and re-generate** for now — see §6 (code-hoist).
 
-### Position sync (`syncBounds`) — load-bearing for ungroup
+### Position sync (`syncBounds`) — keeps `elementArr` coords live
 A box's live position lives only in `GeneratedBox` state after creation. On drag/
-resize end, a top-level box calls **`syncBounds(key, bounds)`** to write its new
-coords back to `elementArr`, so `ungroup` (and anything reading the coords) uses where
-it IS, not where it spawned. Without this, ungrouping a *moved* UI teleported its
-components back to the original spot.
+resize end, **every** top-level box (`isRoot`, manual boxes included) calls
+**`syncBounds(key, bounds)`** to write its new coords back to `elementArr`, so any
+consumer that reads from `elementArr` sees where the box IS, not where it spawned.
+Two consumers depend on this:
+- **ungroup** — without it, ungrouping a *moved* UI teleported its components back to
+  the original spot (this is the load-bearing case for groups).
+- **empty-box targeting** (§"Empty-box targeting" below) — `runDashboardGeneration`
+  places the generated UI at the target box's `colStart/rowStart/colEnd/rowEnd` read
+  from `elementArr`. A manual box that was drawn, then **moved/resized**, then used as
+  a generation target relies on these being current — otherwise the UI lands at the
+  box's spawn position, not where the user dragged it.
+
+It's gated on `isRoot` (not on "has children"), so it runs for manual boxes too. The
+write is harmless when unused: it feeds new `colStart`/etc. props into the same
+`GeneratedBox` instance (key unchanged → no remount), but `blockPos`/`blockDim` are
+`useState`-seeded from props only at mount and ignore later prop changes, so render
+stays driven by the box's own state.
 
 ### Empty-box targeting
 `runDashboardGeneration(task, target)` takes a **target box** (a selected `isEmpty`

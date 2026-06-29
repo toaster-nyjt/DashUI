@@ -122,6 +122,10 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   // the clicks fall to its children's overlays (one level at a time).
   const overlayActive = hasChildren ? !onPath : true;
 
+  // Interact-mode leaf tiles bleed 1px past their cell to overlap neighbours and
+  // cover the fractional-pixel seam between them (see DASHBOARD_GENERATOR.md §6).
+  const seamBleed = interactMode && isChild && !hasChildren;
+
   // Refs + viewport position for the popup menu (kept on-screen). Starts offscreen.
   const boxRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -291,12 +295,11 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   }
 
   // Mousedown handler for a CHILD's click-overlay: drill the selection into this
-  // child. Deliberately does NOT stopPropagation so it bubbles to the root's
+  // child, or: Deliberately does NOT stopPropagation so it bubbles to the root's
   // handler, arming a potential group-move that mouseup resolves.
   const handleChildDown = (e : React.MouseEvent) => {
-    if (e.button !== 0) return; // left button only; right-click = grid context menu
-    // Record the pending drill; the root commits it on MOUSEUP if it wasn't a drag.
-    // (Drilling on mousedown made a group-move briefly flash the child's selection.)
+    if (e.button !== 0) return; // Prevents pendingDrillPath from stashing a potential selection (so future drills start fresh) if you right clicked with a group selected
+    // Record the pending drill but doesn't commit it here; the root commits it on MOUSEUP if it wasn't a drag
     pendingDrillPath = path;
   }
 
@@ -525,7 +528,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   
 
   return (
-    // Generated Box
+    /* GENERATED BOX */
     <div
       ref={boxRef}
       {...boxDivProp}
@@ -541,7 +544,10 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       {/* For a group, this content wrapper is the rounding MASK: rounded +
           overflow-hidden clips the square children so only the UI's outermost
           corners round off. */}
-      <div className={`flex justify-center items-center size-full overflow-hidden z-10 ${roundCls} ${(interactMode || hasChildren) ? '' : `backdrop-blur-sm ${leafBorderCls} bg-emptycomponent/40`}`}>
+      <div
+        className={`flex justify-center items-center size-full overflow-hidden z-10 ${roundCls} ${(interactMode || hasChildren) ? '' : `backdrop-blur-sm ${leafBorderCls} bg-emptycomponent/40`}`}
+        style={seamBleed ? { width: 'calc(100% + 1px)', height: 'calc(100% + 1px)' } : undefined}
+      >
 
         {hasChildren ? (
           // Parent (group): an inner CSS grid that fills this box. 1fr tracks
@@ -587,6 +593,8 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
 
       </div>
 
+      {/* VISUAL / POINTER SHIELDS AND OVERLAYS */}
+
       {/* Group outline drawn ON TOP of the children (above the mask) so it traces
           the rounded UI silhouette and isn't covered by the corner components.
           Brighter + thicker + glowing when the group is on the selection path.
@@ -605,8 +613,9 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       {/* A transparent overlay above the preview captures clicks for
           select/move/drill-in, since the Sandpack iframe would otherwise swallow
           them. pointer-events toggles by overlayActive: a group yields this
-          surface to its children once selected; a nested leaf catches clicks only
-          once its parent is the focus. Absent in interact mode. */}
+          surface to its children once it's ON the selection path (overlayActive =
+          !onPath); a leaf overlay is ALWAYS active, so clicks reach it only when
+          its ancestor groups have gone click-through. Absent in interact mode. */}
       {!interactMode && (
         <div
           onMouseDown={isChild ? handleChildDown : handleMouseDown}
@@ -635,6 +644,8 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
           style={{ cursor: h.cursor }}
         />
       ))}
+
+      {/* MENUS */}
 
       {/* Popup menu: pick a type first, then customize once a type is chosen.
           Positioned in viewport coords (see effect) to always stay on screen. */}
