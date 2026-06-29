@@ -1,5 +1,5 @@
 /**
- * API Route: dashboard LAYOUT. Given the visible grid size (in blocks), the list
+ * API Route: UI LAYOUT. Given the visible grid size (in blocks), the list
  * of component specs, and the original task, returns a JSON array of placements
  * ({ name, colStart, colEnd, rowStart, rowEnd }) that tile the window exactly.
  * The caller validates the result and re-calls with `previousError` on failure.

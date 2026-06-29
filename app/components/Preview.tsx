@@ -72,7 +72,7 @@ export default function App() {
     >
       {/* (100/scale)% then scaled by `scale` fills the wrapper exactly (plain 100%
           at scale 1). Filling the wrapper lets the leaf seam-bleed reach the bled
-          edge — see DASHBOARD_GENERATOR.md §6. transformOrigin pins it top-left. */}
+          edge — see UI_GENERATOR.md §6. transformOrigin pins it top-left. */}
       <div
         style={{
           width: (100 / scale) + "%",
@@ -112,7 +112,7 @@ export default function App() {
             <SandpackPreview
               showNavigator={false}
               showOpenInCodeSandbox={false}
-              showRefreshButton={true}
+              showRefreshButton={false}
             />
           </SandpackLayout>
         </SandpackProvider>

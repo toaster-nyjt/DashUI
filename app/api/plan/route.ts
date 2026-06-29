@@ -1,7 +1,7 @@
 /**
- * API Route: dashboard PLANNER. Takes a high-level user task and returns a JSON
+ * API Route: UI PLANNER. Takes a high-level user task and returns a JSON
  * array of DefaultCompSpec — one functionality-aware preset per component the
- * dashboard needs. The caller appends these to the shared defaultSpec registry.
+ * UI needs. The caller appends these to the shared defaultSpec registry.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { stripCodeFences } from "@/app/utils/helpers";
@@ -12,7 +12,7 @@ const anthropic = new Anthropic({
 });
 
 export async function POST(req: Request) {
-  // width/height = the available pixel area the dashboard will occupy. The planner
+  // width/height = the available pixel area the UI will occupy. The planner
   // scales component count to it (only splitting when there's room for each piece).
   const { task, width, height } = await req.json();
 

@@ -1,6 +1,6 @@
-# Dashboard Generator — Handoff Doc
+# UI Generator — Handoff Doc
 
-Primary orientation doc for dash-ui. Its focus is the **task → dashboard**
+Primary orientation doc for dash-ui. Its focus is the **task → UI**
 auto-generation feature, but it also documents the conventions and subsystems a
 new contributor needs before touching anything (the **component-spec contract**
 in §3 is now codebase-wide, not generator-only). Read §1 + §3 before writing code.
@@ -39,7 +39,7 @@ Both flows converge on the same endpoint: a box's spec is resolved to JSON by
   `numVHTall = 250`. **The grid is 250vh — taller than the viewport.** "Visible
   window" for layout = `floor(window.innerHeight / gridBlockSize)` rows.
 - **Nested boxes / grouping is the latest major feature — see §8.** A generated
-  dashboard is now ONE parent "group" box that contains its components as nested
+  UI is now ONE parent "group" box that contains its components as nested
   children; selection is a `selectionPath`; right-click ungroups. §2/§4/§5 are
   annotated where §8 supersedes them.
 - `defaultSpec` is the shared component registry. `CompSpec.specArrIdx` is
@@ -56,7 +56,7 @@ Both flows converge on the same endpoint: a box's spec is resolved to JSON by
 > Grouping/targeting/sizing details are in §8; the route-level flow is below.
 
 User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
-`SpatialGrid` effect (keyed on `taskRequest.id`) runs `runDashboardGeneration(task, target)`:
+`SpatialGrid` effect (keyed on `taskRequest.id`) runs `runUIGeneration(task, target)`:
 
 0. **BOUNDS + AREA** — compute the target region (a selected `isEmpty` box, else the
    visible window) and its pixel size (`w/h × gridBlockSize`), *before* planning.
@@ -75,7 +75,7 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
    - **Multiple components:** `fetchValidLayout` → `POST /api/layout
      {task, components, cols=w, rows=h, previousError}` → `Placement[]` (LOCAL coords).
      `components` is the **full `DefaultCompSpec[]`** (not names). Validated + retried.
-4. **PLACE** — `runDashboardGeneration` *returns* ONE parent group box (placements
+4. **PLACE** — `runUIGeneration` *returns* ONE parent group box (placements
    become its `children`, carrying local coords + `autoName`); the effect appends it
    to `elementArr`, replacing the targeted empty box if any. (§8)
 5. **SELF-GENERATE** — each leaf `GeneratedBox` with `props.autoName` runs a mount
@@ -153,7 +153,7 @@ you weren't asked for" rule for toggled-off customizations.
 - `app/components/Taskbar.tsx` — `onGenerate` + Enter submit; disabled "Currently
   Designing Layout…" while `isDesigning`.
 - `app/page.tsx` — owns `taskRequest` and `isDesigning` (lifted to share with grid).
-- `app/components/SpatialGrid.tsx` — `runDashboardGeneration`, `fetchValidLayout`.
+- `app/components/SpatialGrid.tsx` — `runUIGeneration`, `fetchValidLayout`.
 - `app/components/GeneratedBox.tsx` — auto-generate mount effect from `props.autoName`.
 - `next.config.ts` — `reactStrictMode: false` (see §5).
 
@@ -358,6 +358,27 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
     string MUST be braced — `className={"a " + cond}`, never `className="a " + cond`
     (a syntax error). Sits beside the no-template-literals-in-JSX rule; added after a
     real malformed-output `SyntaxError`.
+  - **INTERACTION OVER DECORATION.** Purely visual/display components (charts,
+    readouts, status strips, indicators) are explicitly welcomed and told NOT to bolt
+    fake controls onto them; but any component whose role implies interaction MUST wire
+    every rendered control to real React state/handlers — "a visible button/input/toggle
+    that does nothing is a failure." Scoped so it does NOT conflict with the include-list
+    rule (it governs whether rendered controls actually *work*, not which features
+    render). Added after generic-"UI" generations skewed style-heavy / interaction-light.
+  - **Outermost element is square (`rounded-none`).** The outer container must carry no
+    `rounded-*`; the host content-wrapper masks/rounds the whole UI's silhouette, so a
+    radius on the leaf's own outermost element pulls its corners off that mask and
+    exposes a ~1px seam (complements the §6 `seamBleed` fix). Overrides any panel radius
+    in the VISUAL GUIDELINES for the OUTERMOST element only — inner cards/chips keep the
+    style's rounding.
+- **"Dashboard" framing removed from the prompts (experiment).** PLAN / LAYOUT / STYLE
+  and the style + generate route user messages now say "UI", not "dashboard", to stop
+  the planner over-fitting toward grid-of-widgets output. Example tasks were diversified
+  (music, checkout), keeping ONE "avionics dashboard" splitting example in PLAN. The
+  whole codebase + this doc were rebranded dashboard→UI (`runUIGeneration`; this file is
+  now `UI_GENERATOR.md`); the `Stat Dashboard` preset name is the deliberate exception.
+  If the planner starts over-collapsing to single components, the lost framing word is
+  the likely cause — re-add a multi-component cue rather than the literal "dashboard".
 - **Theme** (`app/globals.css`): `--color-bgdarkblue` renamed `--color-canvas`;
   darker canvas, stronger dots, brighter/faster loading shimmer; `--shadow-custom`
   fixed to use `color-mix` instead of the nonexistent `--color-borderactive-50`.
@@ -368,7 +389,7 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
 
 ## 8. Nested boxes, path selection & grouping (latest major feature)
 
-A generated dashboard is no longer N sibling boxes — it's **one parent "group" box**
+A generated UI is no longer N sibling boxes — it's **one parent "group" box**
 in `elementArr` that *contains* its components as nested children. This section
 supersedes the flat-box assumptions in §2/§4/§5 where they conflict.
 
@@ -438,7 +459,7 @@ consumer that reads from `elementArr` sees where the box IS, not where it spawne
 Two consumers depend on this:
 - **ungroup** — without it, ungrouping a *moved* UI teleported its components back to
   the original spot (this is the load-bearing case for groups).
-- **empty-box targeting** (§"Empty-box targeting" below) — `runDashboardGeneration`
+- **empty-box targeting** (§"Empty-box targeting" below) — `runUIGeneration`
   places the generated UI at the target box's `colStart/rowStart/colEnd/rowEnd` read
   from `elementArr`. A manual box that was drawn, then **moved/resized**, then used as
   a generation target relies on these being current — otherwise the UI lands at the
@@ -451,14 +472,14 @@ write is harmless when unused: it feeds new `colStart`/etc. props into the same
 stays driven by the box's own state.
 
 ### Empty-box targeting
-`runDashboardGeneration(task, target)` takes a **target box** (a selected `isEmpty`
+`runUIGeneration(task, target)` takes a **target box** (a selected `isEmpty`
 box, found in the effect via `selectionPath[0]`). It places the parent at the
 target's bounds and tiles its `w×h` interior; the effect **replaces** the empty box.
 No target → fills the visible window. Single-component now **fills** the box (it used
 to center at quarter-window — pointless with a wrapper).
 
 ### Plan route knows the available area
-`runDashboardGeneration` computes the target's pixel size (`w/h × gridBlockSize`) and
+`runUIGeneration` computes the target's pixel size (`w/h × gridBlockSize`) and
 sends `{ task, width, height }` to `/api/plan`. `PLAN_SYSTEM_PROMPT` now leads with
 "**RESPECT THE AVAILABLE AREA** — only create a new component if there's enough pixel
 space for it and every other to stay legible; small area → single component."
@@ -482,15 +503,15 @@ Sandpack's own radius is zeroed via `!rounded-none` on the `sp-*` classes
 
 ---
 
-## 9. Per-UI style registry (coherent styling across a generated dashboard)
+## 9. Per-UI style registry (coherent styling across a generated UI)
 
 Every component in a generated UI is produced by a **separate, single-shot**
 `/api/generate` call with no knowledge of its siblings — so left alone they drift
-apart visually. The **style registry** gives one generated dashboard a single shared
+apart visually. The **style registry** gives one generated UI a single shared
 visual identity that every one of its components is generated against.
 
 ### The STYLE route (`app/api/style/route.ts`)
-- Runs **after PLAN, before LAYOUT** in `runDashboardGeneration` (§2 step 1b). Always
+- Runs **after PLAN, before LAYOUT** in `runUIGeneration` (§2 step 1b). Always
   called on the auto path; lets errors fall to the pipeline's outer `catch`.
 - Input: `{ task, components }` where `components` is the planner specs **resolved
   through `resolveComponentSpec`** (active set = each preset's `defaultSpecArrIdx`),
@@ -498,12 +519,20 @@ visual identity that every one of its components is generated against.
   generator gets per component. `system = STYLE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL`.
 - Output: `{ style: string }` — a **design token sheet** (NOT JSON, not a mood
   board): labelled bullets of concrete Tailwind classes per category (background
-  layers, borders & radius, color tiers, typography, spacing, elevation, motion).
-  It's injected verbatim as the generator's **VISUAL GUIDELINES** section, so it
-  must be specific enough to make separately generated components line up.
+  layers, borders & radius, color tiers, typography, spacing, **structural chrome**,
+  elevation, motion). It's injected verbatim as the generator's **VISUAL GUIDELINES**
+  section, so it must be specific enough to make separately generated components line up.
 - Model: `claude-opus-4-8` (design-stage, like plan/layout). Non-streaming.
 - `STYLE_SYSTEM_PROMPT` opens with the shared `KEY_DIRECTION` creative brief (see
   below) and is intentionally a **starting point** — expect to tune it.
+- **Cross-component chrome consistency.** Because each component is a separate
+  single-shot call with a *different* `boxSize`, panel headers/footers used to drift
+  in height/padding even under a shared style — each box independently condensed its
+  own chrome via the `sizeNote`. Fix is two coordinated pieces: (1) the STYLE sheet
+  carries a **Structural chrome** category of FIXED header/title-bar + footer/status-strip
+  dimensions (with `shrink-0`), constant regardless of box size; (2) the `sizeNote` in
+  `generate/route.ts` scopes "condense to fit" to the **body region only** — the
+  header/footer keep the VISUAL GUIDELINES dimensions so sibling panels align.
 
 ### The registry (`SpatialGrid`)
 - `styleSpec: Record<number, string>` — `styleID` (= `taskRequest.id`) → that UI's
@@ -550,7 +579,7 @@ bold, flashy, lots of animation"). Change it in one place to shift all generated
 `emptyTarget = elementArr.find(el => el.key === selectionPath[0] && el.isEmpty) ?? null`
 is computed once and is the single source for "the selected box is an empty
 generation target." It drives:
-- **Targeting** — the task-submit effect passes it to `runDashboardGeneration` (fill
+- **Targeting** — the task-submit effect passes it to `runUIGeneration` (fill
   that box instead of the window).
 - **Taskbar highlight** — an effect mirrors `!!emptyTarget` up via `setHasEmptyTarget`
   (lifted to `page.tsx`), so the Taskbar can show it's armed.

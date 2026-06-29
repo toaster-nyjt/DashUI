@@ -14,7 +14,7 @@ export type GeneratedBoxProps = {
   rowStart: number;
   rowEnd: number;
   key: string;
-  // Set by the dashboard generator: the box self-generates this component on
+  // Set by the UI generator: the box self-generates this component on
   // mount (the registry already holds its spec). Undefined for manual boxes.
   autoName?: string;
   // NESTING: a parent (group) box carries its children here. Children hold
@@ -29,7 +29,7 @@ export type GeneratedBoxProps = {
   // the first time it generates (see GeneratedBox isGenerating effect). Lets
   // SpatialGrid tell whether a selected box is an empty drop-target.
   isEmpty?: boolean;
-  // Set by the dashboard generator on every box of a generated UI: the id of the
+  // Set by the UI generator on every box of a generated UI: the id of the
   // taskRequest that produced it, used as the key into SpatialGrid's styleSpec
   // registry so every component in this UI shares one coherent visual style.
   styleID?: number;

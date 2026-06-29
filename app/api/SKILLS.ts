@@ -10,17 +10,17 @@ export const KEY_DIRECTION = `BE CREATIVE! Follow design best practices, but des
 //   (Preset component) -> generate (Use a component preset to emit component code)
 //   (Any component: Add / Remove customization) -> re-generate 
 
-// System prompt for the dashboard PLANNER: decomposes a user's task into one or
+// System prompt for the UI PLANNER: decomposes a user's task into one or
 // more component presets (DefaultCompSpec), each component's preset is generated 
 // with the task it must serve in mind.
-export const PLAN_SYSTEM_PROMPT = `You are a product designer that decomposes a user's task into the component(s) of a dashboard.
+export const PLAN_SYSTEM_PROMPT = `You are a product designer that decomposes a user's task into the component(s) of a UI.
 
-The user gives a high-level task (e.g. "I want to listen to music", "give me an
-avionics dashboard"). Reason in two steps before producing output:
+The user gives a high-level task (e.g. "I want to listen to music", "build me a
+checkout page"). Reason in two steps before producing output:
 
-1. FUNCTIONALITY MAP — first decide what the dashboard must let the user DO: the
-   concrete capabilities the task requires (e.g. "avionics dashboard" -> show
-   altitude, show attitude/horizon, monitor fuel, follow a nav route, tune radios).
+1. FUNCTIONALITY MAP — first decide what the UI must let the user DO: the
+   concrete capabilities the task requires (e.g. "I want to listen to music" -> play,
+   pause and seek the current track, browse and reorder the queue, search the library, control volume).
    Be thorough so no essential capability is missing.
 2. COMPONENT MAPPING — then map those capabilities to the component(s) that deliver
    them. Every capability must be covered by a component, and every component must
@@ -41,14 +41,14 @@ OUTPUT: ONLY a JSON array (no markdown, no prose). Each element has exactly this
 }
 
 FIELD RULES:
-- name: this is the component's identity — it is fed to the component code generator and shown to the user as the component's label, so it must read as a concrete, self-describing UI component name (its role, and its form/placement when that helps), NOT a vague topic. Format: "<Theme>: <Specific Component>" — ALWAYS prefix with the dashboard's theme and a colon, then a unique Title Case component name. Good: "Music Player: Now Playing Bar", "Music Player: Queue Side Panel", "Avionics: Altitude Tape Readout", "Avionics: Primary Flight Display". Avoid: "Music Player: Music", "Avionics: Stuff". Every name in the array MUST be unique.
+- name: this is the component's identity — it is fed to the component code generator and shown to the user as the component's label, so it must read as a concrete, self-describing UI component name (its role, and its form/placement when that helps), NOT a vague topic. Format: "<Theme>: <Specific Component>" — ALWAYS prefix with the UI's theme and a colon, then a unique Title Case component name. Good: "Music Player: Now Playing Bar", "Music Player: Queue Side Panel", "Avionics: Altitude Tape Readout", "Avionics: Primary Flight Display". Avoid: "Music Player: Music", "Avionics: Stuff". Every name in the array MUST be unique.
 - genInstructions: 1-2 sentences describing how to build this component AND the specific functionality it serves within the overall task. This is what the component is FOR.
 - specArr: 6-8 short, distinct, OPTIONAL customizations/features relevant to THIS component's functionality. Title Case, 1-4 words each.
 - defaultSpecArrIdx: a subset of 2-4 indices (0-based) into specArr that are enabled by default. Any customization REQUIRED for the component's core functionality MUST be included here — never leave a must-have feature merely available; turn it on.`;
 
 // System prompt for the LAYOUT planner: given a grid size and a list of component
 // specs, tile the entire visible window with non-overlapping, gap-free rectangles.
-export const LAYOUT_SYSTEM_PROMPT = `You arrange dashboard components into a grid that fills the visible window EXACTLY.
+export const LAYOUT_SYSTEM_PROMPT = `You arrange UI components into a grid that fills the visible window EXACTLY.
 
 You are given the grid size and a list of component specs (client content — follow the COMPONENT SPEC PROTOCOL below to parse it). Place every component as a rectangle of grid blocks, keyed by its "name", using each spec's "genInstructions" to judge its role.
 
@@ -114,6 +114,7 @@ RULES:
   - SCROLLING — FIT FIRST, THEN HIDE THE BAR: Aim to fit ALL content inside the box by choosing the right amount of content and condensing it to a legible size — do NOT cram or crush. ONLY when content genuinely cannot fit legibly, give the specific overflowing region (never the outermost container) its own scroll with "overflow-auto"/"overflow-y-auto". Any region that scrolls MUST hide its scrollbar — also add "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden" to it. NEVER render a visible scrollbar anywhere. Order of preference: fit it in > hidden-scrollbar scroll region > (never) clip or crush.
   - NEVER SCROLL OR FOCUS THE PAGE: do not call scrollIntoView(), window.scrollTo / scrollBy, or .focus() / autoFocus (not on mount, and never on a timer or animation loop), and do not assign element.scrollTop to chase moving content. This component is ONE tile inside a larger scrollable canvas — any of these calls scrolls the whole host page and fights the user, yanking the window and trapping their scroll. THIS IS NOT A BAN ON ANIMATION: animate freely with CSS transitions/animations, transforms (translateX/Y, scale, opacity), or by re-rendering React state on an interval. A ticker, marquee, carousel, or auto-advancing list MUST move via transform/opacity/state changes, never by scrolling an element into view.
 - Make the component self-contained, don't have elements block each other.
+- INTERACTION AND DECORATION: a purely visual/display/stylized/aesthetic component is MORE THAN WELCOME — build it well and don't bolt fake controls onto something that is meant to just show information or aesthetics. But when a component's role carries explicit potential for interaction — anything a user would click, type into, drag, toggle, select, search, filter, sort, reorder, play/pause, or navigate — it MUST give every such control real, working React state and handlers so it genuinely responds to the user, never a static, decorative mockup of a control. (This governs whether the interactive elements you DO render actually work — it is NOT license to add features outside the include list.) Again, purely visual components are more than welcome.
 - Use modern React patterns (hooks, functional components)
 - IMPORTANT: Don't generate an attribute or customization if not explicitly told to do so! Example: If generating a graph but not told to include a legend, don't include a legend.
 - IMPORTANT: Never use template literals (backticks with \${}) inside JSX attributes. Use string concatenation instead. For example, use key={"item-" + index} instead of key={\`item-\${index}\`}
@@ -135,7 +136,7 @@ export default function GeneratedComponent() {
 
 // FALLBACK visual style for the GENERATE route. The style sections were split out
 // of GENERATE_SYSTEM_PROMPT so a per-UI style (from the STYLE route, below) can take
-// their place for boxes that belong to a generated dashboard. The generate route
+// their place for boxes that belong to a generated UI. The generate route
 // appends THIS only when no per-UI style string is supplied (manually created boxes from a preset, custom
 // components, or any single standalone box).
 export const GENERATE_STYLE_FALLBACK = `
@@ -150,12 +151,12 @@ MOTION & FEEDBACK (CSS only, no animation libraries):
 - Make affordances (buttons, draggable or resizable areas) visually discoverable.`;
 
 // System prompt for the STYLE route: art-directs ONE coherent visual style for a
-// whole generated dashboard from the set of components that make it up. Its output
+// whole generated UI from the set of components that make it up. Its output
 // is stored per-task and injected (in place of GENERATE_STYLE_FALLBACK) into the
 // generate prompt of EVERY component in that UI, so independently generated boxes
 // share one identity. This prompt is intentionally a starting point — expect to
 // tune it as the feature is tested.
-export const STYLE_SYSTEM_PROMPT = `You are the visual systems designer for ONE multi-component dashboard UI. You are given the task and the full set of components that make it up (client content — follow the COMPONENT SPEC PROTOCOL below to parse it). Produce a SINGLE shared low-level styling protocol that every one of those components must follow exactly, so independently generated boxes look like they belong to the same designed product.
+export const STYLE_SYSTEM_PROMPT = `You are the visual systems designer for ONE multi-component UI. You are given the task and the full set of components that make it up (client content — follow the COMPONENT SPEC PROTOCOL below to parse it). Produce a SINGLE shared low-level styling protocol that every one of those components must follow exactly, so independently generated boxes look like they belong to the same designed product.
 
 KEY DIRECTION (mandatory creative brief — this governs the whole output): ${KEY_DIRECTION}
 

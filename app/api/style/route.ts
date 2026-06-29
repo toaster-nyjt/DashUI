@@ -1,6 +1,6 @@
 /**
- * API Route: dashboard STYLE. Given the original task and the resolved component
- * specs that make up ONE generated dashboard, returns a single coherent visual
+ * API Route: UI STYLE. Given the original task and the resolved component
+ * specs that make up ONE generated UI, returns a single coherent visual
  * style specification (plain text) for that whole UI. The caller stores it in the
  * styleSpec registry keyed by the task id; every component of the UI is then
  * generated with this style injected in place of the GENERATE route's fallback,
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
   const userContent =
     `Task: ${task}\n` +
-    `These are the components that make up this single dashboard UI: ${JSON.stringify(components)}.`;
+    `These are the components that make up this single UI: ${JSON.stringify(components)}.`;
 
   const msg = await anthropic.messages.create({
     model: "claude-opus-4-8", // design-stage quality, like plan/layout

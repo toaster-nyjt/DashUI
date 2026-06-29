@@ -7,11 +7,11 @@ export default function Home() {
   // Interact Mode lives here so both the Taskbar and the grid can share it
   const [interactMode, setInteractMode] = useState<boolean>(false);
 
-  // A submitted dashboard task. The `id` makes each submission distinct so the
+  // A submitted UI task. The `id` makes each submission distinct so the
   // grid re-runs generation even if the same prompt text is entered twice.
   const [taskRequest, setTaskRequest] = useState<{ prompt: string; id: number } | null>(null);
 
-  // True while the grid is planning/laying out a dashboard.
+  // True while the grid is planning/laying out a UI.
   const [isDesigning, setIsDesigning] = useState<boolean>(false);
 
   // True when a selected box is an empty generation target (same condition the grid

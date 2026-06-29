@@ -47,7 +47,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   const [defaultSpec, setDefaultSpec] = useState<DefaultCompSpec[]>(DEFAULT_SPEC);
 
   // Per-UI style registry: taskRequest.id (styleID) -> the coherent visual style
-  // produced for that whole generated dashboard. Every box of a generated UI
+  // produced for that whole generated UI. Every box of a generated UI
   // carries its styleID and looks its style up here, so independently generated
   // components share one identity. Passed down to all boxes (like defaultSpec).
   const [styleSpec, setStyleSpec] = useState<Record<number, string>>({});
@@ -58,7 +58,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   }, [defaultSpec]);
 
 
-  /* DASHBOARD GENERATOR (task prompt -> plan -> layout -> auto boxes) */
+  /* UI GENERATOR (task prompt -> plan -> layout -> auto boxes) */
 
   // Calls the layout route and re-asks (feeding back the validation error) until
   // it returns a tiling that fully covers the window with no gaps/overlaps.
@@ -91,7 +91,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
 
   // Full pipeline: decompose the task into component specs, register them, lay
   // them out across the visible window, then drop in self-generating boxes.
-  const runDashboardGeneration = async (task: string, target: GeneratedBoxProps | null): Promise<GeneratedBoxProps | null> => {
+  const runUIGeneration = async (task: string, target: GeneratedBoxProps | null): Promise<GeneratedBoxProps | null> => {
     setIsDesigning(true);
     try {
       // 0. TARGET BOUNDS + PIXEL AREA: generate WITHIN a selected empty box if there
@@ -168,7 +168,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       // effect appends it to elementArr (replacing the targeted empty box).
       return { colStart, colEnd, rowStart, rowEnd, key: parentKey, children };
     } catch (e) {
-      console.error('Dashboard generation error:', e);
+      console.error('UI generation error:', e);
       return null;
     } finally {
       setIsDesigning(false);
@@ -189,12 +189,12 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
 
   // Run the generator whenever a new task is submitted from the Taskbar, then
   // append the single parent box it produced (the push is the separate step,
-  // outside runDashboardGeneration, per the design).
+  // outside runUIGeneration, per the design).
   useEffect(() => {
     if (taskRequest && taskRequest.prompt.trim()) {
       // Generate INTO a selected empty box if there is one, else fill the window.
       const target = emptyTarget;
-      runDashboardGeneration(taskRequest.prompt.trim(), target)
+      runUIGeneration(taskRequest.prompt.trim(), target)
         .then((parent) => {
           if (!parent) return;
           // Replace the targeted empty box (if any) with the generated group.
@@ -217,7 +217,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   // any consumer reading from elementArr uses its CURRENT position, not where it
   // spawned. (A box's live position otherwise lives only in GeneratedBox state after
   // creation.) Two consumers depend on this: ungroup (flattening a moved group to
-  // global coords) and empty-box targeting (runDashboardGeneration places the new UI
+  // global coords) and empty-box targeting (runUIGeneration places the new UI
   // at a target box's bounds). Runs for ALL top-level boxes incl. manual ones — a
   // manual empty box can be moved/resized before being used as a generation target.
   const syncBounds = (key: string, b: { colStart: number; colEnd: number; rowStart: number; rowEnd: number }) =>

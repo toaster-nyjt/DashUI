@@ -31,7 +31,7 @@ export default function Taskbar({ interactMode, onInteractModeChange, onGenerate
       // Grid's pixel width; the bar centers/sizes off it so it tracks the grid's center.
       canvasWidth : number }) {
 
-  // Local prompt text for the dashboard generator
+  // Local prompt text for the UI generator
   const [prompt, setPrompt] = useState('');
 
   // Fire the task off to the generator and clear the input
@@ -50,10 +50,10 @@ export default function Taskbar({ interactMode, onInteractModeChange, onGenerate
       // Centered on the grid (left = canvasWidth/2) and sized to 60% of it, so the bar
       // tracks the grid's center instead of the viewport's. Falls back to viewport % pre-measure.
       style={{ left: canvasWidth ? canvasWidth / 2 : '50%', width: canvasWidth ? canvasWidth * 0.6 : '60%' }}
-      className={`fixed bottom-12 -translate-x-1/2 z-35 flex min-w-100 items-center gap-4 rounded-3xl border-2 bg-menu px-4 py-2 transition-all ${targeting ? 'border-borderactive ring-2 ring-borderactive/50 shadow-custom' : 'border-white/10 shadow-lg'}`}>
+      className={`fixed bottom-12 -translate-x-1/2 z-35 flex min-w-100 items-center gap-4 rounded-3xl bg-menu px-4 py-2 transition-all ${targeting ? 'border-3 border-borderactive ring-3 ring-borderactive/50 shadow-custom' : 'border-2 border-white/10 shadow-lg'}`}>
 
-      {/* Text bar — Enter submits the task to the dashboard generator. While a
-          dashboard is generating the field is disabled (which also blocks any
+      {/* Text bar — Enter submits the task to the UI generator. While a
+          UI is generating the field is disabled (which also blocks any
           re-submission) and shows the in-progress label. */}
       <input
         type="text"

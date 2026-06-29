@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     history?: Anthropic.MessageParam[];
     boxSize?: XY;
     // Per-UI visual style (from the STYLE route) shared by every component of a
-    // generated dashboard. When absent, fall back to the default style block.
+    // generated UI. When absent, fall back to the default style block.
     style?: string;
   };
 
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   // without a style (manual boxes, custom components, single standalone boxes)
   // gets the fallback.
   const styleBlock = style
-    ? `\n\nVISUAL GUIDELINES — follow these guidelines so this component matches the rest of its dashboard:\n${style}`
+    ? `\n\nVISUAL GUIDELINES — follow these guidelines so this component matches the rest of its UI:\n${style}`
     : GENERATE_STYLE_FALLBACK;
 
   // Tell the model the concrete dimensions it's designing for. Still responsive

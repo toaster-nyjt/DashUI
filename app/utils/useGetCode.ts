@@ -16,7 +16,7 @@ export function useGetCode() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Gets called when user sends prompt, function is cached with useCallback.
-  // style = the per-UI visual style (for boxes in a generated dashboard); passed
+  // style = the per-UI visual style (for boxes in a generated UI); passed
   // through to /api/generate so all components of that UI share one look.
   const handleSend = useCallback(async (prompt: string, fresh: boolean = false, boxSize?: XY, style?: string) => {
     // Create new user message from prompt
@@ -46,7 +46,7 @@ export function useGetCode() {
           })),
           // Current pixel size of the box, so the route can size the prompt to it
           boxSize,
-          // Per-UI style for a generated dashboard (undefined -> route uses fallback)
+          // Per-UI style for a generated UI (undefined -> route uses fallback)
           style,
         }),
       });

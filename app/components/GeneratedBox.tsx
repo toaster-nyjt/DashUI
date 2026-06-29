@@ -127,7 +127,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   const overlayActive = hasChildren ? !onPath : true;
 
   // Interact-mode leaf tiles bleed 1px past their cell to overlap neighbours and
-  // cover the fractional-pixel seam between them (see DASHBOARD_GENERATOR.md §6).
+  // cover the fractional-pixel seam between them (see UI_GENERATOR.md §6).
   const seamBleed = interactMode && isChild && !hasChildren;
 
   // Refs + viewport position for the popup menu (kept on-screen). Starts offscreen.
@@ -159,7 +159,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
 
   /* MAIN COMPONENT GENERATION HANDLER */
 
-  // Look up this box's coherent UI style (if it belongs to a generated dashboard).
+  // Look up this box's coherent UI style (if it belongs to a generated UI).
   // undefined for manual boxes -> the generate route applies its fallback style.
   const resolveStyle = (styleID? : number) =>
     styleID !== undefined ? styleSpec[styleID] : undefined;
@@ -249,9 +249,9 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
     handleSend(resolveComponentSpec(next, defaultSpec), true, boxSize, resolveStyle(props.styleID));
   }
 
-  /* AUTO GENERATION LOGIC (from dashboard generator) */
+  /* AUTO GENERATION LOGIC (from UI generator) */
 
-  // A box created by the dashboard generator carries its assigned
+  // A box created by the UI generator carries its assigned
   // component name and generates itself once on mount. Its spec is already in the
   // registry (the generator committed setDefaultSpec before creating boxes)
   useEffect(() => {
