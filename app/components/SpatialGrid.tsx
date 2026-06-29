@@ -448,7 +448,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   return (
     // Background grid: Visual layer. Interact mode -> white, no dots
     <div
-      className={`flex relative overflow-hidden ${interactMode ? 'bg-white' : 'bg-canvas'}`}
+      className={`flex relative overflow-hidden ${interactMode ? 'bg-neutral-400' : 'bg-canvas'}`}
       style={{
         // Explicit px width (falls back to 100% pre-measure). Wider than the viewport
         // when zoomed in -> the document scrolls horizontally instead of clipping.

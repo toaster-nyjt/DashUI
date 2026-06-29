@@ -281,13 +281,14 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
   lands *mid-device-pixel* (worse on fractional-DPR Windows scaling, and it shifts
   with scroll/position — so the seam flickers in and out). That boundary device pixel
   ends up ~50% covered by the component (`zinc-950` = RGB 9,9,11) and ~50% by the
-  canvas behind it (`bg-white` in interact mode), blending to RGB(132,132,133) =
-  `#848485` — exactly `(255+9)/2`, confirmed with a color picker. It only shows in
+  canvas behind it (`bg-neutral-400` in interact mode), so it blends to a mid-grey
+  hairline. (When the interact bg was `bg-white` this was a brighter `#848485` =
+  `(255+9)/2`.) It only shows in
   interact mode: meta mode's per-leaf 1px borders inset the content and cover the
   boundary (and the bars there are by design), which is also why every tile appears
   to "grow ~1px" when you switch meta→interact (the border inset goes away).
-  - **Why not the earlier attempts:** painting the wrapper a fixed dark color (the
-    undefined `var(--bg-secondary)`) would only *hide* it and breaks under dynamic
+  - **Why not the earlier attempts:** painting the wrapper a fixed dark color (`var(--bg-secondary)`, now defined
+    as the grey backdrop) would only *hide* the seam and breaks under dynamic
     styling; making the pre-scale layer `(100/scale)%` alone didn't help because the
     seam is *between* leaf iframes at the cell boundary, not inner-div underfill;
     device-pixel snapping `blockSize` is a moving target across DPR + scroll.
@@ -556,8 +557,10 @@ visual identity that every one of its components is generated against.
 
 ### Generate prompt split (`SKILLS.ts`)
 The style sections were **extracted** out of `GENERATE_SYSTEM_PROMPT` into a standalone
-`GENERATE_STYLE_FALLBACK`. `generate/route.ts` builds `system = GENERATE_SYSTEM_PROMPT +
-COMPONENT_SPEC_PROTOCOL + styleBlock + sizeNote`, where `styleBlock` is the per-UI
+`GENERATE_STYLE_FALLBACK`. `generate/route.ts` builds `system = GENERATE_QA_DIRECTIVE +
+GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL + styleBlock + sizeNote` — `GENERATE_QA_DIRECTIVE`
+is a short max-performance + self-QA preamble (plan before coding, then self-review against the
+rules). `styleBlock` is the per-UI
 `style` (when present, labelled "VISUAL GUIDELINES") or `GENERATE_STYLE_FALLBACK` (when
 not). The base prompt keeps all structural/sizing rules + the example output format, and
 its DESIGN `<important>` block points at the VISUAL GUIDELINES + the `KEY_DIRECTION`.

@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --bg-secondary: #a3a3a3; /* Preview wrapper backdrop; matches the interact-mode canvas (bg-neutral-400) */
 }
 
 @theme inline {
