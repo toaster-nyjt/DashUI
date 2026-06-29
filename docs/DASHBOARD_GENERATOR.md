@@ -496,11 +496,14 @@ visual identity that every one of its components is generated against.
   through `resolveComponentSpec`** (active set = each preset's `defaultSpecArrIdx`),
   i.e. the same `{name, genInstructions, include, exclude}` protocol view the
   generator gets per component. `system = STYLE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL`.
-- Output: `{ style: string }` — free-form prose/bullets (NOT JSON), a complete
-  visual-style spec (identity, palette, typography, spacing, motion).
+- Output: `{ style: string }` — a **design token sheet** (NOT JSON, not a mood
+  board): labelled bullets of concrete Tailwind classes per category (background
+  layers, borders & radius, color tiers, typography, spacing, elevation, motion).
+  It's injected verbatim as the generator's **VISUAL GUIDELINES** section, so it
+  must be specific enough to make separately generated components line up.
 - Model: `claude-opus-4-8` (design-stage, like plan/layout). Non-streaming.
-- `STYLE_SYSTEM_PROMPT` is intentionally a **starting point** — leads with "Use your
-  styling skills for coherency and ease of use"; expect to tune it.
+- `STYLE_SYSTEM_PROMPT` opens with the shared `KEY_DIRECTION` creative brief (see
+  below) and is intentionally a **starting point** — expect to tune it.
 
 ### The registry (`SpatialGrid`)
 - `styleSpec: Record<number, string>` — `styleID` (= `taskRequest.id`) → that UI's
@@ -523,9 +526,48 @@ visual identity that every one of its components is generated against.
   fallback inside the auto pipeline; the fallback exists purely for style-less boxes.
 
 ### Generate prompt split (`SKILLS.ts`)
-The style sections (DESIGN DIRECTION / COLOR PALETTE / MOTION & FEEDBACK) were
-**extracted** out of `GENERATE_SYSTEM_PROMPT` into a standalone `GENERATE_STYLE_FALLBACK`.
-`generate/route.ts` builds `system = GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL
-+ styleBlock + sizeNote`, where `styleBlock` is the per-UI `style` (when present) or
-`GENERATE_STYLE_FALLBACK` (when not). The base prompt keeps all structural/sizing
-rules + the example output format.
+The style sections were **extracted** out of `GENERATE_SYSTEM_PROMPT` into a standalone
+`GENERATE_STYLE_FALLBACK`. `generate/route.ts` builds `system = GENERATE_SYSTEM_PROMPT +
+COMPONENT_SPEC_PROTOCOL + styleBlock + sizeNote`, where `styleBlock` is the per-UI
+`style` (when present, labelled "VISUAL GUIDELINES") or `GENERATE_STYLE_FALLBACK` (when
+not). The base prompt keeps all structural/sizing rules + the example output format, and
+its DESIGN `<important>` block points at the VISUAL GUIDELINES + the `KEY_DIRECTION`.
+- `GENERATE_STYLE_FALLBACK` is now **general** guidance (cohesive identity, legible
+  palette roles, consistent type/spacing, motion) led by `KEY_DIRECTION` — it no longer
+  hardcodes the old zinc/indigo palette. It's the look for style-less boxes only.
+
+### `KEY_DIRECTION` (shared creative brief)
+One exported string at the top of `SKILLS.ts` interpolated into BOTH the STYLE prompt
+(art-director brief) and the GENERATE prompt (`<important>` block + the fallback). It's
+the single knob for the global aesthetic target (currently "iF/Red Dot award-winning,
+bold, flashy, lots of animation"). Change it in one place to shift all generated UIs.
+
+---
+
+## 10. Empty-box targeting UX + Taskbar/grid alignment
+
+### One `emptyTarget`, two consumers (`SpatialGrid`)
+`emptyTarget = elementArr.find(el => el.key === selectionPath[0] && el.isEmpty) ?? null`
+is computed once and is the single source for "the selected box is an empty
+generation target." It drives:
+- **Targeting** — the task-submit effect passes it to `runDashboardGeneration` (fill
+  that box instead of the window).
+- **Taskbar highlight** — an effect mirrors `!!emptyTarget` up via `setHasEmptyTarget`
+  (lifted to `page.tsx`), so the Taskbar can show it's armed.
+- **Right-click delete** — `handleContextMenu` short-circuits: if `emptyTarget`, it
+  removes that box from `elementArr` + clears the path (same as the Delete key), before
+  the ungroup/back-out branches. (Selection-based, like ungroup: a right-click anywhere
+  while an empty box is selected discards it.)
+
+### Taskbar "targeting" highlight (`page.tsx` → `Taskbar`)
+When `hasEmptyTarget`, the Taskbar wears the **single-box blue highlight**
+(`border-borderactive` + `ring` + `shadow-custom`) to signal a submitted task fills the
+selected box. `border-2` is kept on both states so the toggle causes no layout shift.
+
+### Taskbar centered on the grid, not the viewport
+`canvasWidth` was **lifted from `SpatialGrid` to `page.tsx`** (the grid still measures
+it via `setCanvasWidth`). The Taskbar centers/sizes off it (`left: canvasWidth/2`,
+`width: canvasWidth*0.6`) instead of `left-1/2 w-[60%]`, so it shares a center with the
+grid even when the canvas width diverges from the viewport on a tab/pane resize (which
+previously left the fixed, viewport-centered bar misaligned and "flatter"). Falls back
+to viewport `%` before the first measurement.
