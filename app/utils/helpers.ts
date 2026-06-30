@@ -23,12 +23,46 @@ export function resolveComponentSpec(compSpec: CompSpec, defaultSpec: DefaultCom
   // Every customization NOT chosen -> deliberately excluded features
   const exclude = def.spec.specArr.filter((_, i) => !compSpec.specArrIdx.includes(i));
 
+  // role + connectivity are added without restructuring the existing shape. They
+  // are undefined for manual/preset boxes, so JSON.stringify drops them and those
+  // boxes emit exactly the previous { name, genInstructions, include, exclude }.
   return JSON.stringify({
     name: def.name,
     genInstructions: def.genInstructions,
+    role: def.role,
+    connectivity: def.connectivity,
     include,
     exclude,
   });
+}
+
+// Validates the connectivity wiring in a planner result: every effector/target
+// connection must reference a sibling component by EXACT name (and never itself).
+// Connection names are the join key used by layout (adjacency) and the future
+// path/wiring route, so a dangling name silently breaks those. Returns the first
+// violation so it can be fed back to the planner on retry (see fetchValidPlan).
+export function validateConnectivity(specs: DefaultCompSpec[]): { ok: boolean; error?: string } {
+  const names = new Set(specs.map((s) => s.name));
+
+  for (const s of specs) {
+    const edges = [
+      ...(s.connectivity?.effectors ?? []).map((c) => ({ c, kind: "effector" })),
+      ...(s.connectivity?.targets ?? []).map((c) => ({ c, kind: "target" })),
+    ];
+    for (const { c, kind } of edges) {
+      if (!c?.name) {
+        return { ok: false, error: `"${s.name}" has a ${kind} connection with no "name".` };
+      }
+      if (c.name === s.name) {
+        return { ok: false, error: `"${s.name}" lists itself as a ${kind} connection — a component cannot connect to itself.` };
+      }
+      if (!names.has(c.name)) {
+        return { ok: false, error: `"${s.name}" has a ${kind} connection to "${c.name}", which is not one of this UI's component names. Every connection "name" must exactly match another component's "name".` };
+      }
+    }
+  }
+
+  return { ok: true };
 }
 
 // Validates a layout-route result: every block of the cols x rows window must be

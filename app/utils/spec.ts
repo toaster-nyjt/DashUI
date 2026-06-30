@@ -45,10 +45,31 @@ export type CompSpec = {
   specArrIdx: number[]; // indices into the matching DefaultCompSpec's specArr
 }
 
-// A component-type preset in the shared registry (defaultSpec)
+// One functional link between two components of the SAME generated UI. `name`
+// references a sibling component's DefaultCompSpec.name exactly (the join key used
+// by layout for adjacency and, later, the path/wiring route). See Connectivity.
+export type Connection = {
+  name: string;        // exact name of the connected sibling component within this UI
+  description: string; // what passes across the connection / what it does
+}
+
+// How one component is wired to the others in its UI. An edge "A affects B" is
+// recorded on BOTH endpoints: as a TARGET on A (outgoing) and an EFFECTOR on B
+// (incoming). Set by the planner only; intra-UI metadata, never on manual boxes.
+export type Connectivity = {
+  effectors: Connection[]; // INCOMING: sibling components that drive/affect THIS one
+  targets: Connection[];   // OUTGOING: sibling components THIS one drives/affects
+}
+
+// A component-type preset in the shared registry (defaultSpec).
+// `role` + `connectivity` are populated by the PLANNER only (they describe a
+// component's place inside ONE generated UI). Preset/custom (manual) specs leave
+// them undefined, so they drop out of resolveComponentSpec's JSON for manual boxes.
 export type DefaultCompSpec = {
   name: string;
   genInstructions: string; // general directions for the LLM for this type
+  role?: string;           // declarative role of this component within the larger UI
+  connectivity?: Connectivity; // intra-UI functional links to sibling components
   spec: {
     specArr: string[];          // all available customizations
     defaultSpecArrIdx: number[]; // which are on by default

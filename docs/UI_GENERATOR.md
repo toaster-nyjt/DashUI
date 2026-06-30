@@ -74,7 +74,8 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
    - **Single component:** skip the layout route — it **fills** the box (`1..w / 1..h`).
    - **Multiple components:** `fetchValidLayout` → `POST /api/layout
      {task, components, cols=w, rows=h, previousError}` → `Placement[]` (LOCAL coords).
-     `components` is the **full `DefaultCompSpec[]`** (not names). Validated + retried.
+     `components` is the **resolved spec view** (`resolveComponentSpec` output, reused
+     from the style step), same shape generate + style get. Validated + retried.
 4. **PLACE** — `runUIGeneration` *returns* ONE parent group box (placements
    become its `children`, carrying local coords + `autoName`); the effect appends it
    to `elementArr`, replacing the targeted empty box if any. (§8)
@@ -94,13 +95,23 @@ route's base prompt says "follow the protocol to parse client content." The
 protocol is **pure schema** — what to *do* with the spec lives in each route's own
 system prompt.
 
+> **CONVENTION — incoming specs are the FULL RESOLVED SPEC unless otherwise specified.**
+> Every consuming route (generate, layout, style) receives the output of
+> `resolveComponentSpec` — `{ name, genInstructions, role?, connectivity?, include,
+> exclude }` — *not* the raw `DefaultCompSpec` (`specArr`/`defaultSpecArrIdx`). A route
+> that needs a different shape must say so explicitly. This keeps the payload aligned
+> with the `COMPONENT_SPEC_PROTOCOL` each route is handed. (plan/spec are exempt —
+> they *create* specs, they don't consume one.)
+
 **`resolveComponentSpec(compSpec, defaultSpec)`** (`app/utils/helpers.ts`) is the
 single client-side resolver. It replaced the old `buildInstructions` (which built
 a prose sentence). It:
 - finds the box's `DefaultCompSpec` by name,
 - maps `compSpec.specArrIdx` → active feature names (`include`),
 - takes every *other* feature in `specArr` as `exclude`,
-- returns `JSON.stringify({ name, genInstructions, include, exclude })`.
+- returns `JSON.stringify({ name, genInstructions, role, connectivity, include, exclude })`
+  (`role`/`connectivity` are planner-only; `undefined` on manual/preset boxes, so they
+  drop out of the JSON and those boxes emit the original 4-field shape).
 
 That JSON string is what `handleSend` sends as the user message to `/api/generate`.
 
@@ -109,9 +120,12 @@ That JSON string is what `handleSend` sends as the user message to `/api/generat
   sizeNote`; the user message *is* the `resolveComponentSpec` JSON. All three
   `GeneratedBox` call sites pass `fresh = true`, so generation is single-shot from
   the spec each time (no multi-turn history in this path).
-- **layout** — receives the full `DefaultCompSpec[]`; `system =
-  LAYOUT_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL`. Uses `name` + `genInstructions`
-  (to judge each component's role/size) and ignores other fields.
+- **layout** — receives the **resolved spec view** (per the convention above; reuses
+  the `resolvedSpecs` already built for style); `system = LAYOUT_SYSTEM_PROMPT +
+  COMPONENT_SPEC_PROTOCOL`. Uses `name`, `genInstructions`, `role` (centrality/area),
+  `include` (content-density hint), and `connectivity` (place connected pairs adjacent).
+- **style** — receives the **resolved spec view** of every component in the UI at once;
+  `system = STYLE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL` (see §9).
 - **plan** & **spec** are **exempt** — they *create* specs (from a task / a custom
   name); there's no existing component to receive.
 
@@ -141,10 +155,10 @@ you weren't asked for" rule for toggled-off customizations.
 - `app/api/SKILLS.ts` — added shared `COMPONENT_SPEC_PROTOCOL`; `GENERATE_` and
   `LAYOUT_SYSTEM_PROMPT` now point at it.
 - `app/api/generate/route.ts` / `app/api/layout/route.ts` — append the protocol;
-  layout takes full specs.
+  both take the resolved spec view (see the convention in §3).
 - `app/components/GeneratedBox.tsx` — 3 call sites now use `resolveComponentSpec`.
-- `app/components/SpatialGrid.tsx` — `fetchValidLayout` sends `specs` (full), not
-  `specs.map(s => s.name)`.
+- `app/components/SpatialGrid.tsx` — `fetchValidLayout` sends `resolvedSpecs` (the
+  resolved view reused from the style step), not raw `specs` or `specs.map(s => s.name)`.
 
 **Generator feature (earlier work)**
 - `app/api/plan/route.ts` — planner route (task → `DefaultCompSpec[]`).
@@ -603,3 +617,59 @@ it via `setCanvasWidth`). The Taskbar centers/sizes off it (`left: canvasWidth/2
 grid even when the canvas width diverges from the viewport on a tab/pane resize (which
 previously left the fixed, viewport-centered bar misaligned and "flatter"). Falls back
 to viewport `%` before the first measurement.
+
+---
+
+## 11. Roles, connectivity & the resolved-spec convention (latest session)
+
+The planner now codifies each component's **role** in the UI and its **functional
+connectivity** to the other components, and the consuming routes were unified onto a
+single resolved-spec view.
+
+### New spec fields (`app/utils/spec.ts`)
+- `DefaultCompSpec` gained **optional** `role?: string` and `connectivity?: Connectivity`.
+  Both are **planner-only** — preset (`DEFAULT_SPEC`) and custom (`/api/spec`) specs leave
+  them undefined, so they drop out of the resolved JSON for manual boxes.
+- New types: `Connection = { name, description }` (name = exact sibling component name) and
+  `Connectivity = { effectors: Connection[]; targets: Connection[] }`.
+- **Edge direction:** `targets` = OUTGOING (components THIS one drives/affects);
+  `effectors` = INCOMING (components that drive THIS one). An edge A→B is recorded on
+  **both** endpoints (B in `A.targets`, A in `B.effectors`).
+
+### Planner reasoning chain (`PLAN_SYSTEM_PROMPT`) — now 5 steps
+1. functionality map → 2. component mapping → **3. connectivity** (wire targets/effectors;
+mirror both sides; no redundant/overlapping edges; any control a connection needs must be
+in `specArr` AND enabled in `defaultSpecArrIdx`) → **4. quality control** (in-prompt:
+does the set + wiring form ONE coherent UI subsystem? revise ideas or rerun if not) →
+**5. role** (one-sentence declarative role, as reflection). Output JSON gained `role` +
+`connectivity`. QC rides the planner's existing adaptive thinking — **not** a separate call.
+
+### Connectivity name integrity (`validateConnectivity` + `fetchValidPlan`)
+- `validateConnectivity(specs)` (`helpers.ts`): every effector/target `name` must match a
+  real sibling (and never itself); returns the first violation.
+- `fetchValidPlan` (`SpatialGrid`) wraps `/api/plan` in a retry loop (`PLAN_RETRIES = 3`,
+  mirrors `fetchValidLayout`), feeding `previousError` back to the plan route (which now
+  accepts it → `retryNote`). **Load-bearing:** returns `null` (aborts the generation) on
+  exhaustion, since names are the join key for layout adjacency and the future path/wiring
+  route.
+
+### Where role/connectivity flow
+- Added to `resolveComponentSpec`'s output (additively — see §3), so they reach **generate**
+  (the prompt) and, via the resolved view, **layout** and **style** — with **no
+  `GeneratedBox` change** (auto-gen already resolves against the registry at mount).
+- **GENERATE** treats `role`/`connectivity` as primary context shaping the component (build
+  the controls/surfaces that make its links real); actual cross-component wiring is deferred
+  to the future "Path route".
+- **LAYOUT** uses `role` (centrality/area), `connectivity` (place connected pairs adjacent —
+  control beside the display it drives), and `include` (content-density → area).
+
+### Resolved-spec convention + the layout fix
+The **layout route was switched from the raw `DefaultCompSpec[]` to the resolved view**
+(reusing the `resolvedSpecs` already built for style). This fixed a pre-existing mismatch:
+layout's appended `COMPONENT_SPEC_PROTOCOL` described `include`/`exclude`, but layout was
+actually receiving raw `specArr`/`defaultSpecArrIdx`. Now generate, layout, and style all
+consume the same resolved view — codified as the **full-resolved-spec convention** in §3.
+
+### Scope
+1-level grouping only — no recursive / "higher component set" connectivity yet. The
+functional wiring itself (acting on connectivity at runtime) is future work.

@@ -14,10 +14,16 @@ const anthropic = new Anthropic({
 export async function POST(req: Request) {
   // width/height = the available pixel area the UI will occupy. The planner
   // scales component count to it (only splitting when there's room for each piece).
-  const { task, width, height } = await req.json();
+  // previousError = set on a connectivity-validation retry (see fetchValidPlan).
+  const { task, width, height, previousError } = await req.json();
 
   const sizeNote = (width && height)
     ? `\nAvailable area: ${Math.round(width)}px wide by ${Math.round(height)}px tall. Make ALL decisions relative to this space — only create multiple components if each gets enough pixel area to be legible and useful; in a small area, prefer a single focused component.`
+    : "";
+
+  // On a retry, tell the planner exactly which connectivity link was invalid.
+  const retryNote = previousError
+    ? `\n\nYour previous attempt was REJECTED for invalid connectivity: ${previousError}\nFix the wiring so every connection "name" matches another component's "name" exactly, then return the full corrected JSON array.`
     : "";
 
   const msg = await anthropic.messages.create({
@@ -26,7 +32,7 @@ export async function POST(req: Request) {
     thinking: { type: "adaptive" },
     output_config: { effort: "medium" },
     system: PLAN_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: `Task: ${task}${sizeNote}` }],
+    messages: [{ role: "user", content: `Task: ${task}${sizeNote}${retryNote}` }],
   });
 
   // Reasoning stays in `thinking` blocks, so the text block(s) are just the JSON.

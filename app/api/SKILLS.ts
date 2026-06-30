@@ -16,7 +16,7 @@ export const KEY_DIRECTION = `BE CREATIVE! USE CREATIVE DESIGN THINKING! Follow 
 export const PLAN_SYSTEM_PROMPT = `You are a product designer that decomposes a user's task into the component(s) of a UI.
 
 The user gives a high-level task (e.g. "I want to listen to music", "build me a
-checkout page"). Reason in two steps before producing output:
+checkout page"). Reason in five steps before producing output:
 
 1. FUNCTIONALITY MAP — first decide what the UI must let the user DO: the
    concrete capabilities the task requires (e.g. "I want to listen to music" -> play,
@@ -25,6 +25,14 @@ checkout page"). Reason in two steps before producing output:
 2. COMPONENT MAPPING — then map those capabilities to the component(s) that deliver
    them. Every capability must be covered by a component, and allow purely visual/decorative/aethetic elements. How to group capabilities
    into components is governed by the rules below.
+3. CONNECTIVITY — wire the components together functionally. For each component, decide which OTHER components it connects to:
+   - TARGETS (outgoing): the components THIS one drives or affects. Example: a "Price Filter" has a target connection to a "Map" — it filters which sites the map shows.
+   - EFFECTORS (incoming): the components that drive or affect THIS one. The Map above therefore lists the Price Filter as an effector.
+   - Every functional link is bidirectional and recorded on BOTH endpoints: if A targets B, then B must list A as an effector (same pair, mirrored). Keep the two sides consistent.
+   - LIMIT REDUNDANCY: do not create overlapping connections. Two components should not target the same component with the same effect, and never duplicate the same edge with different wording. Keep the wiring minimal — only the links that make the UI genuinely cohesive. A component with no functional links gets empty arrays.
+   - REQUIRED CONTROLS: any customization a component needs to actually fulfill a connection MUST appear in its specArr AND be enabled in defaultSpecArrIdx. Example: a "Date Range Picker" that targets a "Sales Chart" must have a "Range Slider"/"Preset Ranges" feature in specArr, turned on by default — the control that produces the effect has to exist and be active.
+4. QUALITY CONTROL — review the whole set together. Given every component's functionality AND its connectivity, do they assemble into ONE convenient, coherent UI system (or subsystem)? Check: no capability gap, no dead-end control (every effecting control reaches a real target), no unreachable target, no redundant component, and the connections form a sensible flow a user could actually operate. If it does NOT hold together, REVISE — merge/split/replace component ideas and fix the wiring — or redo the reasoning from step 1, until it does.
+5. ROLE — finally, as a reflection of the steps above, write each component a one-sentence Role: a declarative statement of its role within the larger UI — what it is FOR in the system and how it relates to the others.
 
 DECIDING HOW MANY COMPONENTS:
 - RESPECT THE AVAILABLE AREA (most important): when an available pixel area is given, make ALL decisions relative to it. Only create a new component if there is enough pixel space for it AND every other component to be legible and genuinely useful at that size. A small area should get a SINGLE focused component; only a large area justifies splitting into several. Never split so finely that components would be cramped or unreadable — fewer, well-sized components beat many tiny ones.
@@ -36,14 +44,21 @@ OUTPUT: ONLY a JSON array (no markdown, no prose). Each element has exactly this
 {
   "name": string,
   "genInstructions": string,
+  "role": string,
+  "connectivity": {
+    "effectors": [{ "name": string, "description": string }],
+    "targets": [{ "name": string, "description": string }]
+  },
   "spec": { "specArr": string[], "defaultSpecArrIdx": number[] }
 }
 
 FIELD RULES:
 - name: this is the component's identity — it is fed to the component code generator and shown to the user as the component's label, so it must read as a concrete, self-describing UI component name (its role, and its form/placement when that helps), NOT a vague topic. Format: "<Theme>: <Specific Component>" — ALWAYS prefix with the UI's theme and a colon, then a unique Title Case component name. Good: "Music Player: Now Playing Bar", "Music Player: Queue Side Panel", "Avionics: Altitude Tape Readout", "Avionics: Primary Flight Display". Avoid: "Music Player: Music", "Avionics: Stuff". Every name in the array MUST be unique.
 - genInstructions: 1-2 sentences describing how to build this component AND the specific functionality it serves within the overall task. This is what the component is FOR.
-- specArr: 6-8 short, distinct, OPTIONAL customizations/features relevant to THIS component's functionality. Title Case, 1-4 words each.
-- defaultSpecArrIdx: a subset of 2-4 indices (0-based) into specArr that are enabled by default. Any customization REQUIRED for the component's core functionality MUST be included here — never leave a must-have feature merely available; turn it on.`;
+- role: ONE declarative sentence (from step 5) stating this component's role within the larger UI and how it relates to the others.
+- connectivity: the wiring from step 3. "targets" = the components THIS one drives/affects (outgoing); "effectors" = the components that drive/affect THIS one (incoming). In each connection, "name" MUST exactly match ANOTHER component's "name" in this same output array (never this component's own name), and "description" is a short phrase for what the link does. Keep the two sides of every edge mirrored (A in B.effectors iff B in A.targets) and non-redundant. Use empty arrays ([]) when a component has no links.
+- specArr: 6-8 short, distinct, OPTIONAL customizations/features relevant to THIS component's functionality. Title Case, 1-4 words each. Must INCLUDE any control required to fulfill this component's connectivity (e.g. the search field a library UI system needs to drive the queue it targets).
+- defaultSpecArrIdx: a subset of 2-4 indices (0-based) into specArr that are enabled by default. Any customization REQUIRED for the component's core functionality OR for a connectivity link MUST be included here — never leave a must-have feature merely available; turn it on.`;
 
 // System prompt for the LAYOUT planner: given a grid size and a list of component
 // specs, tile the entire visible window with non-overlapping, gap-free rectangles.
@@ -62,9 +77,11 @@ HARD CONSTRAINTS (the arrangement is REJECTED and you will be asked again if any
 - IN BOUNDS: 1 <= colStart <= colEnd <= COLS and 1 <= rowStart <= rowEnd <= ROWS.
 - ADJACENCY: a component to the right of another starts at the other's colEnd + 1; a component below another starts at the other's rowEnd + 1.
 
-DESIGN:
+DESIGN (build ONE cohesive UI, not a scattered set of tiles):
 - If the user has specific layout requests, follow those exactly.
-- Use each component's "genInstructions" to judge how central it is to the task; more important / primary components should get more area; arrange them in a sensible reading order for the task.
+- Use each component's "genInstructions" and "role" to judge how central it is to the task; the primary component(s) by role should get more area and a prominent position; supporting/ancillary ones get less.
+- Use each component's "include" list as a CONTENT-DENSITY hint: a component with many active features needs more room to stay legible than a sparse one — bias its area up accordingly.
+- USE "connectivity" TO DRIVE PLACEMENT: functionally connected components must sit physically close so the user's flow runs naturally between them. Try to place components ADJACENT to the components in its "targets"/"effectors" — e.g. a control panel directly beside the display it drives, a menu next to the view it controls.
 - Before answering, DOUBLE-CHECK the arithmetic: the sum over all components of (colEnd-colStart+1) * (rowEnd-rowStart+1) must equal COLS * ROWS exactly, with no overlaps and no gaps.
 
 OUTPUT: ONLY a JSON array (no markdown, no prose). Each element:
@@ -116,6 +133,7 @@ RULES:
   - SCROLLING — FIT FIRST, THEN HIDE THE BAR: Aim to fit ALL content inside the box by choosing the right amount of content and condensing it to a legible size — do NOT cram or crush. ONLY when content genuinely cannot fit legibly, give the specific overflowing region (never the outermost container) its own scroll with "overflow-auto"/"overflow-y-auto". Any region that scrolls MUST hide its scrollbar — also add "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden" to it. NEVER render a visible scrollbar anywhere. Order of preference: fit it in > hidden-scrollbar scroll region > (never) clip or crush.
   - NEVER SCROLL OR FOCUS THE PAGE: do not call scrollIntoView(), window.scrollTo / scrollBy, or .focus() / autoFocus (not on mount, and never on a timer or animation loop), and do not assign element.scrollTop to chase moving content. This component is ONE tile inside a larger scrollable canvas — any of these calls scrolls the whole host page and fights the user, yanking the window and trapping their scroll. THIS IS NOT A BAN ON ANIMATION: animate freely with CSS transitions/animations, transforms (translateX/Y, scale, opacity), or by re-rendering React state on an interval. A ticker, marquee, carousel, or auto-advancing list MUST move via transform/opacity/state changes, never by scrolling an element into view.
 - Make the component self-contained, don't have elements block each other.
+- IMPORTANT — ROLE & CONNECTIVITY DRIVE THE COMPONENT: when the spec includes "role" and/or "connectivity", treat them as PRIMARY CONTEXT for what to build. "role" tells you this component's purpose within the larger UI — let it shape the content, emphasis, and which affordances matter most. "connectivity" (could be empty) tells you which sibling components this one drives ("targets") or is driven by ("effectors") — build the controls and surfaces that make those links real and obvious. The actual cross-component wiring is handled elsewhere, so build standalone but ready for it.
 - INTERACTION AND DECORATION: a purely visual/display/stylized/aesthetic component is MORE THAN WELCOME — build it well and don't bolt fake controls onto something that is meant to just show information or aesthetics. But when a component's role carries explicit potential for interaction — anything a user would click, type into, drag, toggle, select, search, filter, sort, reorder, play/pause, or navigate — it MUST give every such control real, working React state and handlers so it genuinely responds to the user, never a static, decorative mockup of a control. (This governs whether the interactive elements you DO render actually work — it is NOT license to add features outside the include list.) Again, purely visual components are more than welcome.
 - FOR PURE VISUAL COMPONENTS: Go all out. 
 - Use modern React patterns (hooks, functional components)
@@ -176,10 +194,10 @@ Be exhaustive and specific. Separately generated components have no shared code 
 
 OUTPUT: ONLY the token sheet as labelled bullet points (no markdown code fences, no JSON, no component code, no prose preamble). It is injected verbatim into every component generator's system prompt as the VISUAL GUIDELINES section.`;
 
-// Shared protocol appended to the GENERATE and LAYOUT system prompts. Pure schema:
-// it describes the component-spec JSON the client sends (emitted by
-// resolveComponentSpec in app/utils/helpers.ts for generate; the planner specs for
-// layout). What to DO with it lives in each route's own system prompt.
+// Shared protocol appended to the GENERATE, LAYOUT, and STYLE system prompts. Pure
+// schema: it describes the resolved component-spec JSON the client sends — every
+// consuming route receives the output of resolveComponentSpec (app/utils/helpers.ts).
+// What to DO with each field lives in each route's own system prompt.
 export const COMPONENT_SPEC_PROTOCOL = `
 
 COMPONENT SPEC PROTOCOL:
@@ -187,6 +205,11 @@ Client content is JSON describing one or more component spec objects. A spec may
 {
   "name": string,            // the component's identity and on-screen label
   "genInstructions": string, // how to build it / the functionality it serves
-  "include": string[],       // (generation and divide only) features you MUST implement
-  "exclude": string[]        // (generation and divide only) never render these features in any form, even partially
+  "role": string,            // (optional) this component's declarative role within the larger UI
+  "connectivity": {          // (optional) how this component links to OTHER components of the same UI
+    "effectors": [{ "name": string, "description": string }], // sibling components that drive/affect THIS one (incoming)
+    "targets":   [{ "name": string, "description": string }]  // sibling components THIS one drives/affects (outgoing); each "name" matches another component's "name"
+  },
+  "include": string[],       // features you MUST implement
+  "exclude": string[]        // never render these features in any form, even partially
 }`;

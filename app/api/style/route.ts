@@ -14,8 +14,9 @@ const anthropic = new Anthropic({
 });
 
 export async function POST(req: Request) {
-  // components = the UI's specs already resolved to the { name, genInstructions,
-  // include, exclude } protocol shape (same view the generator sees per component).
+  // components = the UI's specs already resolved to the full protocol shape
+  // ({ name, genInstructions, role?, connectivity?, include, exclude }) — the same
+  // resolved view the generator and layout routes see per component.
   const { task, components } = await req.json();
 
   const userContent =

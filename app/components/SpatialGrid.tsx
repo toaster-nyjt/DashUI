@@ -3,10 +3,12 @@ import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
 import { XY, defaultXY, GeneratedBoxProps, DefaultCompSpec, Placement, numGridBlocksWide, numVHTall } from '../utils/spec';
 import { DEFAULT_SPEC } from '../utils/defaultSpec';
-import { validateLayout, logDefaultSpec, resolveComponentSpec } from '../utils/helpers';
+import { validateLayout, validateConnectivity, logDefaultSpec, resolveComponentSpec } from '../utils/helpers';
 
 // How many times to re-ask the layout route for a valid (gap-free) tiling
 const LAYOUT_RETRIES = 3;
+// How many times to re-ask the plan route for valid intra-UI connectivity names
+const PLAN_RETRIES = 3;
 
 export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning, setHasEmptyTarget, canvasWidth, setCanvasWidth }
   : { interactMode: boolean; taskRequest: { prompt: string; id: number } | null; setIsDesigning: React.Dispatch<React.SetStateAction<boolean>>; setHasEmptyTarget: React.Dispatch<React.SetStateAction<boolean>>;
@@ -60,16 +62,51 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
 
   /* UI GENERATOR (task prompt -> plan -> layout -> auto boxes) */
 
+  // Calls the plan route and re-asks (feeding back the validation error) until the
+  // connectivity wiring references only real sibling names. Connectivity is the join
+  // key for layout adjacency and the future path/wiring route, so it's load-bearing:
+  // if it can't be made valid within the retry budget, abort (return null) rather
+  // than build a UI on broken wiring — the caller treats null as "no boxes".
+  const fetchValidPlan = async (task: string, width: number, height: number): Promise<DefaultCompSpec[] | null> => {
+    let previousError: string | undefined;
+
+    for (let attempt = 1; attempt <= PLAN_RETRIES; attempt++) {
+      const res = await fetch('/api/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task, width, height, previousError }),
+      });
+      if (!res.ok) throw new Error(`plan request failed (${res.status})`);
+      const specs = await res.json() as DefaultCompSpec[];
+
+      if (!specs.length) return specs; // empty plan handled by the caller
+
+      const { ok, error } = validateConnectivity(specs);
+      if (ok) return specs;
+
+      previousError = error;
+      console.error(`Plan attempt ${attempt}/${PLAN_RETRIES} invalid connectivity: ${error}`);
+    }
+
+    console.error(`Plan connectivity failed after ${PLAN_RETRIES} attempts. Last error: ${previousError}`);
+    return null;
+  };
+
   // Calls the layout route and re-asks (feeding back the validation error) until
   // it returns a tiling that fully covers the window with no gaps/overlaps.
-  const fetchValidLayout = async (task: string, components: DefaultCompSpec[], cols: number, rows: number): Promise<Placement[] | null> => {
+  // `components` is the RESOLVED protocol view (same shape STYLE gets and the shape
+  // COMPONENT_SPEC_PROTOCOL documents): name/genInstructions/role/connectivity +
+  // the active include/exclude feature lists. include doubles as a content-density
+  // signal for sizing; role/connectivity drive centrality + adjacency.
+  const fetchValidLayout = async (task: string, components: Record<string, unknown>[], cols: number, rows: number): Promise<Placement[] | null> => {
     let previousError: string | undefined;
     for (let attempt = 1; attempt <= LAYOUT_RETRIES; attempt++) {
       try {
         const res = await fetch('/api/layout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          // Send the FULL specs so layout has complete context
+          // Resolved protocol view (matches the COMPONENT_SPEC_PROTOCOL appended to
+          // the layout system prompt) so layout parses exactly the fields it's told to.
           body: JSON.stringify({ task, components, cols, rows, previousError }),
         });
         if (!res.ok) throw new Error(`request failed (${res.status})`);
@@ -109,14 +146,11 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       const heightPx = Math.round(h * gridBlockSize);
 
       // 1. PLAN: task + available pixel area -> functionality and space aware. The
-      //    planner only splits into multiple components if the area justifies it.
-      const planRes = await fetch('/api/plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, width: widthPx, height: heightPx }),
-      });
-      if (!planRes.ok) throw new Error(`plan request failed (${planRes.status})`);
-      const specs = await planRes.json() as DefaultCompSpec[];
+      //    planner only splits into multiple components if the area justifies it, and
+      //    wires the components' roles + intra-UI connectivity. fetchValidPlan retries
+      //    until the connectivity names resolve to real siblings (or aborts).
+      const specs = await fetchValidPlan(task, widthPx, heightPx);
+      if (!specs) return null; // exhausted connectivity retries; already logged
       if (!specs.length) throw new Error('planner returned no components');
 
       // 1b. STYLE: derive ONE coherent visual style for this whole UI from its
@@ -146,8 +180,10 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       const placements: Placement[] | null = specs.length === 1
         // Single component -> fill the whole box (nothing to tile/validate).
         ? [{ name: specs[0].name, colStart: 1, colEnd: w, rowStart: 1, rowEnd: h }]
-        // Multiple -> ask the layout route to tile the box interior (w x h).
-        : await fetchValidLayout(task, specs, w, h);
+        // Multiple -> ask the layout route to tile the box interior (w x h). Sent the
+        // RESOLVED specs (reused from the style step above) so layout sees include/role/
+        // connectivity exactly as the protocol describes.
+        : await fetchValidLayout(task, resolvedSpecs, w, h);
       if (!placements) return null; // exhausted retries; already logged
 
       // 4. Wrap the placements as CHILDREN of ONE parent (group) box. Each child
