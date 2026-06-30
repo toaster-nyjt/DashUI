@@ -29,9 +29,11 @@ Both flows converge on the same endpoint: a box's spec is resolved to JSON by
 - Route handlers return `Response.json(...)`. Anthropic SDK. Models split by
   route: **plan** + **layout** + **style** run `claude-opus-4-8` (plan also sets
   adaptive thinking + `effort: "medium"`); **spec** + **generate** run
-  `claude-sonnet-4-6`. **generate streams**; plan/spec/layout/style are
-  non-streaming. API key env var: `CLAUDE_API_KEY`. All system prompts live in
-  `app/api/SKILLS.ts`.
+  `claude-sonnet-4-6` (generate sets `effort: "max"`, no thinking). **generate
+  streams**; plan/spec/layout/style are non-streaming. API key env var:
+  `CLAUDE_API_KEY`. All system prompts live in `app/api/SKILLS.ts`.
+- **Comment style.** Keep code comments only as long as necessary; put rationale,
+  background, and design context in this doc, not in long inline comments.
 - **Component-spec contract (§3).** Every route that *consumes* a component
   receives the whole spec as JSON; a shared `COMPONENT_SPEC_PROTOCOL` string tells
   the model how to parse it. Don't pass bare names or hand-built sentences.
@@ -353,6 +355,19 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
 ---
 
 ## 7. Related recent tweaks (not the generator, but touched)
+
+- **Code extraction tolerates a reasoning preamble (`extractComponentCode`).** With
+  thinking OFF, Opus 4.8 can write its reasoning into the visible response and wrap
+  the real code in a ```` ```tsx ```` fence, despite the "output ONLY code" rule. The
+  old `stripCodeFences` only stripped a fence at position 0, so the leading prose
+  reached Sandpack as code → `SyntaxError`. `extractComponentCode` (helpers.ts, used
+  by `useGetCode`) takes the FIRST fenced block's contents bounded by its closing
+  fence (so preamble, trailing prose, AND later blocks all drop; no closing fence yet
+  → take to end, streaming-safe), else slices from the first `import`/`export`.
+  `stripCodeFences` stays for the JSON routes (plan/
+  layout/style/spec). NOTE: the leak still wastes output tokens against `max_tokens` —
+  if generations truncate, that's the cause; strengthen the no-preamble instruction or
+  run the generate route with thinking on / on Sonnet 4.6 (which doesn't leak).
 
 - **Generate prompt** (`GENERATE_SYSTEM_PROMPT` in `app/api/SKILLS.ts`) sizing
   rules: `min-w-0` (horizontal shrink), tables `table-fixed w-full`, "NO SHRINK

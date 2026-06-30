@@ -9,6 +9,24 @@ export function stripCodeFences(code: string): string {
   return stripped;
 }
 
+// Pull the component code out of a generate-route response that may carry a
+// reasoning preamble and/or a markdown fence anywhere (thinking-off models can
+// prepend prose despite the "code only" rule). See UI_GENERATOR.md §7.
+export function extractComponentCode(raw: string): string {
+  // Code inside a fence: take the FIRST fenced block's contents, bounded by its
+  // closing fence — so a preamble, trailing prose, AND any later blocks all drop.
+  // Closing fence not streamed in yet -> take to end (streaming-safe).
+  const open = raw.match(/```[a-z]*\n/i);
+  if (open) {
+    const after = raw.slice(open.index! + open[0].length);
+    const close = after.search(/\n```/);
+    return close === -1 ? after : after.slice(0, close);
+  }
+  // No fence: drop any leading prose by starting at the first import/export.
+  const start = raw.search(/^(import |export )/m);
+  return start > 0 ? raw.slice(start) : stripCodeFences(raw);
+}
+
 // Layer between spec and the routes, essentially just does the deterministic array caluculations instead of passing it to the LLM
 // Seperates the spec field into explicit include and exclude lists
 export function resolveComponentSpec(compSpec: CompSpec, defaultSpec: DefaultCompSpec[]): string {

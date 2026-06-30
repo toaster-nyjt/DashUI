@@ -2,7 +2,7 @@
 // creative brief for the art director) and the GENERATE prompt (as key directive
 // for the component generator). Edit this one string to shift the aesthetic target
 // for all generated UIs.
-export const KEY_DIRECTION = `BE CREATIVE! USE CREATIVE DESIGN THINKING! Follow design best practices, but design as if you are the ten time winner of the iF DESIGN AWARD and the Red Dot Design Award, and you are making a digital artpiece. LOTS OF ANIMATIONS! Be BOLD, be FLASHY, be UNIQUE, and above all else be INTERESTING!!!`;
+export const KEY_DIRECTION = `BE CREATIVE! USE CREATIVE DESIGN THINKING! Follow design best practices, but design as if you are the ten time winner of the iF DESIGN AWARD and the Red Dot Design Award, and you are making a digital artpiece. LOTS OF ANIMATIONS! CRANK WHATEVER STYLE IN MIND TO 11! Be BOLD, be FLASHY, be UNIQUE, and above all else be INTERESTING!!!`;
 
 // Consolidated system prompts for the multi-stage UI generation pipelines:
 //   (Task-based prompt) -> plan -> layout -> generate (decompose task into components based on functionality and create specs, tile them on the grid, then emit component)
@@ -21,24 +21,25 @@ checkout page"). Reason in five steps before producing output:
 1. FUNCTIONALITY MAP — first decide what the UI must let the user DO: the
    concrete capabilities the task requires (e.g. "I want to listen to music" -> play,
    pause and seek the current track, visualize the current track and info, browse and reorder the queue, search the library, control volume).
-   Be thorough so no essential capability is missing.
+   Be thorough so not a single possible capability is missing.
 2. COMPONENT MAPPING — then map those capabilities to the component(s) that deliver
    them. Every capability must be covered by a component, and allow purely visual/decorative/aethetic elements. How to group capabilities
    into components is governed by the rules below.
 3. CONNECTIVITY — wire the components together functionally. For each component, decide which OTHER components it connects to:
    - TARGETS (outgoing): the components THIS one drives or affects. Example: a "Price Filter" has a target connection to a "Map" — it filters which sites the map shows.
    - EFFECTORS (incoming): the components that drive or affect THIS one. The Map above therefore lists the Price Filter as an effector.
+   - ONLY REAL CONNECTIONS (most important): add a connection ONLY when there is a genuine, concrete functional relationship between the two components — one component actually drives, updates, filters, selects, or otherwise changes the state or content of the other. This connectivity data will be consumed by heavy downstream computation that wires the components together for real, so every edge must be a true, correct connection — a wrong or imaginary one corrupts that computation. Do NOT connect components just because they share a theme, sit near each other, or "feel related." Wire up every connection that GENUINELY MAKES SENSE TO EXIST.
    - Every functional link is bidirectional and recorded on BOTH endpoints: if A targets B, then B must list A as an effector (same pair, mirrored). Keep the two sides consistent.
    - LIMIT REDUNDANCY: do not create overlapping connections. Two components should not target the same component with the same effect, and never duplicate the same edge with different wording. Keep the wiring minimal — only the links that make the UI genuinely cohesive. A component with no functional links gets empty arrays.
+   - DESCRIBE EACH CONNECTION FULLY: for every connection you DO add, write a description that covers all the ground a downstream engineer would need to actually build the wiring — be as specific as possible. State concretely WHAT data, event, or state flows across the edge, in WHICH direction, what triggers it, and what the receiving component does in response. A vague phrase like "filters the map" is not enough; "when the user adjusts the min/max price sliders, emit the selected price range and the map re-queries and re-renders only the listings whose price falls within it" is the target level of detail. Leave no ambiguity about the contract between the two components.
    - REQUIRED CONTROLS: any customization a component needs to actually fulfill a connection MUST appear in its specArr AND be enabled in defaultSpecArrIdx. Example: a "Date Range Picker" that targets a "Sales Chart" must have a "Range Slider"/"Preset Ranges" feature in specArr, turned on by default — the control that produces the effect has to exist and be active.
 4. QUALITY CONTROL — review the whole set together. Given every component's functionality AND its connectivity, do they assemble into ONE convenient, coherent UI system (or subsystem)? Check: no capability gap, no dead-end control (every effecting control reaches a real target), no unreachable target, no redundant component, and the connections form a sensible flow a user could actually operate. If it does NOT hold together, REVISE — merge/split/replace component ideas and fix the wiring — or redo the reasoning from step 1, until it does.
 5. ROLE — finally, as a reflection of the steps above, write each component a one-sentence Role: a declarative statement of its role within the larger UI — what it is FOR in the system and how it relates to the others.
 
 DECIDING HOW MANY COMPONENTS:
-- RESPECT THE AVAILABLE AREA (most important): when an available pixel area is given, make ALL decisions relative to it. Only create a new component if there is enough pixel space for it AND every other component to be legible and genuinely useful at that size. A small area should get a SINGLE focused component; only a large area justifies splitting into several. Never split so finely that components would be cramped or unreadable — fewer, well-sized components beat many tiny ones.
+- RESPECT THE AVAILABLE AREA (most important): when an available pixel area is given, make ALL decisions relative to it. Only create a new component if there is enough pixel space for it AND every other component to be legible and genuinely useful at that size. A small area should get a SINGLE focused component; only a larger area justifies splitting into several. Never split so finely that components would be cramped or unreadable.
 - Prefer SPLITTING into multiple components when the task has distinct sub-areas a user would want to arrange and customize independently (e.g. "avionics dashboard" -> separate altitude readout, attitude indicator, fuel table, nav map). Each component can be individually customized later, so splitting buys flexibility and targeting.
-- Keep it a SINGLE component when the parts are tightly coupled or trivial (e.g. "a login form" -> one form). Do not over-split into pieces too small to stand on their own.
-- Typical range: 1-6 components. Use judgement based on the task's complexity AND the available area.
+- Use judgement based on the task's nature, complexity, AND the available area.
 
 OUTPUT: ONLY a JSON array (no markdown, no prose). Each element has exactly this shape:
 {
@@ -56,7 +57,7 @@ FIELD RULES:
 - name: this is the component's identity — it is fed to the component code generator and shown to the user as the component's label, so it must read as a concrete, self-describing UI component name (its role, and its form/placement when that helps), NOT a vague topic. Format: "<Theme>: <Specific Component>" — ALWAYS prefix with the UI's theme and a colon, then a unique Title Case component name. Good: "Music Player: Now Playing Bar", "Music Player: Queue Side Panel", "Avionics: Altitude Tape Readout", "Avionics: Primary Flight Display". Avoid: "Music Player: Music", "Avionics: Stuff". Every name in the array MUST be unique.
 - genInstructions: 1-2 sentences describing how to build this component AND the specific functionality it serves within the overall task. This is what the component is FOR.
 - role: ONE declarative sentence (from step 5) stating this component's role within the larger UI and how it relates to the others.
-- connectivity: the wiring from step 3. "targets" = the components THIS one drives/affects (outgoing); "effectors" = the components that drive/affect THIS one (incoming). In each connection, "name" MUST exactly match ANOTHER component's "name" in this same output array (never this component's own name), and "description" is a short phrase for what the link does. Keep the two sides of every edge mirrored (A in B.effectors iff B in A.targets) and non-redundant. Use empty arrays ([]) when a component has no links.
+- connectivity: the wiring from step 3. "targets" = the components THIS one drives/affects (outgoing); "effectors" = the components that drive/affect THIS one (incoming). Include an edge only when a real functional connection genuinely exists, and give its "description" the full, specific detail step 3 requires. In each connection, "name" MUST exactly match ANOTHER component's "name" in this same output array (never this component's own name). Keep the two sides of every edge mirrored (A in B.effectors iff B in A.targets) and non-redundant. Use empty arrays ([]) when a component has no links.
 - specArr: 6-8 short, distinct, OPTIONAL customizations/features relevant to THIS component's functionality. Title Case, 1-4 words each. Must INCLUDE any control required to fulfill this component's connectivity (e.g. the search field a library UI system needs to drive the queue it targets).
 - defaultSpecArrIdx: a subset of 2-4 indices (0-based) into specArr that are enabled by default. Any customization REQUIRED for the component's core functionality OR for a connectivity link MUST be included here — never leave a must-have feature merely available; turn it on.`;
 
@@ -84,7 +85,7 @@ DESIGN (build ONE cohesive UI, not a scattered set of tiles):
 - USE "connectivity" TO DRIVE PLACEMENT: functionally connected components must sit physically close so the user's flow runs naturally between them. Try to place components ADJACENT to the components in its "targets"/"effectors" — e.g. a control panel directly beside the display it drives, a menu next to the view it controls.
 - Before answering, DOUBLE-CHECK the arithmetic: the sum over all components of (colEnd-colStart+1) * (rowEnd-rowStart+1) must equal COLS * ROWS exactly, with no overlaps and no gaps.
 
-OUTPUT: ONLY a JSON array (no markdown, no prose). Each element:
+OUTPUT: ONLY a JSON array (NO MARKDOWN, NO PROSE). Each element:
 { "name": string, "colStart": number, "colEnd": number, "rowStart": number, "rowEnd": number }
 Use each component's "name" exactly once.`;
 
@@ -143,7 +144,7 @@ RULES:
 - IMPORTANT: Use hooks directly (useState, useEffect, etc.) - do NOT use React.useState or React.useEffect syntax
 
 <important>
-DESIGN: Follow VISUAL GUIDELINES section for specific low-level styling protocol. However, for KEY DIRECTION, YOU MUST GENERATE THE COMPONENT EXACTLY WITH RESPECT TO THE FOLLOWING HIGH LEVEL DIRECTIVE: ${KEY_DIRECTION} THIS IS THE SINGLE MOST IMPORTANT RULE.
+DESIGN: Follow VISUAL GUIDELINES section for specific low-level styling protocol. However, for KEY DIRECTION, YOU MUST GENERATE THE COMPONENT EXACTLY WITH RESPECT TO THE FOLLOWING HIGH LEVEL DIRECTIVE: ${KEY_DIRECTION} THIS IS THE SINGLE MOST IMPORTANT RULE THAT DEFINES THE COMPONENT.
 </important>
 
 Example output format:

@@ -53,6 +53,8 @@ export async function POST(req: Request) {
   const stream = await anthropic.messages.stream({
     model: "claude-sonnet-4-6",
     max_tokens: 16000,
+    thinking: { type: "disabled" },
+    output_config: { effort: "max" }, 
     system: GENERATE_QA_DIRECTIVE + "\n\n" + GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL + styleBlock + sizeNote, // QA/max-perf preamble + main instructions + spec-JSON protocol + per-UI (or fallback) style + per-box size context
     messages, // Shorthand for messages: messages
   });

@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useState } from "react";
 import { Message, XY } from "./spec";
-import { stripCodeFences } from "./helpers";
+import { extractComponentCode } from "./helpers";
 
 // API ROUTE CALLER, initializes state vars and the cached function that gets LLM
 // code. Lives in its own client module so the server-safe utils in helpers.ts can
@@ -66,7 +66,7 @@ export function useGetCode() {
           if (done) break;
           const chunk = decoder.decode(value, { stream: true });
           fullCode += chunk;
-          setGeneratedCode(stripCodeFences(fullCode)); // Connects LLM output
+          setGeneratedCode(extractComponentCode(fullCode)); // Connects LLM output
         }
       }
 
