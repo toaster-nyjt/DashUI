@@ -40,7 +40,8 @@ export async function POST(req: Request) {
     The component as a whole MUST fit the box — nothing spills past its edges and it NEVER scrolls the host page. Fill the full width AND the full height (lay the body out as a flex column whose main region is "flex-1").
     When there is more content than comfortably fits in ${Math.round(boxSize.y)}px of height, FIRST try to fit it by condensing to a still-legible size: tighten spacing/gaps, shrink text and cards, reduce per-item padding, or show fewer items — but never crush past legibility.
     Condense ONLY the content/body region: any panel header/title bar and footer/status strip MUST keep the fixed height, padding, and type treatment from VISUAL GUIDELINES (regardless of this box's size) so this component's chrome lines up with its siblings — shrink the body, never the chrome.
-    Only if a list or feed STILL has more items than fit legibly, give that region its own internal scroll ("overflow-y-auto") with its scrollbar HIDDEN ("[scrollbar-width:none] [&::-webkit-scrollbar]:hidden") rather than crushing rows until text collides. Never render a visible scrollbar, never clip text mid-glyph at an edge, and keep every row's stacked lines from overlapping.`
+    Only if a list or feed STILL has more items than fit legibly, give that region its own internal scroll ("overflow-y-auto") with its scrollbar HIDDEN ("[scrollbar-width:none] [&::-webkit-scrollbar]:hidden") rather than crushing rows until text collides. Never render a visible scrollbar, never clip text mid-glyph at an edge, and keep every row's stacked lines from overlapping.
+    Generate ALL PIECES, even non-traditional ones (ie DJ discs, scrubbable timelines, elastic node graphs) WITHIN THESE BOUNDS, and if not possible: NEVER CLIP CONTENT WITHOUT ALSO ALLOWING SCROLL`
     : "";
 
   // History is persistent -> Supports multi-turn interactions
