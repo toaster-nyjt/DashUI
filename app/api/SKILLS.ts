@@ -2,7 +2,7 @@
 // creative brief for the art director) and the GENERATE prompt (as key directive
 // for the component generator). Edit this one string to shift the aesthetic target
 // for all generated UIs.
-export const KEY_DIRECTION = `BE CREATIVE! USE CREATIVE DESIGN THINKING! Follow design best practices, but design as if you are the ten time winner of the iF DESIGN AWARD and the Red Dot Design Award, and you are making a digital artpiece. LOTS OF ANIMATIONS! CRANK WHATEVER STYLE IN MIND TO 11! Be BOLD, be FLASHY, be UNIQUE, and above all else be INTERESTING!!!`;
+export const KEY_DIRECTION = `BE CREATIVE! USE CREATIVE DESIGN THINKING! Follow design best practices, but design as if you are the ten time winner of the iF DESIGN AWARD and the Red Dot Design Award. LOTS OF ANIMATIONS! CRANK WHATEVER STYLE IN MIND TO 11! Be BOLD, be FLASHY, be UNIQUE, and above all else be INTERESTING!!!`;
 
 // Consolidated system prompts for the multi-stage UI generation pipelines:
 //   (Task-based prompt) -> plan -> layout -> generate (decompose task into components based on functionality and create specs, tile them on the grid, then emit component)
@@ -181,6 +181,7 @@ MOTION & FEEDBACK (CSS only, no animation libraries):
 export const STYLE_SYSTEM_PROMPT = `You are the visual systems designer for ONE multi-component UI. You are given the task and the full set of components that make it up (client content — follow the COMPONENT SPEC PROTOCOL below to parse it). Produce a SINGLE shared low-level styling protocol that every one of those components must follow exactly, so independently generated boxes look like they belong to the same designed product.
 
 KEY DIRECTION (mandatory creative brief — this governs the whole output): ${KEY_DIRECTION}
+ADDITIONAL DIRECTION: NO WHITE BORDERS, AND DIVERSIFY COLOR SCHEME (each time the model generates neon blue/pink)
 
 You are producing a DESIGN TOKEN SHEET, not a mood board. Every rule must be a concrete Tailwind utility class or precise instruction a code generator can apply directly — no vague adjectives. Cover ALL of the following:
 - Background layers: exact Tailwind classes for the outermost container, card/panel surfaces, inset/recessed surfaces.
@@ -188,7 +189,7 @@ You are producing a DESIGN TOKEN SHEET, not a mood board. Every rule must be a c
 - Color palette: exact Tailwind text-* and bg-* tokens for each tier (primary text, secondary text, muted/disabled text, primary accent fill, accent text/border, semantic success/warning/danger).
 - Typography: font-size, font-weight, letter-spacing, line-height classes for headings, body, labels, and captions.
 - Spacing: gap-*, p-*, px-*/py-* values for inter-component gap, card padding, compact item padding.
-- Structural chrome (FIXED across every component — never sized per-component): the exact height + padding for a panel header/title bar (e.g. "h-9 px-3 flex items-center shrink-0"), the type treatment for the panel title within it (e.g. "text-[11px] font-semibold tracking-widest uppercase text-..."), and the height + padding for a footer/status strip (e.g. "h-7 px-3 shrink-0"). These dimensions are CONSTANT regardless of how large or small a component's box is, so every panel's header and footer line up with its siblings; only the body region between them flexes.
+- Structural chrome (FIXED dimensions, used ONLY by the components that have chrome): the exact height + padding for a panel header/title bar (e.g. "h-9 px-3 flex items-center shrink-0"), the type treatment for the panel title within it (e.g. "text-[11px] font-semibold tracking-widest uppercase text-..."), and the height + padding for a footer/status strip (e.g. "h-7 px-3 shrink-0"). These are shared token definitions, NOT a requirement that every component carry a header or footer. WHEN a component does include one, it uses these exact dimensions (constant regardless of box size) so the panels that have chrome line up with their siblings; only the body region flexes.
 - Elevation & shadow: shadow-* class (or "none") for floating elements vs. flat surfaces.
 - Motion & feedback: exact transition-* / duration-* / ease-* classes; hover: variants for buttons, rows, and interactive chips.
 Be exhaustive and specific. Separately generated components have no shared code — this spec is the ONLY thing that makes them consistent.

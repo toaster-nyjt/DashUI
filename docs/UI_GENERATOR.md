@@ -26,12 +26,19 @@ Both flows converge on the same endpoint: a box's spec is resolved to JSON by
 ### Codebase gotchas (read first)
 - **Modified Next.js.** `AGENTS.md`: "This is NOT the Next.js you know" — read
   `node_modules/next/dist/docs/` before writing Next-specific code. App Router.
-- Route handlers return `Response.json(...)`. Anthropic SDK. Models split by
-  route: **plan** + **layout** + **style** run `claude-opus-4-8` (plan also sets
-  adaptive thinking + `effort: "medium"`); **spec** + **generate** run
-  `claude-sonnet-4-6` (generate sets `effort: "max"`, no thinking). **generate
-  streams**; plan/spec/layout/style are non-streaming. API key env var:
-  `CLAUDE_API_KEY`. All system prompts live in `app/api/SKILLS.ts`.
+- Route handlers return `Response.json(...)`. Anthropic SDK. **Current model
+  arrangement:** **plan**, **layout**, **style**, and **generate** all run
+  `claude-opus-4-8`; only **spec** runs `claude-sonnet-4-6`. Per-route knobs: plan
+  sets `thinking: adaptive` + `effort: "medium"`; generate sets `thinking: disabled`
+  + `effort: "max"`; layout/style/spec pass neither (default). `max_tokens` is 16000
+  everywhere except **style** (4000). **generate streams**; plan/spec/layout/style
+  are non-streaming. API key env var: `CLAUDE_API_KEY`. All system prompts live in
+  `app/api/SKILLS.ts`.
+  - **NOTE — generate flipped Sonnet 4.6 → Opus 4.8.** Generation previously ran
+    `claude-sonnet-4-6` (an earlier Opus experiment had been reverted); it now runs
+    `claude-opus-4-8` with `thinking: disabled` + `effort: "max"`. This makes the
+    reasoning-preamble leak that `extractComponentCode` guards against a LIVE concern,
+    not hypothetical (see §7).
 - **Comment style.** Keep code comments only as long as necessary; put rationale,
   background, and design context in this doc, not in long inline comments.
 - **Component-spec contract (§3).** Every route that *consumes* a component
@@ -358,7 +365,9 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
 
 - **Code extraction tolerates a reasoning preamble (`extractComponentCode`).** With
   thinking OFF, Opus 4.8 can write its reasoning into the visible response and wrap
-  the real code in a ```` ```tsx ```` fence, despite the "output ONLY code" rule. The
+  the real code in a ```` ```tsx ```` fence, despite the "output ONLY code" rule. This
+  is the generate route's LIVE config (`claude-opus-4-8`, `thinking: disabled`, see
+  §1), so the leak is active, not hypothetical. The
   old `stripCodeFences` only stripped a fence at position 0, so the leading prose
   reached Sandpack as code → `SyntaxError`. `extractComponentCode` (helpers.ts, used
   by `useGetCode`) takes the FIRST fenced block's contents bounded by its closing
@@ -366,8 +375,8 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
   → take to end, streaming-safe), else slices from the first `import`/`export`.
   `stripCodeFences` stays for the JSON routes (plan/
   layout/style/spec). NOTE: the leak still wastes output tokens against `max_tokens` —
-  if generations truncate, that's the cause; strengthen the no-preamble instruction or
-  run the generate route with thinking on / on Sonnet 4.6 (which doesn't leak).
+  if generations truncate, that's the cause; strengthen the no-preamble instruction, or
+  switch the generate route to thinking-on / back to Sonnet 4.6 (which doesn't leak).
 
 - **Generate prompt** (`GENERATE_SYSTEM_PROMPT` in `app/api/SKILLS.ts`) sizing
   rules: `min-w-0` (horizontal shrink), tables `table-fixed w-full`, "NO SHRINK
@@ -555,14 +564,24 @@ visual identity that every one of its components is generated against.
 - Model: `claude-opus-4-8` (design-stage, like plan/layout). Non-streaming.
 - `STYLE_SYSTEM_PROMPT` opens with the shared `KEY_DIRECTION` creative brief (see
   below) and is intentionally a **starting point** — expect to tune it.
-- **Cross-component chrome consistency.** Because each component is a separate
-  single-shot call with a *different* `boxSize`, panel headers/footers used to drift
-  in height/padding even under a shared style — each box independently condensed its
-  own chrome via the `sizeNote`. Fix is two coordinated pieces: (1) the STYLE sheet
-  carries a **Structural chrome** category of FIXED header/title-bar + footer/status-strip
-  dimensions (with `shrink-0`), constant regardless of box size; (2) the `sizeNote` in
-  `generate/route.ts` scopes "condense to fit" to the **body region only** — the
-  header/footer keep the VISUAL GUIDELINES dimensions so sibling panels align.
+- **Chrome is OPTIONAL, but consistent when present.** Chrome (a panel header/title
+  bar or footer/status strip) is not mandatory on every component — forcing it on all
+  of them made short/purely-visual boxes waste space on chrome that didn't earn its
+  keep. Responsibility is split cleanly:
+  - **STYLE = token definitions.** The **Structural chrome** category of the token
+    sheet just fixes the header/title-bar + footer/status-strip *dimensions* (with
+    `shrink-0`), constant regardless of box size. It's explicitly framed as shared
+    tokens used ONLY by the components that have chrome, NOT a requirement that every
+    component carry it (the sheet is injected verbatim into every generate prompt, so
+    its wording must not imply chrome is universal).
+  - **GENERATE = the include decision.** The `sizeNote` in `generate/route.ts` decides
+    *whether* this component gets chrome — only when its content genuinely calls for
+    one AND the box has vertical room without crowding the body; a short or
+    purely-visual box skips it. WHEN chrome IS included it must use the VISUAL
+    GUIDELINES dimensions (so the panels that have chrome still line up with their
+    siblings) and only the body region condenses — shrink the body, never the chrome.
+  - Prior behavior (every component carried fixed chrome, body-only condense) is
+    superseded by this conditional split.
 
 ### The registry (`SpatialGrid`)
 - `styleSpec: Record<number, string>` — `styleID` (= `taskRequest.id`) → that UI's
