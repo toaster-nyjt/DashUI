@@ -29,15 +29,17 @@ export type GeneratedBoxProps = {
   // the first time it generates (see GeneratedBox isGenerating effect). Lets
   // SpatialGrid tell whether a selected box is an empty drop-target.
   isEmpty?: boolean;
-  // Set by the UI generator on every box of a generated UI: the id of the
-  // taskRequest that produced it, used as the key into SpatialGrid's styleSpec
-  // registry so every component in this UI shares one coherent visual style.
-  styleID?: number;
+  // Set by the UI generator on every box of a generated UI (group + leaves):
+  // the id of the taskRequest that produced it. The single grouping key for a
+  // generated UI, with three consumers: the styleSpec lookup (shared visual
+  // style), the completion barrier (when have all this UI's leaves generated?),
+  // and the runtime bus (relay messages only between leaves of the same UI).
+  taskID?: number;
 }
 
 // One component's placement on the block grid (inclusive coords), returned by
 // the /api/layout route. Mirrors the col/row fields of GeneratedBoxProps.
-export type Placement = {name: string} & Omit<GeneratedBoxProps, "key" | "autoName" | "styleID">;
+export type Placement = {name: string} & Omit<GeneratedBoxProps, "key" | "autoName" | "taskID">;
 
 // Per-box: the chosen component type + which customizations are active
 export type CompSpec = {

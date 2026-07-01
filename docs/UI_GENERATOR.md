@@ -203,12 +203,13 @@ you weren't asked for" rule for toggled-off customizations.
   Stat Dashboard, Calendar, Chart Panel, Form).
 - `app/utils/useGetCode.ts` — `useGetCode` hook: streaming fetch to `/api/generate`,
   message history, `generatedCode` / `isGenerating`.
-- `app/api/{plan,style,layout,spec,generate}/route.ts` — the five LLM routes
-  (`style` → one coherent visual identity per generated UI, §9).
+- `app/api/{plan,style,layout,spec,generate,path}/route.ts` — the six LLM routes
+  (`style` → one coherent visual identity per generated UI, §9; `path` → runtime
+  functional wiring between a UI's components, §12).
 
 **Key types**
 ```ts
-GeneratedBoxProps = { colStart, colEnd, rowStart, rowEnd, key, autoName?, children?, isChild?, isEmpty?, styleID? } // children/isChild/isEmpty → §8; styleID → §9
+GeneratedBoxProps = { colStart, colEnd, rowStart, rowEnd, key, autoName?, children?, isChild?, isEmpty?, taskID? } // children/isChild/isEmpty → §8; taskID (was styleID) → §9 (style) + §12 (wiring)
 DefaultCompSpec  = { name, genInstructions, spec: { specArr: string[], defaultSpecArrIdx: number[] } }
 CompSpec         = { name, specArrIdx: number[] }   // specArrIdx = positional indices into specArr
 Placement        = { name, colStart, colEnd, rowStart, rowEnd }
@@ -384,15 +385,20 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
   content in dead space), "IGNORE PLACEMENT WORDS" (bar/sidebar/header describe the
   box's canvas position, not internal anchoring), legible stacked-text rows, no
   viewport-anchored/`fixed`/modal/portal, fixed `classname`→`className` typo.
-  - **Scrolling policy (`SCROLLING — FIT FIRST, THEN HIDE THE BAR`).** Hierarchy:
-    fit all content by right-sizing/condensing to a *legible* size → only if it still
-    won't fit, give the specific overflowing region its own `overflow-auto`/`-y-auto`
-    → that region MUST hide its bar (`[scrollbar-width:none] [&::-webkit-scrollbar]:hidden`).
-    Never a visible scrollbar; never crush or clip to avoid scrolling. This REPLACED
-    the old "condense INSTEAD of scrolling" / never-scroll framing. The page-scroll
-    ban ("NEVER SCROLL OR FOCUS THE PAGE": no `scrollIntoView`/`window.scrollTo`/
-    `.focus`) is a SEPARATE rule, still in force. Mirrored in `sizeNote`
-    (`generate/route.ts`).
+  - **Scrolling policy (`SCROLLING — FIT FIRST, THEN SCROLL (BAR HIDDEN)`).** Preference,
+    not a strict last-resort ladder: fit content by right-sizing/condensing to a *legible*
+    size FIRST → but when content is naturally long or condensing would cost legibility,
+    an internal hidden-scrollbar scroll on the specific overflowing region
+    (`overflow-auto`/`-y-auto` + `[scrollbar-width:none] [&::-webkit-scrollbar]:hidden`) is
+    a **normal, acceptable choice — a legitimate design tool, not a fallback of shame.**
+    The July 2026 relaxation MODERATELY softened the earlier "scroll ONLY as last resort" /
+    "Order of preference: fit > scroll > never" tone (which itself had replaced the even
+    older "condense INSTEAD of scrolling" / never-scroll framing); fit-first is still the
+    default, but a scroll region no longer reads as a grudging failure. Hard rules unchanged:
+    NEVER a visible scrollbar; never clip or crush to avoid scrolling; and the page-scroll
+    ban ("NEVER SCROLL OR FOCUS THE PAGE": no `scrollIntoView`/`window.scrollTo`/`.focus`) is
+    a SEPARATE rule, still fully in force. Only the outermost container never scrolls.
+    Mirrored in `sizeNote` (`generate/route.ts`) and the SKILLS SIZING bullets.
   - **JSX braces non-negotiable.** Any attribute value that isn't a plain quoted
     string MUST be braced — `className={"a " + cond}`, never `className="a " + cond`
     (a syntax error). Sits beside the no-template-literals-in-JSX rule; added after a
@@ -583,23 +589,29 @@ visual identity that every one of its components is generated against.
   - Prior behavior (every component carried fixed chrome, body-only condense) is
     superseded by this conditional split.
 
+> **`styleID` was renamed to `taskID`.** The field that groups a UI's boxes is now
+> `GeneratedBoxProps.taskID` (still `= taskRequest.id`), because it grew a second and
+> third consumer beyond style: the **wiring completion barrier** and the **runtime bus**
+> (§12). Style is just one thing keyed off it. `styleSpec` is still `Record<number,string>`
+> keyed by `taskID`.
+
 ### The registry (`SpatialGrid`)
-- `styleSpec: Record<number, string>` — `styleID` (= `taskRequest.id`) → that UI's
+- `styleSpec: Record<number, string>` — `taskID` (= `taskRequest.id`) → that UI's
   style string. Committed alongside `defaultSpec` (same state-commit-on-`await`
   guarantee, §5 risk 1), so a box finds its style at mount.
 - Threaded down to every `GeneratedBox` (like `defaultSpec`); a group passes it to
   its children recursively.
 
 ### Threading the style into generation
-- `GeneratedBoxProps.styleID?` is set on every **child** of a generated group to
-  `taskRequest.id`. Survives ungroup (the leaf keeps its `styleID`, and `styleSpec`
-  persists in `SpatialGrid`), so freed/re-generated leaves stay on-style.
-- `GeneratedBox.resolveStyle(styleID?)` returns `styleSpec[styleID]` (or `undefined`).
-  The auto-gen mount effect calls `handleUpdateNameAndSend(autoName, props.styleID)`;
+- `GeneratedBoxProps.taskID?` is set on every box of a generated group (children **and**
+  the parent) to `taskRequest.id`. Survives ungroup (the leaf keeps its `taskID`, and
+  `styleSpec` persists in `SpatialGrid`), so freed/re-generated leaves stay on-style.
+- `GeneratedBox.resolveStyle(taskID?)` returns `styleSpec[taskID]` (or `undefined`).
+  The auto-gen mount effect calls `handleUpdateNameAndSend(autoName, props.taskID)`;
   **both** generation paths (name+send and customization toggle) pass
   `resolveStyle(...)` into `handleSend(prompt, true, boxSize, style)`, which forwards
   `style` to `/api/generate`.
-- **Fallback by absence:** a manual box has no `styleID` → `style` is `undefined` →
+- **Fallback by absence:** a manual box has no `taskID` → `style` is `undefined` →
   the generate route applies `GENERATE_STYLE_FALLBACK` instead. There is NO failure
   fallback inside the auto pipeline; the fallback exists purely for style-less boxes.
 
@@ -684,16 +696,16 @@ does the set + wiring form ONE coherent UI subsystem? revise ideas or rerun if n
 - `fetchValidPlan` (`SpatialGrid`) wraps `/api/plan` in a retry loop (`PLAN_RETRIES = 3`,
   mirrors `fetchValidLayout`), feeding `previousError` back to the plan route (which now
   accepts it → `retryNote`). **Load-bearing:** returns `null` (aborts the generation) on
-  exhaustion, since names are the join key for layout adjacency and the future path/wiring
-  route.
+  exhaustion, since names are the join key for layout adjacency and the Path route's channel
+  ids (§12).
 
 ### Where role/connectivity flow
 - Added to `resolveComponentSpec`'s output (additively — see §3), so they reach **generate**
   (the prompt) and, via the resolved view, **layout** and **style** — with **no
   `GeneratedBox` change** (auto-gen already resolves against the registry at mount).
 - **GENERATE** treats `role`/`connectivity` as primary context shaping the component (build
-  the controls/surfaces that make its links real); actual cross-component wiring is deferred
-  to the future "Path route".
+  the controls/surfaces that make its links real); actual cross-component wiring is done by
+  the **Path route** (§12).
 - **LAYOUT** uses `role` (centrality/area), `connectivity` (place connected pairs adjacent —
   control beside the display it drives), and `include` (content-density → area).
 
@@ -706,4 +718,113 @@ consume the same resolved view — codified as the **full-resolved-spec conventi
 
 ### Scope
 1-level grouping only — no recursive / "higher component set" connectivity yet. The
-functional wiring itself (acting on connectivity at runtime) is future work.
+functional wiring itself (acting on connectivity at runtime) is **built** — see §12.
+
+---
+
+## 12. Functional wiring — the Path route & runtime bus bridge
+
+The planner's `connectivity` (§11) describes which components *should* drive which; this
+feature makes it **real at runtime**. It's a manual, on-demand step: after a generated UI
+has finished, right-click the group and pick **Wire**, and its components start actually
+talking (a filter narrows a map, a search drives a queue, a toggle reformats prices…).
+
+### The hard constraint that shapes everything
+Every leaf renders in its **own isolated, cross-origin Sandpack iframe** (`Preview.tsx`,
+one `SandpackProvider` each). Two iframes share no React tree, no state, no `window` — so
+editing component A's code to "drive" B is necessary but **not sufficient**: A's code can't
+reach B. Wiring needs a **transport**. We chose a **bridge** (keep N iframes; relay
+messages through the host) over merging the UI into one iframe, because it preserves the
+whole nesting/drill/resize/regen model (§8). Topology is hub-and-spoke: **iframe → host
+relay → iframe** (iframes can't address each other; only the host hears and can reach all).
+
+### Three layers
+1. **The `bus` shim** (`Preview.tsx`, injected into every UI leaf — `taskID` defined).
+   Prepended into `GeneratedComponent.tsx` so the component has `bus.emit(channel, payload)`
+   and `bus.on(channel, handler)` (returns an unsubscribe) in scope — no import. `emit`
+   `postMessage`s to `window.parent` tagged `{ __uibus, type:"event", taskID, channel, payload }`;
+   `on` adds a `message` listener filtered by `taskID` + `channel`. Manual boxes (no `taskID`)
+   get no shim.
+2. **The host relay** (`SpatialGrid`, one `window` `message` listener set up on mount).
+   Keyed by `taskID`: on `"event"` it **caches** the payload as that channel's last value
+   and **fans it out** to the other leaves of the same UI (never echoes the sender); on
+   `"register"` it records the leaf's window and **replays** every cached channel value to
+   it. Dead windows (a remounted/removed leaf) are pruned when a post throws. Filters
+   `__uibus` so it ignores Sandpack's own postMessage protocol.
+3. **The injected calls** (`/api/path`, thin layer). For each channel the route adds, in the
+   source, `useEffect(() => bus.emit(id, value), [value])` (fires on mount to seed **and**
+   on every change) and, in the receiver, `useEffect(() => bus.on(id, d => setState(d)), [])`
+   plus using that state in render. It changes as little else as possible.
+
+### Channel ids are computed app-side (not by the LLM)
+The #1 failure mode is the two endpoints disagreeing on the channel string. So `buildChannels`
+(`helpers.ts`) derives the **deterministic** edge list from the specs' `connectivity.targets`
+— each target becomes `{ id: "<from>-><to>", from, to, description }`, dangling/self edges
+dropped, duplicates collapsed — and the route is *handed* those ids to implement. (Same
+"deterministic parts stay in JS" philosophy as `resolveComponentSpec`, §3.)
+
+### The initial-sync cache (why register happens in a mount effect)
+We keep a **last-value cache** so a receiver that mounts after a value was published still
+gets it (e.g. a filter's current selection). For the replay to land, the leaf must register
+**after** its `bus.on` handlers are attached. The injected `App` therefore posts `"register"`
+in its own `useEffect` — React runs child effects before parent effects, so every `bus.on`
+(a child effect) is live before the relay replays. This is what makes "wire it and B
+immediately reflects A's current state" work, not just "B reacts to A's next change."
+
+### Trigger, gating, and applying the result (`SpatialGrid`)
+- **Code hoist:** each leaf reports its finished code up via `reportCode(key, code)` (an
+  `isGenerating`-edge effect in `GeneratedBox`) into `codeMap: Record<leafKey, string>`.
+  Fires on first gen and every re-gen. (This is also the mechanism the deferred §6
+  "preserve code across ungroup" item needs.)
+- **The Wire button** lives in the existing right-click menu beside **Ungroup**
+  (`handleContextMenu` / `ungroupMenu`). It shows only when `canWire`: the selected root is
+  a group, **every** leaf has reported code, **and** `buildChannels` finds ≥1 real edge (so
+  single-component UIs never offer it).
+- **`wireUI(root)`:** `collectUIComponents` flattens the group (reusing `flattenToGlobal`
+  purely as a leaf collector — coords ignored) to `{ key, name, code, role, connectivity }`
+  per leaf; `buildChannels` derives the edges;
+  `fetchValidWiring` POSTs `{ components, channels }` to `/api/path` and validates the result
+  (`validateWiring`: every channel id must appear in both its endpoints' returned code),
+  retrying up to `PATH_RETRIES = 3` with `previousError`. Results map back by name into
+  `wiredCode: Record<leafKey, string>`.
+- **Wiring feedback (shimmer):** the Path call takes a while, and a rewired leaf never runs
+  its own `useGetCode` stream, so its `isGenerating` stays false and it would otherwise sit
+  showing stale output with no signal. `wireUI` sets `wiringLeaves: Set<leafKey>` to the
+  channel-participant leaves (threaded down like `wiredCode`); `GeneratedBox` shows the
+  generation shimmer (labelled "wiring…") when `isGenerating || wiringLeaves.has(key)`.
+  Non-participant leaves stay live. Cleared in `wireUI`'s `finally` (so a failed/empty result
+  never leaves a stuck shimmer) — batched with `setWiredCode`, so a participant goes straight
+  from shimmer → wired preview with no flash of the pre-wiring output.
+- **Applying wiring:** a leaf renders `wiredCode[key] ?? generatedCode`, and its `Preview`
+  is **keyed** on the wired flag so setting `wiredCode` **remounts** that leaf's iframe —
+  the shim re-initializes and re-registers cleanly (fresh `contentWindow`). The original
+  generated code is untouched in `codeMap`, so "unwire" is just clearing the entry.
+
+### The `/api/path` route
+- `claude-opus-4-8`, adaptive thinking + `effort: "medium"` (mirrors the reasoning-heavy
+  planner). `max_tokens: 32000` (several full components in one response). `PATH_SYSTEM_PROMPT`
+  in `SKILLS.ts`.
+- **Streams internally** (`messages.stream(...).finalMessage()`), unlike the other
+  non-streaming design routes. Required: at `max_tokens` this high the SDK **rejects** a
+  plain `messages.create` up front ("Streaming is required for operations that may take
+  longer than 10 minutes") — it fails in ~100ms before any work. Streaming sidesteps the
+  guard; the route still returns ONE assembled JSON response (it just consumes the model
+  output as a stream). Keep this if `max_tokens` stays > ~16000.
+- Input (user message): the deterministic channel list + each component's current code in
+  `<<<COMPONENT name="…">>> … <<<END>>>` blocks. Output: the **same delimited block format**
+  (not JSON — avoids escaping large code blobs), one block per component it edited; the route
+  parses the blocks and runs each through `extractComponentCode`. Only components that appear
+  in a channel are edited/returned; the rest keep their generated code.
+- The prompt is a **thin wiring layer**: preserve structure/styling/the outer-container
+  rules; emit only in effects/handlers; payloads must be structured-clone-serializable.
+
+### Scope / deferred
+- **1-level UIs only** (matches §11). No recursive/cross-group wiring yet.
+- **Re-wiring after a user customizes a component** (toggles a feature → that leaf re-gens →
+  its wiring is lost) is **not** handled — Wire is re-clickable to redo the whole UI, but
+  there's no automatic per-edit re-wire. Deliberately deferred.
+- Wiring's interaction with **ungroup** (which remounts + regenerates freed leaves, §6) is
+  out of scope; the leaf keeps its `taskID`/`wiredCode` entry, but ungroup's regen story is
+  the deferred code-hoist item.
+- The Wire action reuses `setIsDesigning` for its busy state (Taskbar shows "Designing…"),
+  a minor label reuse.

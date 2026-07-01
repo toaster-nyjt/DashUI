@@ -3,12 +3,14 @@ import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
 import { XY, defaultXY, GeneratedBoxProps, DefaultCompSpec, Placement, numGridBlocksWide, numVHTall } from '../utils/spec';
 import { DEFAULT_SPEC } from '../utils/defaultSpec';
-import { validateLayout, validateConnectivity, logDefaultSpec, resolveComponentSpec } from '../utils/helpers';
+import { validateLayout, validateConnectivity, logDefaultSpec, resolveComponentSpec, buildChannels, validateWiring } from '../utils/helpers';
 
 // How many times to re-ask the layout route for a valid (gap-free) tiling
 const LAYOUT_RETRIES = 3;
 // How many times to re-ask the plan route for valid intra-UI connectivity names
 const PLAN_RETRIES = 3;
+// How many times to re-ask the path route for valid (channel-injected) wiring
+const PATH_RETRIES = 3;
 
 export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning, setHasEmptyTarget, canvasWidth, setCanvasWidth }
   : { interactMode: boolean; taskRequest: { prompt: string; id: number } | null; setIsDesigning: React.Dispatch<React.SetStateAction<boolean>>; setHasEmptyTarget: React.Dispatch<React.SetStateAction<boolean>>;
@@ -48,16 +50,80 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   // Passed down to all boxes
   const [defaultSpec, setDefaultSpec] = useState<DefaultCompSpec[]>(DEFAULT_SPEC);
 
-  // Per-UI style registry: taskRequest.id (styleID) -> the coherent visual style
+  // Per-UI style registry: taskRequest.id (taskID) -> the coherent visual style
   // produced for that whole generated UI. Every box of a generated UI
-  // carries its styleID and looks its style up here, so independently generated
+  // carries its taskID and looks its style up here, so independently generated
   // components share one identity. Passed down to all boxes (like defaultSpec).
   const [styleSpec, setStyleSpec] = useState<Record<number, string>>({});
+
+  // Code hoist: leafKey -> that leaf's finished generated code. Every UI leaf
+  // reports here when it finishes (reportCode), so the Wire action can collect a
+  // whole UI's code once all its leaves are done, then send it to the Path route.
+  const [codeMap, setCodeMap] = useState<Record<string, string>>({});
+
+  // Wiring result: leafKey -> Path-route code with the runtime bus (emit/subscribe)
+  // injected. A leaf with an entry renders this in place of its generated code.
+  const [wiredCode, setWiredCode] = useState<Record<string, string>>({});
+
+  // Leaf keys currently being (re)wired by the Path route: they show the generation
+  // shimmer while it runs (non-participant leaves stay live). Cleared when wireUI ends.
+  const [wiringLeaves, setWiringLeaves] = useState<Set<string>>(new Set());
+
+  // A UI leaf reports its finished code so the whole UI can be wired later.
+  const reportCode = (key: string, code: string) =>
+    setCodeMap((prev) => (prev[key] === code ? prev : { ...prev, [key]: code }));
 
   // Dev: print the component registry on mount and whenever it changes.
   useEffect(() => {
     logDefaultSpec(defaultSpec);
   }, [defaultSpec]);
+
+  // RUNTIME BUS RELAY (the hub of the bridge). Every UI leaf is an isolated,
+  // cross-origin Sandpack iframe, so wired components can't talk directly — they
+  // tunnel over postMessage through this single host listener:
+  //   - "register" (posted by a leaf's App on mount): remember that leaf's window
+  //     under its taskID, then REPLAY the last value of every channel to it, so a
+  //     leaf that mounts late still receives the current state (initial-sync cache).
+  //   - "event" (a bus.emit): cache it as the channel's last value, then fan it out
+  //     to the OTHER leaves of the SAME taskID (never echo to the sender).
+  // Dead windows (a remounted/removed leaf) are pruned when a post to them throws.
+  useEffect(() => {
+    const groups = new Map<number, Set<Window>>(); // taskID -> live leaf windows
+    const cache = new Map<number, Map<string, unknown>>(); // taskID -> channel -> last payload
+
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data;
+      if (!d || d.__uibus !== true || typeof d.taskID !== "number") return;
+      const src = e.source as Window | null;
+      const taskID = d.taskID as number;
+
+      if (d.type === "register") {
+        if (!src) return;
+        let set = groups.get(taskID);
+        if (!set) { set = new Set(); groups.set(taskID, set); }
+        set.add(src);
+        const channels = cache.get(taskID); // replay current state to the new leaf
+        if (channels) for (const [channel, payload] of channels) {
+          try { src.postMessage({ __uibus: true, type: "event", taskID, channel, payload }, "*"); } catch { /* dead window */ }
+        }
+        return;
+      }
+
+      if (d.type === "event") {
+        let channels = cache.get(taskID);
+        if (!channels) { channels = new Map(); cache.set(taskID, channels); }
+        channels.set(d.channel, d.payload); // last-value cache for late subscribers
+        const set = groups.get(taskID);
+        if (set) for (const w of [...set]) {
+          if (w === src) continue; // don't echo back to the emitter
+          try { w.postMessage(d, "*"); } catch { set.delete(w); } // prune dead windows
+        }
+      }
+    };
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
 
 
   /* UI GENERATOR (task prompt -> plan -> layout -> auto boxes) */
@@ -126,6 +192,40 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
     return null;
   };
 
+  // Calls the path route and re-asks (feeding back the validation error) until every
+  // channel's emitter/subscriber actually references its channel id. `components` is
+  // each leaf's { name, code, role, connectivity }; `channels` is the deterministic,
+  // app-computed edge list (buildChannels) both endpoints must wire to. Returns the
+  // per-component wired code, or null if it can't be made valid within the budget.
+  const fetchValidWiring = async (
+    components: Record<string, unknown>[],
+    channels: ReturnType<typeof buildChannels>,
+  ): Promise<{ name: string; code: string }[] | null> => {
+    let previousError: string | undefined;
+    for (let attempt = 1; attempt <= PATH_RETRIES; attempt++) {
+      try {
+        const res = await fetch('/api/path', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ components, channels, previousError }),
+        });
+        if (!res.ok) throw new Error(`request failed (${res.status})`);
+        const wired = await res.json() as { name: string; code: string }[];
+
+        const { ok, error } = validateWiring(wired, channels);
+        if (ok) return wired;
+
+        previousError = error;
+        console.error(`Path attempt ${attempt}/${PATH_RETRIES} invalid: ${error}`);
+      } catch (e) {
+        previousError = e instanceof Error ? e.message : String(e);
+        console.error(`Path attempt ${attempt}/${PATH_RETRIES} errored:`, e);
+      }
+    }
+    console.error(`Path failed after ${PATH_RETRIES} attempts. Last error: ${previousError}`);
+    return null;
+  };
+
   // Full pipeline: decompose the task into component specs, register them, lay
   // them out across the visible window, then drop in self-generating boxes.
   const runUIGeneration = async (task: string, target: GeneratedBoxProps | null): Promise<GeneratedBoxProps | null> => {
@@ -158,7 +258,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       //     gets the specs RESOLVED to the same { name, genInstructions, include,
       //     exclude } protocol shape the generator sees per component (active set =
       //     each preset's defaults). Always called for an auto-gen UI; only manual
-      //     boxes (no styleID) skip a style and get the generate route's fallback.
+      //     boxes (no taskID) skip a style and get the generate route's fallback.
       const resolvedSpecs = specs.map((s) =>
         JSON.parse(resolveComponentSpec({ name: s.name, specArrIdx: s.spec.defaultSpecArrIdx }, specs)));
       const styleRes = await fetch('/api/style', {
@@ -197,12 +297,13 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
         key: `${parentKey}-child-${i}`,
         autoName: p.name, // Lets the leaf box know to self-generate
         isChild: true,
-        styleID: taskRequest!.id, // Key into styleSpec -> this UI's shared style
+        taskID: taskRequest!.id, // Groups this UI: styleSpec lookup + bus routing + wiring
       }));
 
       // The parent occupies the target bounds (drawn box or full window); the
-      // effect appends it to elementArr (replacing the targeted empty box).
-      return { colStart, colEnd, rowStart, rowEnd, key: parentKey, children };
+      // effect appends it to elementArr (replacing the targeted empty box). It also
+      // carries the taskID so the Wire action can find this UI's leaves + style.
+      return { colStart, colEnd, rowStart, rowEnd, key: parentKey, children, taskID: taskRequest!.id };
     } catch (e) {
       console.error('UI generation error:', e);
       return null;
@@ -259,9 +360,11 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   const syncBounds = (key: string, b: { colStart: number; colEnd: number; rowStart: number; rowEnd: number }) =>
     setElementArr((prev) => prev.map((el) => (el.key === key ? { ...el, ...b } : el)));
 
-  // Recursively flatten a group: every leaf descendant becomes a top-level box at
-  // GLOBAL coords (local coords + each ancestor's accumulated origin offset), with
-  // isChild cleared so it rejoins the main grid. Used in ungroup
+  // Recursively flatten a group to its leaf descendants. For ungroup each leaf is
+  // promoted to a top-level box at GLOBAL coords (local + each ancestor's accumulated
+  // origin offset) with isChild cleared, so it rejoins the main grid. The wiring path
+  // (collectUIComponents) reuses this purely as a leaf collector — it reads only each
+  // leaf's key + autoName and ignores the coords.
   const flattenToGlobal = (box: GeneratedBoxProps, baseCol: number, baseRow: number): GeneratedBoxProps[] => {
     const g = {
       colStart: box.colStart + baseCol, colEnd: box.colEnd + baseCol,
@@ -279,6 +382,51 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
     const freed = parent.children.flatMap((c) => flattenToGlobal(c, parent.colStart - 1, parent.rowStart - 1));
     setElementArr((prev) => [...prev.filter((el) => el.key !== parent.key), ...freed]);
     setSelectionPath([]);
+  };
+
+  // Build one UI's { name, code, role, connectivity } per leaf (code from the hoist
+  // map, role/connectivity resolved from the registry by the leaf's autoName). Shared
+  // by the Wire action and its gating check so both see the same view.
+  const collectUIComponents = (root: GeneratedBoxProps) =>
+    // flattenToGlobal doubles as the leaf collector here; wiring needs only each
+    // leaf's key + autoName, so the (0,0) global coords it computes are ignored.
+    flattenToGlobal(root, 0, 0).map((l) => {
+      const def = defaultSpec.find((d) => d.name === l.autoName);
+      return { key: l.key, name: l.autoName!, code: codeMap[l.key] ?? '', role: def?.role, connectivity: def?.connectivity };
+    });
+
+  // Wire a finished UI (the manual right-click "Wire" action). Collect every leaf's
+  // code + its planner connectivity, derive the deterministic channel list, ask the
+  // Path route to inject the bus emit/subscribe calls, then store the wired code per
+  // leaf — which remounts each leaf's iframe so the runtime bus initializes and the
+  // components start talking. No-op when the UI has no real connections.
+  const wireUI = async (root: GeneratedBoxProps) => {
+    const components = collectUIComponents(root);
+    const channels = buildChannels(components);
+    if (!channels.length) return; // single component / no real connections -> nothing to wire
+
+    // Leaves that will actually be rewired = those on a channel endpoint. They show the
+    // generation shimmer while the Path route runs; non-participant leaves stay live.
+    const participants = new Set(channels.flatMap((c) => [c.from, c.to]));
+    setWiringLeaves(new Set(components.filter((c) => participants.has(c.name)).map((c) => c.key)));
+    setIsDesigning(true);
+    try {
+      // Send only what the route reads (name/code/role); channels carry the wiring.
+      const payload = components.map((c) => ({ name: c.name, code: c.code, role: c.role }));
+      const wired = await fetchValidWiring(payload, channels);
+      if (!wired) return; // exhausted retries; already logged
+      setWiredCode((prev) => {
+        const next = { ...prev };
+        for (const w of wired) {
+          const leaf = components.find((c) => c.name === w.name); // map result back to a leaf key
+          if (leaf) next[leaf.key] = w.code;
+        }
+        return next;
+      });
+    } finally {
+      setWiringLeaves(new Set());
+      setIsDesigning(false);
+    }
   };
 
 
@@ -441,6 +589,15 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   // Calculate number of grid rows in overlay
   const overlayRows = Math.ceil(((gridRef.current?.getBoundingClientRect().height) ?? 0)/(gridBlockSize || 1));
 
+  // The group the right-click menu targets, and whether it can be WIRED now: every
+  // leaf has finished generating (has code) AND the UI has at least one real
+  // connection to wire. Gates the "Wire" button in the menu below.
+  const menuRoot = ungroupMenu ? elementArr.find((el) => el.key === ungroupMenu.rootKey) ?? null : null;
+  const menuComponents = menuRoot ? collectUIComponents(menuRoot) : [];
+  const canWire = menuComponents.length > 0
+    && menuComponents.every((c) => !!c.code)
+    && buildChannels(menuComponents).length > 0;
+
   // Get drag box properties
   const xPos = boxPosition.current.x;
   const yPos = boxPosition.current.y;
@@ -527,6 +684,9 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
             styleSpec={styleSpec}
             markNonEmpty={markNonEmpty}
             syncBounds={syncBounds}
+            reportCode={reportCode}
+            wiredCode={wiredCode}
+            wiringLeaves={wiringLeaves}
           >
 
           </GeneratedBox>
@@ -578,19 +738,38 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
             onWheel={() => setUngroupMenu(null)}
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setUngroupMenu(null); }}
           />
-          <button
-            type="button"
-            className="absolute z-50 rounded-lg border border-white/10 bg-menu px-4 py-2 text-sm text-white/90 shadow-2xl hover:bg-menuhover"
+          <div
+            className="absolute z-50 flex flex-col gap-1"
             style={{ left: ungroupMenu.x, top: ungroupMenu.y }}
-            onMouseDown={(e) => {
-              e.stopPropagation(); // don't let the shield/grid see this click
-              const root = elementArr.find((el) => el.key === ungroupMenu.rootKey);
-              if (root) ungroup(root);
-              setUngroupMenu(null);
-            }}
           >
-            Ungroup
-          </button>
+            {/* Wire: only once every leaf has generated AND the UI has real
+                connections. Runs the Path route to make the components talk. */}
+            {canWire && (
+              <button
+                type="button"
+                className="rounded-lg border border-white/10 bg-menu px-4 py-2 text-sm text-white/90 shadow-2xl hover:bg-menuhover"
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  if (menuRoot) wireUI(menuRoot);
+                  setUngroupMenu(null);
+                }}
+              >
+                Wire
+              </button>
+            )}
+            <button
+              type="button"
+              className="rounded-lg border border-white/10 bg-menu px-4 py-2 text-sm text-white/90 shadow-2xl hover:bg-menuhover"
+              onMouseDown={(e) => {
+                e.stopPropagation(); // don't let the shield/grid see this click
+                const root = elementArr.find((el) => el.key === ungroupMenu.rootKey);
+                if (root) ungroup(root);
+                setUngroupMenu(null);
+              }}
+            >
+              Ungroup
+            </button>
+          </div>
         </>
       )}
     </div>

@@ -1,4 +1,9 @@
-import { CompSpec, DefaultCompSpec, Placement } from "./spec";
+import { CompSpec, DefaultCompSpec, Placement, Connectivity } from "./spec";
+
+// One directed runtime link between two leaves of a UI, derived DETERMINISTICALLY
+// (app-side, not by the LLM) from the planner's connectivity so the emit/subscribe
+// channel string can never mismatch. `id` is the channel key both endpoints use.
+export type WireChannel = { id: string; from: string; to: string; description: string };
 
 // Strip markdown code fences from generated code
 export function stripCodeFences(code: string): string {
@@ -131,4 +136,45 @@ export function validateLayout(placements: Placement[], cols: number, rows: numb
 export function logDefaultSpec(defaultSpec: DefaultCompSpec[]): void {
   if (process.env.NODE_ENV === "production") return; // dev log only
   console.log(`[defaultSpec] ${defaultSpec.length} component(s):`, JSON.stringify(defaultSpec, null, 2));
+}
+
+// Derive the deterministic channel list for a UI from its components' connectivity.
+// Each planner "target" (an OUTGOING edge owner -> target) becomes one channel the
+// owner emits on and the target subscribes to; id = "<owner>-><target>". Edges to a
+// name that isn't in this UI are dropped, and duplicate ids are collapsed. Keeping
+// this in JS (not the LLM) guarantees both endpoints agree on the exact channel key.
+export function buildChannels(components: { name: string; connectivity?: Connectivity }[]): WireChannel[] {
+  const names = new Set(components.map((c) => c.name));
+  const byId = new Map<string, WireChannel>();
+  for (const c of components) {
+    for (const t of c.connectivity?.targets ?? []) {
+      if (!t?.name || t.name === c.name || !names.has(t.name)) continue; // dangling/self -> skip
+      const id = `${c.name}->${t.name}`;
+      if (!byId.has(id)) byId.set(id, { id, from: c.name, to: t.name, description: t.description });
+    }
+  }
+  return [...byId.values()];
+}
+
+// Validate a Path-route result: every channel's emitter and subscriber must actually
+// reference the channel id in its returned code (a light proxy for "the bus.emit /
+// bus.on call was injected"). Returns the first violation to feed back on retry. The
+// channel id contains "->", so a stray textual match is very unlikely.
+export function validateWiring(wired: { name: string; code: string }[], channels: WireChannel[]): { ok: boolean; error?: string } {
+  const codeByName = new Map(wired.map((w) => [w.name, w.code]));
+
+  for (const ch of channels) {
+    const fromCode = codeByName.get(ch.from);
+    const toCode = codeByName.get(ch.to);
+    if (fromCode === undefined) return { ok: false, error: `No wired code returned for "${ch.from}".` };
+    if (toCode === undefined) return { ok: false, error: `No wired code returned for "${ch.to}".` };
+    if (!fromCode.includes(ch.id)) {
+      return { ok: false, error: `"${ch.from}" must publish on channel "${ch.id}" via bus.emit("${ch.id}", ...), but its returned code never references that channel id.` };
+    }
+    if (!toCode.includes(ch.id)) {
+      return { ok: false, error: `"${ch.to}" must subscribe on channel "${ch.id}" via bus.on("${ch.id}", ...), but its returned code never references that channel id.` };
+    }
+  }
+
+  return { ok: true };
 }

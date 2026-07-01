@@ -12,26 +12,58 @@ import { XY } from '../utils/spec';
 export default function Preview({
   code,
   isSideDragging = false, // Determines the scaling logic
-  boxSize // Dimensions of the box
+  boxSize, // Dimensions of the box
+  taskID // Set for a UI leaf: injects the runtime bus so wired components can talk
 }: {
   code: string;
   isSideDragging?: boolean;
   boxSize: XY // Dimensions in pix of Generated box
+  taskID?: number
 }) {
 
-  // Prepend hook imports unless the code imports from "react".
+  // Runtime message bus injected into every UI leaf (taskID defined). It gives the
+  // generated/wired component `bus.emit(channel, payload)` + `bus.on(channel, handler)`
+  // in scope, tunnelling over postMessage to the host relay (see SpatialGrid), which
+  // fans messages out to the OTHER leaves of the same taskID. Absent for manual boxes.
+  const busShim = taskID !== undefined
+    ? `const __TASK_ID = ${taskID};
+const bus = {
+  emit: (channel, payload) => {
+    try { window.parent.postMessage({ __uibus: true, type: "event", taskID: __TASK_ID, channel, payload }, "*"); } catch (e) {}
+  },
+  on: (channel, handler) => {
+    const listener = (e) => {
+      const d = e.data;
+      if (d && d.__uibus && d.type === "event" && d.taskID === __TASK_ID && d.channel === channel) handler(d.payload);
+    };
+    window.addEventListener("message", listener);
+    return () => window.removeEventListener("message", listener);
+  },
+};
+
+`
+    : "";
+
+  // Hook imports (unless the code already imports from "react"), THEN the bus shim,
+  // THEN the code — imports stay first so the common (no-import) case never emits a
+  // statement before an import.
   const hasReactImport = /\bimport\b[^\n]*\bfrom\s*['"]react['"]/.test(code);
-  const componentCode = hasReactImport
-    ? code
-    : `import { useState, useEffect, useRef, useMemo, useCallback } from "react";\n\n${code}`;
+  const reactImport = hasReactImport ? "" : `import { useState, useEffect, useRef, useMemo, useCallback } from "react";\n\n`;
+  const componentCode = reactImport + busShim + code;
 
   // Wrap the generated component in an App that fills the iframe. All
   // scaling lives host-side (below) because props can't cross the iframe
-  // boundary without re-mounting Sandpack.
+  // boundary without re-mounting Sandpack. A UI leaf's App also REGISTERS with the
+  // host relay in a mount effect — AFTER the child's bus.on handlers attach (React
+  // runs child effects before parent effects), so the relay's cached-value replay on
+  // registration always lands on an attached listener (initial-sync guarantee).
   const bgColor = "bg-zinc-950";
-  const appCode = `import GeneratedComponent from "./GeneratedComponent";
+  const appCode = `import GeneratedComponent from "./GeneratedComponent";${taskID !== undefined ? `\nimport { useEffect } from "react";` : ""}
 
-export default function App() {
+export default function App() {${taskID !== undefined ? `
+  useEffect(() => {
+    window.parent.postMessage({ __uibus: true, type: "register", taskID: ${taskID} }, "*");
+  }, []);` : ""}
   return (
     <div className="h-screen w-screen overflow-hidden ${bgColor}">
       <GeneratedComponent />

@@ -28,7 +28,7 @@ let pendingDrillPath: string[] | null = null;
 // Created from drag interaction in Spacial Grid, 
 // Contains a bunch of low level visual layer transformations for the boxes,
 // and the main logic behind the prompt routing
-export default function GeneratedBox({ props, path, selectionPath, setSelectionPath, blockSize, gridRef, interactMode, defaultSpec, setDefaultSpec, styleSpec, isChild = false, markNonEmpty, syncBounds }
+export default function GeneratedBox({ props, path, selectionPath, setSelectionPath, blockSize, gridRef, interactMode, defaultSpec, setDefaultSpec, styleSpec, isChild = false, markNonEmpty, syncBounds, reportCode, wiredCode, wiringLeaves }
   : {
       props : GeneratedBoxProps,
       // This box's path from its top-level root, e.g. [rootKey] or [rootKey, childKey].
@@ -41,8 +41,8 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       interactMode : boolean
       defaultSpec : DefaultCompSpec[]
       setDefaultSpec : React.Dispatch<React.SetStateAction<DefaultCompSpec[]>>
-      // Per-UI style registry (styleID -> style). A box of a generated UI looks up
-      // its style here by props.styleID; manual boxes have no styleID and get the
+      // Per-UI style registry (taskID -> style). A box of a generated UI looks up
+      // its style here by props.taskID; manual boxes have no taskID and get the
       // generate route's fallback style.
       styleSpec : Record<number, string>
       // True for any box rendered inside a parent (any depth). Only the root (false) drags.
@@ -52,6 +52,15 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       // Persist a moved/resized box's new block coords back to elementArr (top-level
       // only) so consumers like ungroup read where it IS, not where it spawned.
       syncBounds? : (key : string, b : { colStart : number; colEnd : number; rowStart : number; rowEnd : number }) => void
+      // A UI leaf reports its finished code up (keyed by box key) so SpatialGrid can
+      // collect the whole UI's code once every leaf is done, then wire it (Path route).
+      reportCode? : (key : string, code : string) => void
+      // leafKey -> wired code from the Path route. When this leaf has an entry, it
+      // renders the wired code (bus.emit/on injected) in place of its generated code.
+      wiredCode? : Record<string, string>
+      // Leaf keys currently being rewired by the Path route -> show the generation
+      // shimmer while wiring runs (this leaf isn't running its own useGetCode stream).
+      wiringLeaves? : Set<string>
     }) {
 
   /* DATA LAYER STATE VARS */
@@ -130,6 +139,15 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   // cover the fractional-pixel seam between them (see UI_GENERATOR.md §6).
   const seamBleed = interactMode && isChild && !hasChildren;
 
+  // Wired code (from the Path route) takes precedence over this leaf's own
+  // generated code once its UI has been wired. undefined until then.
+  const wired = wiredCode?.[props.key];
+  const codeToShow = wired ?? generatedCode;
+
+  // True while the Path route is rewiring this leaf (it isn't running its own gen
+  // stream, so isGenerating stays false) — drives the shimmer for wiring feedback.
+  const isWiring = !!wiringLeaves?.has(props.key);
+
   // Refs + viewport position for the popup menu (kept on-screen). Starts offscreen.
   const boxRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -161,11 +179,11 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
 
   // Look up this box's coherent UI style (if it belongs to a generated UI).
   // undefined for manual boxes -> the generate route applies its fallback style.
-  const resolveStyle = (styleID? : number) =>
-    styleID !== undefined ? styleSpec[styleID] : undefined;
+  const resolveStyle = (taskID? : number) =>
+    taskID !== undefined ? styleSpec[taskID] : undefined;
 
   // Finds and generates existing component in default or generates the DefaultCompSpec for a custom component, sets compSpec
-  const handleUpdateNameAndSend = async (name : string, styleID? : number) => {
+  const handleUpdateNameAndSend = async (name : string, taskID? : number) => {
     let def = defaultSpec.find((d) => d.name === name) as DefaultCompSpec; 
     let specList = defaultSpec; // To add in the new generated spec immediately to use list in handleSend without waiting for state setter
 
@@ -203,7 +221,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
     // THIS IS WHERE ALL COMPONENT SPECS -> CODE. style (if any) keeps this box visually
     // coherent with the rest of its generated UI.
-    handleSend(resolveComponentSpec(next, specList), true, boxSize, resolveStyle(styleID));
+    handleSend(resolveComponentSpec(next, specList), true, boxSize, resolveStyle(taskID));
   }
 
   /* MAIN CUSTOMIZATION (SPEC) HANDLER */ 
@@ -233,7 +251,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       setCompSpec(next); // Modifies compSpec
 
       // Calls code setter with rebuild instuction prompt and new appended spec list, initiates new code gen stream
-      handleSend(resolveComponentSpec(next, specList), true, boxSize, resolveStyle(props.styleID));
+      handleSend(resolveComponentSpec(next, specList), true, boxSize, resolveStyle(props.taskID));
       return;
     }
     
@@ -246,7 +264,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
     setCompSpec(next);
 
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
-    handleSend(resolveComponentSpec(next, defaultSpec), true, boxSize, resolveStyle(props.styleID));
+    handleSend(resolveComponentSpec(next, defaultSpec), true, boxSize, resolveStyle(props.taskID));
   }
 
   /* AUTO GENERATION LOGIC (from UI generator) */
@@ -256,7 +274,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   // registry (the generator committed setDefaultSpec before creating boxes)
   useEffect(() => {
     if (props.autoName) {
-      handleUpdateNameAndSend(props.autoName, props.styleID);
+      handleUpdateNameAndSend(props.autoName, props.taskID);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -265,6 +283,15 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   // empty drop-target. Only top-level boxes live in elementArr, so only they report.
   useEffect(() => {
     if (isGenerating && isRoot) markNonEmpty?.(props.key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGenerating]);
+
+  // Code hoist: whenever a UI leaf FINISHES generating, report its final code up so
+  // SpatialGrid can collect the whole UI (keyed by taskID) and wire it. Fires on
+  // first gen and on every re-gen (customization), keeping the collected code fresh.
+  // Only UI leaves (props.autoName) participate; manual boxes never wire.
+  useEffect(() => {
+    if (!isGenerating && props.autoName && generatedCode) reportCode?.(props.key, generatedCode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGenerating]);
 
@@ -584,21 +611,28 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
                 defaultSpec={defaultSpec}
                 setDefaultSpec={setDefaultSpec}
                 styleSpec={styleSpec}
+                reportCode={reportCode}
+                wiredCode={wiredCode}
+                wiringLeaves={wiringLeaves}
               />
             ))}
           </div>
-        ) : isGenerating ? (
+        ) : (isGenerating || isWiring) ? (
           <div className="flex justify-center items-center animate-vertical-shimmer size-full rounded-lg bg-neutral-900 border border-white/5">
-            {/* Generating | Empty | Showing code preview */}
-            <span>generating...</span>
+            {/* Generating (own stream) | Wiring (Path route) | Empty | Preview */}
+            <span>{isWiring && !isGenerating ? 'wiring...' : 'generating...'}</span>
           </div>
-        ) : (generatedCode == "") ? (
+        ) : (codeToShow == "") ? (
           <span>empty</span>
         ) : (
           <Preview
-            code={generatedCode}
+            // Remount (fresh iframe) when this leaf becomes wired or its wiring
+            // changes, so the injected bus re-initializes and re-registers cleanly.
+            key={wired ? `w${wired.length}` : 'gen'}
+            code={codeToShow}
             boxSize={boxSize}
             isSideDragging={isSideDragging}
+            taskID={props.taskID}
           />
         )}
 
