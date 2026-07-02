@@ -228,7 +228,7 @@ RULES:
 - A component can be a source for some channels and a receiver for others — wire ALL of its channels.
 - Only edit components that appear in at least one channel. Any component with no channel is left as-is and must NOT be output.
 
-OUTPUT FORMAT — this is strict and mechanical; the response is parsed by matching the exact delimiter lines. Output ONLY blocks, nothing else: no markdown, no code fences, no prose, no commentary before, between, or after them. For EACH component you edited, emit EXACTLY ONE block, and emit the delimiter lines LITERALLY and verbatim — the opening line starting with <<<COMPONENT name=" and the closing line <<<END>>>:
+OUTPUT FORMAT — this is strict and mechanical; the response is parsed by matching the exact delimiter lines. <important>Output ONLY blocks, nothing else: no markdown, no code fences, no prose, no commentary before, between, or after them.</important> For EACH component you edited, emit EXACTLY ONE block, and emit the delimiter lines LITERALLY and verbatim — the opening line starting with <<<COMPONENT name=" and the closing line <<<END>>>:
 <<<COMPONENT name="EXACT NAME">>>
 <the full updated component code — the ENTIRE component, not a diff or a snippet>
 <<<END>>>

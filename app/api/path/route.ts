@@ -41,21 +41,25 @@ export async function POST(req: Request) {
   const userContent =
     `CHANNELS TO WIRE:\n${channelList}\n\nCOMPONENTS (current code):\n${componentBlocks}${retryNote}`;
 
-  // STREAM (not create): with max_tokens this high + adaptive thinking, the SDK's
-  // non-streaming path is rejected up front ("Streaming is required for operations
-  // that may take longer than 10 minutes"). We still return one JSON response — we
-  // just consume the model output as a stream and await the assembled message.
+  // STREAM (not create): at this max_tokens the SDK's non-streaming path is rejected
+  // up front ("Streaming is required for operations that may take longer than 10
+  // minutes"). We still return one JSON response — we just consume the model output
+  // as a stream and await the assembled message.
   const stream = anthropic.messages.stream({
-    model: "claude-opus-4-8", // reasoning over existing code — mirrors the planner's config
+    model: "claude-opus-4-8",
     max_tokens: 32000,
-    thinking: { type: "adaptive" },
-    output_config: { effort: "medium" },
+    // Thinking OFF so the whole token budget goes to the echoed component code
+    // (thinking tokens count against max_tokens); effort max for quality.
+    thinking: { type: "disabled" },
+    output_config: { effort: "max" },
     system: PATH_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userContent }],
   });
   const msg = await stream.finalMessage();
 
-  // Reasoning stays in thinking blocks; concatenate the text block(s).
+  // Concatenate the text block(s). Any reasoning preamble the model emits with
+  // thinking off falls OUTSIDE the <<<COMPONENT>>> delimiters, so the parser below
+  // ignores it (and extractComponentCode strips a stray fence inside a block).
   const raw = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("");
 
   // Parse the delimited output blocks -> [{ name, code }]. extractComponentCode drops
