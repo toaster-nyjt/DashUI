@@ -1,13 +1,13 @@
 /**
  * API Route: UI LAYOUT. Given the visible grid size (in blocks), the resolved
- * component specs (full protocol view — name/genInstructions/role/connectivity/
- * include/exclude), and the original task, returns a JSON array of placements
+ * component definitions (full protocol view — name/genInstructions/role/connectivity/
+ * features/excludedFeatures), and the original task, returns a JSON array of placements
  * ({ name, colStart, colEnd, rowStart, rowEnd }) that tile the window exactly.
  * The caller validates the result and re-calls with `previousError` on failure.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { stripCodeFences } from "@/app/utils/helpers";
-import { LAYOUT_SYSTEM_PROMPT, COMPONENT_SPEC_PROTOCOL } from "../SKILLS";
+import { LAYOUT_SYSTEM_PROMPT, COMPONENT_PROTOCOL } from "../SKILLS";
 
 const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   const msg = await anthropic.messages.create({
     model: "claude-opus-4-8",
     max_tokens: 16000,
-    system: LAYOUT_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL,
+    system: LAYOUT_SYSTEM_PROMPT + COMPONENT_PROTOCOL,
     messages: [{ role: "user", content: userContent }],
   });
 

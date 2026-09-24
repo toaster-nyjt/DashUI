@@ -7,16 +7,16 @@
  * so independently generated boxes share one visual identity.
  */
 import Anthropic from "@anthropic-ai/sdk";
-import { STYLE_SYSTEM_PROMPT, COMPONENT_SPEC_PROTOCOL } from "../SKILLS";
+import { STYLE_SYSTEM_PROMPT, COMPONENT_PROTOCOL } from "../SKILLS";
 
 const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
 });
 
 export async function POST(req: Request) {
-  // components = the UI's specs already resolved to the full protocol shape
-  // ({ name, genInstructions, role?, connectivity?, include, exclude }) — the same
-  // resolved view the generator and layout routes see per component.
+  // components = the UI's definitions already resolved to the full protocol shape
+  // ({ name, genInstructions, role?, connectivity?, features, excludedFeatures }) — the
+  // same resolved view the generator and layout routes see per component.
   const { task, components } = await req.json();
 
   const userContent =
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   const msg = await anthropic.messages.create({
     model: "claude-opus-4-8", // design-stage quality, like plan/layout
     max_tokens: 4000,
-    system: STYLE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL,
+    system: STYLE_SYSTEM_PROMPT + COMPONENT_PROTOCOL,
     messages: [{ role: "user", content: userContent }],
   });
 

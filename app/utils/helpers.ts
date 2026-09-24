@@ -1,4 +1,4 @@
-import { CompSpec, DefaultCompSpec, Placement, Connectivity } from "./spec";
+import { ComponentInstance, ComponentDef, Placement, Connectivity } from "./spec";
 
 // One directed runtime link between two leaves of a UI, derived DETERMINISTICALLY
 // (app-side, not by the LLM) from the planner's connectivity so the emit/subscribe
@@ -32,30 +32,30 @@ export function extractComponentCode(raw: string): string {
   return start > 0 ? raw.slice(start) : stripCodeFences(raw);
 }
 
-// Layer between spec and the routes, essentially just does the deterministic array caluculations instead of passing it to the LLM
-// Seperates the spec field into explicit include and exclude lists
-export function resolveComponentSpec(compSpec: CompSpec, defaultSpec: DefaultCompSpec[]): string {
-  const def = defaultSpec.find((d) => d.name === compSpec.name); // Full spec for this box's chosen type
+// Layer between the registry and the routes, essentially just does the deterministic array caluculations instead of passing it to the LLM
+// Separates the component's feature list into explicit active + excluded feature lists
+export function resolveComponent(instance: ComponentInstance, registry: ComponentDef[]): string {
+  const def = registry.find((d) => d.name === instance.name); // Full definition for this box's chosen type
   if (!def) return '{}'; // Unreachable, for ts type safety
 
-  // Indices of active customizations -> their names (features to implement)
-  const include = compSpec.specArrIdx
-    .map((i) => def.spec.specArr[i])
+  // Indices of active features -> their names (features to implement)
+  const activeFeatures = instance.activeIdx
+    .map((i) => def.features[i])
     .filter(Boolean);
 
-  // Every customization NOT chosen -> deliberately excluded features
-  const exclude = def.spec.specArr.filter((_, i) => !compSpec.specArrIdx.includes(i));
+  // Every feature NOT chosen -> deliberately excluded features
+  const excludedFeatures = def.features.filter((_, i) => !instance.activeIdx.includes(i));
 
   // role + connectivity are added without restructuring the existing shape. They
   // are undefined for manual/preset boxes, so JSON.stringify drops them and those
-  // boxes emit exactly the previous { name, genInstructions, include, exclude }.
+  // boxes emit exactly { name, genInstructions, features, excludedFeatures }.
   return JSON.stringify({
     name: def.name,
     genInstructions: def.genInstructions,
     role: def.role,
     connectivity: def.connectivity,
-    include,
-    exclude,
+    features: activeFeatures,
+    excludedFeatures,
   });
 }
 
@@ -64,10 +64,10 @@ export function resolveComponentSpec(compSpec: CompSpec, defaultSpec: DefaultCom
 // Connection names are the join key used by layout (adjacency) and the future
 // path/wiring route, so a dangling name silently breaks those. Returns the first
 // violation so it can be fed back to the planner on retry (see fetchValidPlan).
-export function validateConnectivity(specs: DefaultCompSpec[]): { ok: boolean; error?: string } {
-  const names = new Set(specs.map((s) => s.name));
+export function validateConnectivity(defs: ComponentDef[]): { ok: boolean; error?: string } {
+  const names = new Set(defs.map((s) => s.name));
 
-  for (const s of specs) {
+  for (const s of defs) {
     const edges = [
       ...(s.connectivity?.effectors ?? []).map((c) => ({ c, kind: "effector" })),
       ...(s.connectivity?.targets ?? []).map((c) => ({ c, kind: "target" })),
@@ -130,12 +130,12 @@ export function validateLayout(placements: Placement[], cols: number, rows: numb
   return { ok: true };
 }
 
-// Dev-only: dump the full current component registry (defaultSpec) to the console
-// with ALL fields, so you can watch it grow as the planner / custom-spec route
-// append presets.
-export function logDefaultSpec(defaultSpec: DefaultCompSpec[]): void {
+// Dev-only: dump the full current component registry to the console with ALL
+// fields, so you can watch it grow as the planner / custom-define route append
+// component definitions.
+export function logRegistry(registry: ComponentDef[]): void {
   if (process.env.NODE_ENV === "production") return; // dev log only
-  console.log(`[defaultSpec] ${defaultSpec.length} component(s):`, JSON.stringify(defaultSpec, null, 2));
+  console.log(`[registry] ${registry.length} component(s):`, JSON.stringify(registry, null, 2));
 }
 
 // Derive the deterministic channel list for a UI from its components' connectivity.

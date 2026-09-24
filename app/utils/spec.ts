@@ -41,14 +41,14 @@ export type GeneratedBoxProps = {
 // the /api/layout route. Mirrors the col/row fields of GeneratedBoxProps.
 export type Placement = {name: string} & Omit<GeneratedBoxProps, "key" | "autoName" | "taskID">;
 
-// Per-box: the chosen component type + which customizations are active
-export type CompSpec = {
+// Per-box: the chosen component type + which features are active
+export type ComponentInstance = {
   name: string;
-  specArrIdx: number[]; // indices into the matching DefaultCompSpec's specArr
+  activeIdx: number[]; // indices into the matching ComponentDef's features
 }
 
 // One functional link between two components of the SAME generated UI. `name`
-// references a sibling component's DefaultCompSpec.name exactly (the join key used
+// references a sibling component's ComponentDef.name exactly (the join key used
 // by layout for adjacency and, later, the path/wiring route). See Connectivity.
 export type Connection = {
   name: string;        // exact name of the connected sibling component within this UI
@@ -63,19 +63,17 @@ export type Connectivity = {
   targets: Connection[];   // OUTGOING: sibling components THIS one drives/affects
 }
 
-// A component-type preset in the shared registry (defaultSpec).
+// A component-type entry in the shared registry (componentRegistry).
 // `role` + `connectivity` are populated by the PLANNER only (they describe a
-// component's place inside ONE generated UI). Preset/custom (manual) specs leave
-// them undefined, so they drop out of resolveComponentSpec's JSON for manual boxes.
-export type DefaultCompSpec = {
+// component's place inside ONE generated UI). Preset/custom (manual) defs leave
+// them undefined, so they drop out of resolveComponent's JSON for manual boxes.
+export type ComponentDef = {
   name: string;
   genInstructions: string; // general directions for the LLM for this type
   role?: string;           // declarative role of this component within the larger UI
   connectivity?: Connectivity; // intra-UI functional links to sibling components
-  spec: {
-    specArr: string[];          // all available customizations
-    defaultSpecArrIdx: number[]; // which are on by default
-  };
+  features: string[];         // the component's full, canonical feature list
+  defaultActiveIdx: number[]; // which features are on by default
 }
 
 // Used in getCode to represent messages

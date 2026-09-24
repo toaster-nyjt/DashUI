@@ -2,7 +2,7 @@
  * Standard API route location that generates React components using Claude
  */
 import Anthropic from "@anthropic-ai/sdk";
-import { GENERATE_QA_DIRECTIVE, GENERATE_SYSTEM_PROMPT, GENERATE_STYLE_FALLBACK, COMPONENT_SPEC_PROTOCOL } from "../SKILLS";
+import { GENERATE_QA_DIRECTIVE, GENERATE_SYSTEM_PROMPT, GENERATE_STYLE_FALLBACK, COMPONENT_PROTOCOL } from "../SKILLS";
 import { XY } from "@/app/utils/spec";
 
 const anthropic = new Anthropic({
@@ -22,6 +22,15 @@ export async function POST(req: Request) {
     // generated UI. When absent, fall back to the default style block.
     style?: string;
   };
+
+  // Log the full resolved component spec (name/genInstructions/role/connectivity/
+  // include/exclude) that drives this generation. prompt IS that spec JSON; parse
+  // to pretty-print, falling back to the raw string if it isn't JSON.
+  try {
+    console.log("[generate] spec:\n" + JSON.stringify(JSON.parse(prompt), null, 2));
+  } catch {
+    console.log("[generate] spec:\n" + prompt);
+  }
 
   // A box that belongs to a generated UI carries that UI's coherent style; use it
   // in place of the default style direction so all its components match. Anything
@@ -56,7 +65,7 @@ export async function POST(req: Request) {
     max_tokens: 16000,
     thinking: { type: "disabled" },
     output_config: { effort: "max" }, 
-    system: GENERATE_QA_DIRECTIVE + "\n\n" + GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL + styleBlock + sizeNote, // QA/max-perf preamble + main instructions + spec-JSON protocol + per-UI (or fallback) style + per-box size context
+    system: GENERATE_QA_DIRECTIVE + "\n\n" + GENERATE_SYSTEM_PROMPT + COMPONENT_PROTOCOL + styleBlock + sizeNote, // QA/max-perf preamble + main instructions + component-JSON protocol + per-UI (or fallback) style + per-box size context
     messages, // Shorthand for messages: messages
   });
 

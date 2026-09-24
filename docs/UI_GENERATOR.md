@@ -2,7 +2,7 @@
 
 Primary orientation doc for dash-ui. Its focus is the **task → UI**
 auto-generation feature, but it also documents the conventions and subsystems a
-new contributor needs before touching anything (the **component-spec contract**
+new contributor needs before touching anything (the **component contract**
 in §3 is now codebase-wide, not generator-only). Read §1 + §3 before writing code.
 
 ---
@@ -14,14 +14,14 @@ A spatial canvas where you drag to create boxes; each box picks a component type
 iframe. Customizations toggle features per box.
 
 - **Manual flow (pre-existing):** drag a box → pick a type in `ComponentSelector` /
-  toggle customizations in `CustomizationSelector` → `resolveComponentSpec` →
+  toggle customizations in `CustomizationSelector` → `resolveComponent` →
   `handleSend` → `/api/generate` streams the component code.
 - **Auto flow (the feature this doc covers):** type a high-level task in the
   bottom Taskbar → the app plans, lays out, and fills the visible window with
   self-generating boxes.
 
-Both flows converge on the same endpoint: a box's spec is resolved to JSON by
-`resolveComponentSpec` and streamed through `/api/generate` (see §3).
+Both flows converge on the same endpoint: a box's component is resolved to JSON by
+`resolveComponent` and streamed through `/api/generate` (see §3).
 
 ### Codebase gotchas (read first)
 - **Modified Next.js.** `AGENTS.md`: "This is NOT the Next.js you know" — read
@@ -41,8 +41,8 @@ Both flows converge on the same endpoint: a box's spec is resolved to JSON by
     not hypothetical (see §7).
 - **Comment style.** Keep code comments only as long as necessary; put rationale,
   background, and design context in this doc, not in long inline comments.
-- **Component-spec contract (§3).** Every route that *consumes* a component
-  receives the whole spec as JSON; a shared `COMPONENT_SPEC_PROTOCOL` string tells
+- **Component contract (§3).** Every route that *consumes* a component
+  receives the whole component as JSON; a shared `COMPONENT_PROTOCOL` string tells
   the model how to parse it. Don't pass bare names or hand-built sentences.
 - Grid constants in `app/utils/spec.ts`: `numGridBlocksWide = 45`,
   `numVHTall = 250`. **The grid is 250vh — taller than the viewport.** "Visible
@@ -51,8 +51,8 @@ Both flows converge on the same endpoint: a box's spec is resolved to JSON by
   UI is now ONE parent "group" box that contains its components as nested
   children; selection is a `selectionPath`; right-click ungroups. §2/§4/§5 are
   annotated where §8 supersedes them.
-- `defaultSpec` is the shared component registry. `CompSpec.specArrIdx` is
-  **positional** (indices into `specArr`) — fragile if a registry entry is replaced.
+- `componentRegistry` is the shared component registry. `ComponentInstance.activeIdx` is
+  **positional** (indices into `features`) — fragile if a registry entry is replaced.
 - **State-commit-on-`await` is load-bearing** (see §5, risk 1).
 - Use the Read tool (not `cat`/`grep`) as source of truth — terminal output garbles.
 
@@ -69,109 +69,118 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
 
 0. **BOUNDS + AREA** — compute the target region (a selected `isEmpty` box, else the
    visible window) and its pixel size (`w/h × gridBlockSize`), *before* planning.
-1. **PLAN** — `POST /api/plan {task, width, height}` → `DefaultCompSpec[]`. The
+1. **PLAN** — `POST /api/plan {task, width, height}` → `ComponentDef[]`. The
    planner scales component count to the available pixel area (§8).
 1b. **STYLE** — `POST /api/style {task, components}` → `{ style: string }` — ONE
    coherent visual identity for this whole UI (§9). `components` is the planner
-   specs *resolved* through `resolveComponentSpec` (active set = each preset's
-   `defaultSpecArrIdx`), so the styler sees the same protocol view the generator
+   defs *resolved* through `resolveComponent` (active set = each component's
+   `defaultActiveIdx`), so the styler sees the same protocol view the generator
    will. Always called on the auto path.
-2. **REGISTER** — `setDefaultSpec(prev => [...prev, ...specs])` **and**
+2. **REGISTER** — `setComponentRegistry(prev => [...prev, ...defs])` **and**
    `setStyleSpec(prev => ({ ...prev, [taskRequest.id]: style }))`. The `await` in
    step 3 lets both commit *before* any box is created.
 3. **LAYOUT** — tile the region interior `w × h`.
    - **Single component:** skip the layout route — it **fills** the box (`1..w / 1..h`).
    - **Multiple components:** `fetchValidLayout` → `POST /api/layout
      {task, components, cols=w, rows=h, previousError}` → `Placement[]` (LOCAL coords).
-     `components` is the **resolved spec view** (`resolveComponentSpec` output, reused
+     `components` is the **resolved component view** (`resolveComponent` output, reused
      from the style step), same shape generate + style get. Validated + retried.
 4. **PLACE** — `runUIGeneration` *returns* ONE parent group box (placements
    become its `children`, carrying local coords + `autoName`); the effect appends it
    to `elementArr`, replacing the targeted empty box if any. (§8)
 5. **SELF-GENERATE** — each leaf `GeneratedBox` with `props.autoName` runs a mount
-   effect → `handleUpdateNameAndSend(autoName)` → finds spec in registry →
-   `resolveComponentSpec` → `handleSend` → `/api/generate` stream.
+   effect → `handleUpdateNameAndSend(autoName)` → finds def in registry →
+   `resolveComponent` → `handleSend` → `/api/generate` stream.
 
 ---
 
-## 3. The component-spec contract  ← read this before touching routes/specs
+## 3. The component contract  ← read this before touching routes/defs
 
-**Standard:** any route that *consumes* component info takes the **whole spec as
+**Standard:** any route that *consumes* component info takes the **whole component as
 JSON**, never bare names or a hand-built instruction sentence. A single shared
-protocol string, `COMPONENT_SPEC_PROTOCOL` (in `app/api/SKILLS.ts`), documents the
+protocol string, `COMPONENT_PROTOCOL` (in `app/api/SKILLS.ts`), documents the
 JSON schema; each consuming route **appends it to its system prompt**, and the
 route's base prompt says "follow the protocol to parse client content." The
-protocol is **pure schema** — what to *do* with the spec lives in each route's own
+protocol is **pure schema** — what to *do* with the component lives in each route's own
 system prompt.
 
-> **CONVENTION — incoming specs are the FULL RESOLVED SPEC unless otherwise specified.**
+> **CONVENTION — incoming components are the FULL RESOLVED COMPONENT unless otherwise specified.**
 > Every consuming route (generate, layout, style) receives the output of
-> `resolveComponentSpec` — `{ name, genInstructions, role?, connectivity?, include,
-> exclude }` — *not* the raw `DefaultCompSpec` (`specArr`/`defaultSpecArrIdx`). A route
-> that needs a different shape must say so explicitly. This keeps the payload aligned
-> with the `COMPONENT_SPEC_PROTOCOL` each route is handed. (plan/spec are exempt —
-> they *create* specs, they don't consume one.)
+> `resolveComponent` — `{ name, genInstructions, role?, connectivity?, features,
+> excludedFeatures }` — *not* the raw `ComponentDef` (`features` array + `defaultActiveIdx`
+> indices). A route that needs a different shape must say so explicitly. This keeps the
+> payload aligned with the `COMPONENT_PROTOCOL` each route is handed. (plan & spec are
+> exempt — they *create* component definitions, they don't consume one.)
 
-**`resolveComponentSpec(compSpec, defaultSpec)`** (`app/utils/helpers.ts`) is the
+**`resolveComponent(instance, componentRegistry)`** (`app/utils/helpers.ts`) is the
 single client-side resolver. It replaced the old `buildInstructions` (which built
 a prose sentence). It:
-- finds the box's `DefaultCompSpec` by name,
-- maps `compSpec.specArrIdx` → active feature names (`include`),
-- takes every *other* feature in `specArr` as `exclude`,
-- returns `JSON.stringify({ name, genInstructions, role, connectivity, include, exclude })`
+- finds the box's `ComponentDef` by name,
+- maps `instance.activeIdx` → active feature names (`features`),
+- takes every *other* feature in the def's `features` list as `excludedFeatures`,
+- returns `JSON.stringify({ name, genInstructions, role, connectivity, features, excludedFeatures })`
   (`role`/`connectivity` are planner-only; `undefined` on manual/preset boxes, so they
   drop out of the JSON and those boxes emit the original 4-field shape).
 
 That JSON string is what `handleSend` sends as the user message to `/api/generate`.
 
 **Wiring per route:**
-- **generate** — `system = GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL +
-  sizeNote`; the user message *is* the `resolveComponentSpec` JSON. All three
+- **generate** — `system = GENERATE_SYSTEM_PROMPT + COMPONENT_PROTOCOL +
+  sizeNote`; the user message *is* the `resolveComponent` JSON. All three
   `GeneratedBox` call sites pass `fresh = true`, so generation is single-shot from
-  the spec each time (no multi-turn history in this path).
-- **layout** — receives the **resolved spec view** (per the convention above; reuses
-  the `resolvedSpecs` already built for style); `system = LAYOUT_SYSTEM_PROMPT +
-  COMPONENT_SPEC_PROTOCOL`. Uses `name`, `genInstructions`, `role` (centrality/area),
-  `include` (content-density hint), and `connectivity` (place connected pairs adjacent).
-- **style** — receives the **resolved spec view** of every component in the UI at once;
-  `system = STYLE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL` (see §9).
-- **plan** & **spec** are **exempt** — they *create* specs (from a task / a custom
-  name); there's no existing component to receive.
+  the component each time (no multi-turn history in this path).
+- **layout** — receives the **resolved component view** (per the convention above; reuses
+  the `resolvedDefs` already built for style); `system = LAYOUT_SYSTEM_PROMPT +
+  COMPONENT_PROTOCOL`. Uses `name`, `genInstructions`, `role` (centrality/area),
+  `features` (content-density hint), and `connectivity` (place connected pairs adjacent).
+- **style** — receives the **resolved component view** of every component in the UI at once;
+  `system = STYLE_SYSTEM_PROMPT + COMPONENT_PROTOCOL` (see §9).
+- **plan** & **spec** are **exempt** — they *create* component definitions (from a task / a
+  custom name); there's no existing component to receive.
 
 **Why resolution stays client-side (and is NOT pushed into the protocol):** the
 index→name mapping is trivial but the *deterministic* part of the job. Moving it
-into the LLM (i.e. shipping `specArr` + active indices and asking the model to
-resolve them) would put off-by-one / miscount risk on the **no-thinking** generate
-path, with **no validation net** (unlike layout, which has `validateLayout`).
-`specArr` is also not bounded — the custom-customization feature appends to it
-([GeneratedBox] `handleUpdateSpecAndSend`), so arrays grow over a session. So the
+into the LLM (i.e. shipping the full `features` list + active indices and asking the
+model to resolve them) would put off-by-one / miscount risk on the **no-thinking**
+generate path, with **no validation net** (unlike layout, which has `validateLayout`).
+The `features` list is also not bounded — the custom-feature flow appends to it
+([GeneratedBox] `handleUpdateFeatureAndSend`), so arrays grow over a session. So the
 client does the reliable array math; the protocol owns only the schema + the
-include/exclude *semantics*. (This was the "Option A vs B" decision — **B** chosen:
-ship resolved `include`/`exclude`, not raw indices.)
+active/excluded *semantics*. (This was the "Option A vs B" decision — **B** chosen:
+ship resolved active/excluded feature lists, not raw indices.)
 
-**`include`/`exclude` semantics** (ties to §5, risk 6): `include` = features to
-implement; `exclude` = every other feature in the spec, which must **never render
-in any form**. This is what enforces `GENERATE_SYSTEM_PROMPT`'s "don't add features
-you weren't asked for" rule for toggled-off customizations.
+**`features`/`excludedFeatures` semantics** (ties to §5, risk 6): the resolved
+`features` list is the **canonical, exhaustive** set the generator builds — every
+feature in it, and NOTHING outside it (`genInstructions`/`role`/`connectivity` are
+how-to guidance, not extra buildables). `excludedFeatures` = every deselected feature,
+which must **never render in any form**. This is what enforces `GENERATE_SYSTEM_PROMPT`'s
+"build exactly the feature list" rule.
+
+> **Canonical-features shift (Sept 2026).** The feature list used to be *optional
+> add-ons* layered on a core described in prose; it's now the **definitive** list of
+> what the component IS. The planner's FEATURE SET step (§11) makes it exhaustive, and
+> `defaultActiveIdx` enables **all** features by default for planner/custom components
+> (presets enable core + a few). Renamed alongside: the old `spec.specArr` /
+> `include` / `exclude` are now `features` / `features` (active) / `excludedFeatures`.
 
 ---
 
 ## 4. Files & codebase map
 
-**Component-spec refactor (most recent work)**
-- `app/utils/helpers.ts` — `resolveComponentSpec` (replaced `buildInstructions`);
+**Component contract refactor (most recent work)**
+- `app/utils/helpers.ts` — `resolveComponent` (replaced `buildInstructions`);
   also holds `stripCodeFences`, `validateLayout`.
-- `app/api/SKILLS.ts` — added shared `COMPONENT_SPEC_PROTOCOL`; `GENERATE_` and
+- `app/api/SKILLS.ts` — added shared `COMPONENT_PROTOCOL`; `GENERATE_` and
   `LAYOUT_SYSTEM_PROMPT` now point at it.
 - `app/api/generate/route.ts` / `app/api/layout/route.ts` — append the protocol;
-  both take the resolved spec view (see the convention in §3).
-- `app/components/GeneratedBox.tsx` — 3 call sites now use `resolveComponentSpec`.
-- `app/components/SpatialGrid.tsx` — `fetchValidLayout` sends `resolvedSpecs` (the
-  resolved view reused from the style step), not raw `specs` or `specs.map(s => s.name)`.
+  both take the resolved component view (see the convention in §3).
+- `app/components/GeneratedBox.tsx` — 3 call sites now use `resolveComponent`.
+- `app/components/SpatialGrid.tsx` — `fetchValidLayout` sends `resolvedDefs` (the
+  resolved view reused from the style step), not raw `defs` or `defs.map(s => s.name)`.
 
 **Generator feature (earlier work)**
-- `app/api/plan/route.ts` — planner route (task → `DefaultCompSpec[]`).
-- `app/api/layout/route.ts` — layout route (specs + grid → `Placement[]`).
+- `app/api/plan/route.ts` — planner route (task → `ComponentDef[]`).
+- `app/api/layout/route.ts` — layout route (component defs + grid → `Placement[]`).
 - `app/utils/spec.ts` — `autoName?: string` on `GeneratedBoxProps`; `Placement` type.
 - `app/components/Taskbar.tsx` — `onGenerate` + Enter submit; disabled "Currently
   Designing Layout…" while `isDesigning`.
@@ -187,11 +196,11 @@ you weren't asked for" rule for toggled-off customizations.
 - `app/components/SpatialGrid.tsx` — the canvas: drag-to-create boxes, grid-block
   sizing, **`selectionPath`** selection, Delete/Backspace removal, **right-click
   ungroup menu**, `markNonEmpty` / `syncBounds` / recursive `ungroup`; **owns the
-  `defaultSpec` registry**; runs the generator pipeline (§8).
-- `app/components/GeneratedBox.tsx` — one box, **recursive**: per-box `compSpec`
+  `componentRegistry` registry**; runs the generator pipeline (§8).
+- `app/components/GeneratedBox.tsx` — one box, **recursive**: per-box `instance`
   state, move-drag (root only), resize (manual leaf only), popup menu, the `autoName`
   self-generate mount effect, and the **group children-grid vs. Preview** branch;
-  calls `resolveComponentSpec` → `handleSend` (§8).
+  calls `resolveComponent` → `handleSend` (§8).
 - `app/components/ComponentSelector.tsx` — popup to pick a registry type or type a
   custom name (custom name → `/api/spec`).
 - `app/components/CustomizationSelector.tsx` — popup to toggle/add customizations
@@ -199,7 +208,7 @@ you weren't asked for" rule for toggled-off customizations.
 - `app/components/Preview.tsx` — Sandpack iframe host + host-side scaling logic.
 - `app/utils/spec.ts` — shared types + grid constants.
 - `app/utils/helpers.ts` — server-safe pure utils (importable by routes).
-- `app/utils/defaultSpec.ts` — `DEFAULT_SPEC` seed registry (Kanban, Data Table,
+- `app/utils/componentRegistry.ts` — `COMPONENT_REGISTRY` seed registry (Kanban, Data Table,
   Stat Dashboard, Calendar, Chart Panel, Form).
 - `app/utils/useGetCode.ts` — `useGetCode` hook: streaming fetch to `/api/generate`,
   message history, `generatedCode` / `isGenerating`.
@@ -210,12 +219,12 @@ you weren't asked for" rule for toggled-off customizations.
 **Key types**
 ```ts
 GeneratedBoxProps = { colStart, colEnd, rowStart, rowEnd, key, autoName?, children?, isChild?, isEmpty?, taskID? } // children/isChild/isEmpty → §8; taskID (was styleID) → §9 (style) + §12 (wiring)
-DefaultCompSpec  = { name, genInstructions, spec: { specArr: string[], defaultSpecArrIdx: number[] } }
-CompSpec         = { name, specArrIdx: number[] }   // specArrIdx = positional indices into specArr
-Placement        = { name, colStart, colEnd, rowStart, rowEnd }
+ComponentDef      = { name, genInstructions, role?, connectivity?, features: string[], defaultActiveIdx: number[] }
+ComponentInstance = { name, activeIdx: number[] }   // activeIdx = positional indices into features
+Placement         = { name, colStart, colEnd, rowStart, rowEnd }
 
-// Wire shape emitted by resolveComponentSpec → /api/generate (see §3):
-{ name: string, genInstructions: string, include: string[], exclude: string[] }
+// Wire shape emitted by resolveComponent → /api/generate (see §3):
+{ name, genInstructions, role?, connectivity?, features: string[], excludedFeatures: string[] }
 ```
 
 **Coordinate convention:** 1-indexed, **inclusive**. A box occupies
@@ -246,9 +255,9 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
 
 ## 5. Design decisions & reasoning (the "6 risks")
 
-1. **Async commit before self-gen.** `setDefaultSpec` is queued; the `await
+1. **Async commit before self-gen.** `setComponentRegistry` is queued; the `await
    fetchValidLayout` between it and `setElementArr` guarantees the registry
-   commits before boxes mount, so each box's mount effect finds its spec (no
+   commits before boxes mount, so each box's mount effect finds its definition (no
    `/api/spec` re-fetch). The box mount effect *is* the post-commit trigger.
 2. **Boxes self-trigger** via the `autoName` mount effect (manual boxes leave
    `autoName` undefined → no-op).
@@ -261,15 +270,16 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
    validation) — it **fills** the region, so there's nothing to tile.
 4. **Always-new, colon-namespaced names** (`"Theme: Specific Component"`, e.g.
    `"Music Player: Now Playing Bar"`). The grid only *appends* to the registry,
-   never replaces — avoids breaking positional `specArrIdx` and existing boxes.
+   never replaces — avoids breaking positional `activeIdx` and existing boxes.
    **No cross-run dedup yet** (deliberately deferred; repeat identical themes can
    collide and `.find()` grabs the first).
 5. **Reuse `GeneratedBoxProps` / `Placement`**, not parallel shapes.
-6. **Functionality-critical customizations must be in `defaultSpecArrIdx`** (a
-   planner-prompt rule) — because `handleUpdateNameAndSend` seeds `specArrIdx`
-   from `defaultSpecArrIdx`, and `resolveComponentSpec` puts everything *not*
-   active into the `exclude` list, which the generate route's
-   `COMPONENT_SPEC_PROTOCOL` enforces as "never render in any form."
+6. **Functionality-critical features must be in `defaultActiveIdx`** (a planner-prompt
+   rule; the planner now enables *all* of a component's features by default, presets
+   core + a few) — because `handleUpdateNameAndSend` seeds `activeIdx` from
+   `defaultActiveIdx`, and `resolveComponent` puts everything *not* active into
+   `excludedFeatures`, which the generate route's `COMPONENT_PROTOCOL` enforces as
+   "never render in any form."
 
 **Other decisions**
 - `reactStrictMode: false` stops dev from double-invoking the one-shot auto-gen
@@ -286,7 +296,7 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
 
 ## 6. Open items / caveats
 
-- `resolveComponentSpec` emits the spec as JSON with e.g. `"name": "Music Player:
+- `resolveComponent` emits the component as JSON with e.g. `"name": "Music Player:
   Now Playing Bar"` — the colon prefix rides into the generate prompt via the name
   field (acts as helpful context; strip if undesired).
 - **Pre-existing lint errors** (newer react-hooks plugin, severity `error` but
@@ -295,7 +305,7 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
     render path; GeneratedBox `blockPosLiveRef`/`resizeRectLive` mirror-in-render).
     These are real smells; ideally move ref touches into effects/handlers.
   - `react-hooks/set-state-in-effect` — several intentional effects (interactMode,
-    auto-gen, task-trigger, menu-reopen, isEmpty report, defaultSpec dev-log).
+    auto-gen, task-trigger, menu-reopen, isEmpty report, componentRegistry dev-log).
     Intentional → suppress-with-rationale candidates.
 - Registry grows with prefixed entries; they also appear in the manual
   `ComponentSelector` dropdown (no filtering). Deferred.
@@ -350,7 +360,7 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
 - **No cross-run dedup yet** (deliberately deferred; repeat identical themes can
   collide and `.find()` grabs the first).
 - **Future: min-size-per-component.** Discussed approach — add optional
-  `minBlockDim: XY` to `DefaultCompSpec`, clamp resize in `GeneratedBox`
+  `minBlockDim: XY` to `ComponentDef`, clamp resize in `GeneratedBox`
   (`handleResizeUp`). Keep it a *container* constraint; do NOT put minimums in the
   generate prompt (reintroduces the shrink-floor → overflow → clip chain).
 - **Future: preserve generated code across ungroup (nested boxes).** Ungrouping a
@@ -407,7 +417,7 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
     readouts, status strips, indicators) are explicitly welcomed and told NOT to bolt
     fake controls onto them; but any component whose role implies interaction MUST wire
     every rendered control to real React state/handlers — "a visible button/input/toggle
-    that does nothing is a failure." Scoped so it does NOT conflict with the include-list
+    that does nothing is a failure." Scoped so it does NOT conflict with the feature-list
     rule (it governs whether rendered controls actually *work*, not which features
     render). Added after generic-"UI" generations skewed style-heavy / interaction-light.
   - **Outermost element is square (`rounded-none`).** The outer container must carry no
@@ -427,7 +437,7 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
 - **Theme** (`app/globals.css`): `--color-bgdarkblue` renamed `--color-canvas`;
   darker canvas, stronger dots, brighter/faster loading shimmer; `--shadow-custom`
   fixed to use `color-mix` instead of the nonexistent `--color-borderactive-50`.
-- **`defaultSpec.ts`** Data Table `genInstructions` got explicit
+- **`componentRegistry.ts`** Data Table `genInstructions` got explicit
   `table-fixed`/truncate guidance.
 
 ---
@@ -543,8 +553,8 @@ Sandpack's own radius is zeroed via `!rounded-none` on the `sp-*` classes
 (`Preview.tsx`). Resize handles are hidden while a box `isGenerating`.
 
 ### Dev helper
-`logDefaultSpec(defaultSpec)` (`helpers.ts`, dev-only) JSON-dumps the full registry;
-`SpatialGrid` calls it in a `[defaultSpec]` effect (mount + every change).
+`logRegistry(componentRegistry)` (`helpers.ts`, dev-only) JSON-dumps the full registry;
+`SpatialGrid` calls it in a `[componentRegistry]` effect (mount + every change).
 
 ---
 
@@ -558,10 +568,10 @@ visual identity that every one of its components is generated against.
 ### The STYLE route (`app/api/style/route.ts`)
 - Runs **after PLAN, before LAYOUT** in `runUIGeneration` (§2 step 1b). Always
   called on the auto path; lets errors fall to the pipeline's outer `catch`.
-- Input: `{ task, components }` where `components` is the planner specs **resolved
-  through `resolveComponentSpec`** (active set = each preset's `defaultSpecArrIdx`),
-  i.e. the same `{name, genInstructions, include, exclude}` protocol view the
-  generator gets per component. `system = STYLE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL`.
+- Input: `{ task, components }` where `components` is the planner defs **resolved
+  through `resolveComponent`** (active set = each component's `defaultActiveIdx`),
+  i.e. the same `{name, genInstructions, features, excludedFeatures}` protocol view the
+  generator gets per component. `system = STYLE_SYSTEM_PROMPT + COMPONENT_PROTOCOL`.
 - Output: `{ style: string }` — a **design token sheet** (NOT JSON, not a mood
   board): labelled bullets of concrete Tailwind classes per category (background
   layers, borders & radius, color tiers, typography, spacing, **structural chrome**,
@@ -597,9 +607,9 @@ visual identity that every one of its components is generated against.
 
 ### The registry (`SpatialGrid`)
 - `styleSpec: Record<number, string>` — `taskID` (= `taskRequest.id`) → that UI's
-  style string. Committed alongside `defaultSpec` (same state-commit-on-`await`
+  style string. Committed alongside `componentRegistry` (same state-commit-on-`await`
   guarantee, §5 risk 1), so a box finds its style at mount.
-- Threaded down to every `GeneratedBox` (like `defaultSpec`); a group passes it to
+- Threaded down to every `GeneratedBox` (like `componentRegistry`); a group passes it to
   its children recursively.
 
 ### Threading the style into generation
@@ -618,7 +628,7 @@ visual identity that every one of its components is generated against.
 ### Generate prompt split (`SKILLS.ts`)
 The style sections were **extracted** out of `GENERATE_SYSTEM_PROMPT` into a standalone
 `GENERATE_STYLE_FALLBACK`. `generate/route.ts` builds `system = GENERATE_QA_DIRECTIVE +
-GENERATE_SYSTEM_PROMPT + COMPONENT_SPEC_PROTOCOL + styleBlock + sizeNote` — `GENERATE_QA_DIRECTIVE`
+GENERATE_SYSTEM_PROMPT + COMPONENT_PROTOCOL + styleBlock + sizeNote` — `GENERATE_QA_DIRECTIVE`
 is a short max-performance + self-QA preamble (plan before coding, then self-review against the
 rules). `styleBlock` is the per-UI
 `style` (when present, labelled "VISUAL GUIDELINES") or `GENERATE_STYLE_FALLBACK` (when
@@ -666,15 +676,15 @@ to viewport `%` before the first measurement.
 
 ---
 
-## 11. Roles, connectivity & the resolved-spec convention (latest session)
+## 11. Roles, connectivity & the resolved-component convention (latest session)
 
 The planner now codifies each component's **role** in the UI and its **functional
 connectivity** to the other components, and the consuming routes were unified onto a
-single resolved-spec view.
+single resolved-component view.
 
-### New spec fields (`app/utils/spec.ts`)
-- `DefaultCompSpec` gained **optional** `role?: string` and `connectivity?: Connectivity`.
-  Both are **planner-only** — preset (`DEFAULT_SPEC`) and custom (`/api/spec`) specs leave
+### New component fields (`app/utils/spec.ts`)
+- `ComponentDef` gained **optional** `role?: string` and `connectivity?: Connectivity`.
+  Both are **planner-only** — preset (`COMPONENT_REGISTRY`) and custom (`/api/spec`) defs leave
   them undefined, so they drop out of the resolved JSON for manual boxes.
 - New types: `Connection = { name, description }` (name = exact sibling component name) and
   `Connectivity = { effectors: Connection[]; targets: Connection[] }`.
@@ -682,16 +692,20 @@ single resolved-spec view.
   `effectors` = INCOMING (components that drive THIS one). An edge A→B is recorded on
   **both** endpoints (B in `A.targets`, A in `B.effectors`).
 
-### Planner reasoning chain (`PLAN_SYSTEM_PROMPT`) — now 5 steps
+### Planner reasoning chain (`PLAN_SYSTEM_PROMPT`) — now 6 steps
 1. functionality map → 2. component mapping → **3. connectivity** (wire targets/effectors;
 mirror both sides; no redundant/overlapping edges; any control a connection needs must be
-in `specArr` AND enabled in `defaultSpecArrIdx`) → **4. quality control** (in-prompt:
-does the set + wiring form ONE coherent UI subsystem? revise ideas or rerun if not) →
-**5. role** (one-sentence declarative role, as reflection). Output JSON gained `role` +
-`connectivity`. QC rides the planner's existing adaptive thinking — **not** a separate call.
+in `features` AND enabled in `defaultActiveIdx`) → **4. feature set** (combine each
+component's own functionality + everything its connectivity requires into the EXHAUSTIVE,
+canonical `features` list — the generator builds exactly the active features and nothing
+else, so anything omitted is never built) → **5. quality control** (in-prompt: does the set
++ wiring + feature sets form ONE coherent UI subsystem? revise ideas or rerun if not) →
+**6. role** (one-sentence declarative role, as reflection). Output JSON has `role`,
+`connectivity`, `features`, `defaultActiveIdx`. QC rides the planner's existing adaptive
+thinking — **not** a separate call.
 
 ### Connectivity name integrity (`validateConnectivity` + `fetchValidPlan`)
-- `validateConnectivity(specs)` (`helpers.ts`): every effector/target `name` must match a
+- `validateConnectivity(defs)` (`helpers.ts`): every effector/target `name` must match a
   real sibling (and never itself); returns the first violation.
 - `fetchValidPlan` (`SpatialGrid`) wraps `/api/plan` in a retry loop (`PLAN_RETRIES = 3`,
   mirrors `fetchValidLayout`), feeding `previousError` back to the plan route (which now
@@ -700,21 +714,23 @@ does the set + wiring form ONE coherent UI subsystem? revise ideas or rerun if n
   ids (§12).
 
 ### Where role/connectivity flow
-- Added to `resolveComponentSpec`'s output (additively — see §3), so they reach **generate**
+- Added to `resolveComponent`'s output (additively — see §3), so they reach **generate**
   (the prompt) and, via the resolved view, **layout** and **style** — with **no
   `GeneratedBox` change** (auto-gen already resolves against the registry at mount).
-- **GENERATE** treats `role`/`connectivity` as primary context shaping the component (build
-  the controls/surfaces that make its links real); actual cross-component wiring is done by
-  the **Path route** (§12).
+- **GENERATE** treats `role`/`connectivity` as **focus guidelines** — they shape which of the
+  component's features matter most and how, but add no features beyond the canonical list
+  (the controls/surfaces a connection needs are already in `features`). Actual cross-component
+  wiring is done by the **Path route** (§12).
 - **LAYOUT** uses `role` (centrality/area), `connectivity` (place connected pairs adjacent —
-  control beside the display it drives), and `include` (content-density → area).
+  control beside the display it drives), and `features` (content-density → area).
 
-### Resolved-spec convention + the layout fix
-The **layout route was switched from the raw `DefaultCompSpec[]` to the resolved view**
-(reusing the `resolvedSpecs` already built for style). This fixed a pre-existing mismatch:
-layout's appended `COMPONENT_SPEC_PROTOCOL` described `include`/`exclude`, but layout was
-actually receiving raw `specArr`/`defaultSpecArrIdx`. Now generate, layout, and style all
-consume the same resolved view — codified as the **full-resolved-spec convention** in §3.
+### Resolved-component convention + the layout fix
+The **layout route was switched from the raw `ComponentDef[]` to the resolved view**
+(reusing the `resolvedDefs` already built for style). This fixed a pre-existing mismatch:
+layout's appended `COMPONENT_PROTOCOL` described the resolved feature lists, but layout was
+actually receiving the raw `features` array + `defaultActiveIdx` indices. Now generate, layout,
+and style all consume the same resolved view — codified as the **full-resolved-component
+convention** in §3.
 
 ### Scope
 1-level grouping only — no recursive / "higher component set" connectivity yet. The
@@ -758,10 +774,10 @@ relay → iframe** (iframes can't address each other; only the host hears and ca
 
 ### Channel ids are computed app-side (not by the LLM)
 The #1 failure mode is the two endpoints disagreeing on the channel string. So `buildChannels`
-(`helpers.ts`) derives the **deterministic** edge list from the specs' `connectivity.targets`
+(`helpers.ts`) derives the **deterministic** edge list from the components' `connectivity.targets`
 — each target becomes `{ id: "<from>-><to>", from, to, description }`, dangling/self edges
 dropped, duplicates collapsed — and the route is *handed* those ids to implement. (Same
-"deterministic parts stay in JS" philosophy as `resolveComponentSpec`, §3.)
+"deterministic parts stay in JS" philosophy as `resolveComponent`, §3.)
 
 ### The initial-sync cache (why register happens in a mount effect)
 We keep a **last-value cache** so a receiver that mounts after a value was published still

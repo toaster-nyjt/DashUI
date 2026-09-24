@@ -1,6 +1,6 @@
-import { GeneratedBoxProps, XY, defaultXY, CompSpec, DefaultCompSpec } from '../utils/spec';
+import { GeneratedBoxProps, XY, defaultXY, ComponentInstance, ComponentDef } from '../utils/spec';
 import { useGetCode } from '../utils/useGetCode';
-import { resolveComponentSpec } from '../utils/helpers';
+import { resolveComponent } from '../utils/helpers';
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import ComponentSelector from './ComponentSelector';
 import CustomizationSelector from './CustomizationSelector';
@@ -28,7 +28,7 @@ let pendingDrillPath: string[] | null = null;
 // Created from drag interaction in Spacial Grid, 
 // Contains a bunch of low level visual layer transformations for the boxes,
 // and the main logic behind the prompt routing
-export default function GeneratedBox({ props, path, selectionPath, setSelectionPath, blockSize, gridRef, interactMode, defaultSpec, setDefaultSpec, styleSpec, isChild = false, markNonEmpty, syncBounds, reportCode, wiredCode, wiringLeaves }
+export default function GeneratedBox({ props, path, selectionPath, setSelectionPath, blockSize, gridRef, interactMode, componentRegistry, setComponentRegistry, styleSpec, isChild = false, markNonEmpty, syncBounds, reportCode, wiredCode, wiringLeaves }
   : {
       props : GeneratedBoxProps,
       // This box's path from its top-level root, e.g. [rootKey] or [rootKey, childKey].
@@ -39,8 +39,8 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       blockSize : number
       gridRef : HTMLDivElement
       interactMode : boolean
-      defaultSpec : DefaultCompSpec[]
-      setDefaultSpec : React.Dispatch<React.SetStateAction<DefaultCompSpec[]>>
+      componentRegistry : ComponentDef[]
+      setComponentRegistry : React.Dispatch<React.SetStateAction<ComponentDef[]>>
       // Per-UI style registry (taskID -> style). A box of a generated UI looks up
       // its style here by props.taskID; manual boxes have no taskID and get the
       // generate route's fallback style.
@@ -65,9 +65,9 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
 
   /* DATA LAYER STATE VARS */
 
-  // The chosen component type + active customizations for this box
-  const [compSpec, setCompSpec] = useState<CompSpec>({ name: '', specArrIdx: [] });
-  // True while the LLM generates a customization preset for a custom component
+  // The chosen component type + active features for this box
+  const [instance, setInstance] = useState<ComponentInstance>({ name: '', activeIdx: [] });
+  // True while the LLM generates a definition for a custom component
   const [isLoadingSpec, setIsLoadingSpec] = useState<boolean>(false);
 
 
@@ -182,28 +182,28 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   const resolveStyle = (taskID? : number) =>
     taskID !== undefined ? styleSpec[taskID] : undefined;
 
-  // Finds and generates existing component in default or generates the DefaultCompSpec for a custom component, sets compSpec
+  // Finds and generates existing component in the registry or generates the ComponentDef for a custom component, sets the instance
   const handleUpdateNameAndSend = async (name : string, taskID? : number) => {
-    let def = defaultSpec.find((d) => d.name === name) as DefaultCompSpec; 
-    let specList = defaultSpec; // To add in the new generated spec immediately to use list in handleSend without waiting for state setter
+    let def = componentRegistry.find((d) => d.name === name) as ComponentDef;
+    let registryList = componentRegistry; // To add in the new generated def immediately to use in handleSend without waiting for state setter
 
-    // If the name isn't in default spec list -> Custom name entered -> Updates default spec
+    // If the name isn't in the registry -> Custom name entered -> Updates the registry
     if (!def) {
       setIsLoadingSpec(true); // Sets loading wheel
       try {
-        // Calls the spec custom component instructions API route
+        // Calls the custom component definition API route
         const res = await fetch('/api/spec', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name }), // Literally send the name of the custom component, could be "Fidget Spinner"
         });
-        if (!res.ok) throw new Error('spec generation failed');
+        if (!res.ok) throw new Error('definition generation failed');
 
-        // New spec created
-        const createdSpec = await res.json() as DefaultCompSpec;
-        setDefaultSpec((prev) => [...prev, createdSpec]); // add to the shared registry (queues state setter)
-        def = createdSpec;
-        specList = [...defaultSpec, createdSpec]; // update local list
+        // New definition created
+        const createdDef = await res.json() as ComponentDef;
+        setComponentRegistry((prev) => [...prev, createdDef]); // add to the shared registry (queues state setter)
+        def = createdDef;
+        registryList = [...componentRegistry, createdDef]; // update local list
 
       } catch (e) {
         console.error(e);
@@ -214,64 +214,64 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       setIsLoadingSpec(false); // Unsets loading wheel
     }
 
-    // Next spec state for this box
-    const next : CompSpec = { name, specArrIdx: def.spec.defaultSpecArrIdx }; // Initial active customizations get set to the default idxs
-    setCompSpec(next);
+    // Next instance state for this box
+    const next : ComponentInstance = { name, activeIdx: def.defaultActiveIdx }; // Initial active features get set to the default idxs
+    setInstance(next);
 
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
-    // THIS IS WHERE ALL COMPONENT SPECS -> CODE. style (if any) keeps this box visually
+    // THIS IS WHERE ALL COMPONENT DEFINITIONS -> CODE. style (if any) keeps this box visually
     // coherent with the rest of its generated UI.
-    handleSend(resolveComponentSpec(next, specList), true, boxSize, resolveStyle(taskID));
+    handleSend(resolveComponent(next, registryList), true, boxSize, resolveStyle(taskID));
   }
 
-  /* MAIN CUSTOMIZATION (SPEC) HANDLER */ 
+  /* MAIN FEATURE HANDLER */
 
-  // Toggle a customization on or off, updates default spec for custom customizations, sets compSpec fully regenerates component
-  const handleUpdateSpecAndSend = (toAdd : boolean, specName : string) => {
+  // Toggle a feature on or off, updates the registry for custom features, sets the instance, fully regenerates component
+  const handleUpdateFeatureAndSend = (toAdd : boolean, featureName : string) => {
 
-    // Get the index from default spec list of spec given its name if it exists
-    const specNameIndex = (defaultSpec.find((d) => d.name === compSpec.name) as DefaultCompSpec)
-      ?.spec.specArr.indexOf(specName);
-    
-    // Meaning user is adding a new customization under the current component
-    if (specNameIndex === -1) {
-      // Creates a local modified defaultSpec w/ custom spec used in both setting default spec state and resolveComponentSpec
-      const specList = defaultSpec.map((d) =>
-      d.name === compSpec.name
-        ? { ...d, spec: { ...d.spec, specArr: [...d.spec.specArr, specName] } }
+    // Get the index from the registry of the feature given its name if it exists
+    const featureIndex = (componentRegistry.find((d) => d.name === instance.name) as ComponentDef)
+      ?.features.indexOf(featureName);
+
+    // Meaning user is adding a new feature under the current component
+    if (featureIndex === -1) {
+      // Creates a local modified registry w/ custom feature used in both setting registry state and resolveComponent
+      const registryList = componentRegistry.map((d) =>
+      d.name === instance.name
+        ? { ...d, features: [...d.features, featureName] }
         : d
       );
 
-      // Calls setter for defaultSpec to append new customization
-      setDefaultSpec(specList);
+      // Calls setter for the registry to append new feature
+      setComponentRegistry(registryList);
 
-      const def = specList.find((d) => d.name === compSpec.name);
-      const index = def!.spec.specArr.length - 1;
-      const next : CompSpec = { ...compSpec, specArrIdx: [...compSpec.specArrIdx, index] };
-      setCompSpec(next); // Modifies compSpec
+      const def = registryList.find((d) => d.name === instance.name);
+      const index = def!.features.length - 1;
+      const next : ComponentInstance = { ...instance, activeIdx: [...instance.activeIdx, index] };
+      setInstance(next); // Modifies the instance
 
-      // Calls code setter with rebuild instuction prompt and new appended spec list, initiates new code gen stream
-      handleSend(resolveComponentSpec(next, specList), true, boxSize, resolveStyle(props.taskID));
+      // Calls code setter with rebuild instuction prompt and new appended registry, initiates new code gen stream
+      handleSend(resolveComponent(next, registryList), true, boxSize, resolveStyle(props.taskID));
       return;
     }
-    
-    // Modifies compSpec to either include or exclude the customization in question
-    // using local specArrIdx to work around waiting for compSpec setter
-    const specArrIdx = toAdd 
-      ? [...compSpec.specArrIdx, specNameIndex]
-      : compSpec.specArrIdx.filter((i) => i !== specNameIndex);
-    const next : CompSpec = { ...compSpec, specArrIdx };
-    setCompSpec(next);
+
+    // Modifies the instance to either include or exclude the feature in question
+    // using local activeIdx to work around waiting for the instance setter
+    const activeIdx = toAdd
+      ? [...instance.activeIdx, featureIndex]
+      : instance.activeIdx.filter((i) => i !== featureIndex);
+    const next : ComponentInstance = { ...instance, activeIdx };
+    setInstance(next);
 
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
-    handleSend(resolveComponentSpec(next, defaultSpec), true, boxSize, resolveStyle(props.taskID));
+    handleSend(resolveComponent(next, componentRegistry), true, boxSize, resolveStyle(props.taskID));
   }
 
   /* AUTO GENERATION LOGIC (from UI generator) */
 
   // A box created by the UI generator carries its assigned
   // component name and generates itself once on mount. Its spec is already in the
-  // registry (the generator committed setDefaultSpec before creating boxes)
+  // registry (the generator committed setComponentRegistry before creating boxes)
   useEffect(() => {
     if (props.autoName) {
       handleUpdateNameAndSend(props.autoName, props.taskID);
@@ -521,7 +521,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       window.removeEventListener('scroll', place, true);
       window.removeEventListener('resize', place);
     };
-  }, [showPopup, compSpec, isLoadingSpec, blockPos, blockDim, blockSize]);
+  }, [showPopup, instance, isLoadingSpec, blockPos, blockDim, blockSize]);
 
 
   // Conditional behavior depending on if its being dragged
@@ -608,8 +608,8 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
                 blockSize={blockSize}
                 gridRef={gridRef}
                 interactMode={interactMode}
-                defaultSpec={defaultSpec}
-                setDefaultSpec={setDefaultSpec}
+                componentRegistry={componentRegistry}
+                setComponentRegistry={setComponentRegistry}
                 styleSpec={styleSpec}
                 reportCode={reportCode}
                 wiredCode={wiredCode}
@@ -702,18 +702,18 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
           onMouseDown={(e) => e.stopPropagation()} // Don't let popup clicks reselect/drag the box
         >
           {/* Empty component -> Show component menu */}
-          {compSpec.name === '' ? (
+          {instance.name === '' ? (
             <ComponentSelector
-              names={defaultSpec.map((d) => d.name)}
+              names={componentRegistry.map((d) => d.name)}
               loading={isLoadingSpec} // Passes down loading state
               onSend={handleUpdateNameAndSend} // pick component -> generate it -> populate Preview
             />
           ) : (
-            // Current component-specific customizations, shown after a component populates the box
+            // Current component-specific features, shown after a component populates the box
             <CustomizationSelector
-              compSpec={compSpec}
-              defaultSpec={defaultSpec}
-              onSend={handleUpdateSpecAndSend} // (toAdd, name) -> regenerate w/ new customization spec
+              instance={instance}
+              componentRegistry={componentRegistry}
+              onSend={handleUpdateFeatureAndSend} // (toAdd, name) -> regenerate w/ new feature
             />
           )}
         </div>

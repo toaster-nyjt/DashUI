@@ -1,7 +1,7 @@
 /**
  * API Route: UI PLANNER. Takes a high-level user task and returns a JSON
- * array of DefaultCompSpec — one functionality-aware preset per component the
- * UI needs. The caller appends these to the shared defaultSpec registry.
+ * array of ComponentDef — one functionality-aware definition per component the
+ * UI needs. The caller appends these to the shared component registry.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { stripCodeFences } from "@/app/utils/helpers";

@@ -1,10 +1,10 @@
 /**
- * API Route location, generates a customization preset (DefaultCompSpec) for a custom component using Claude, 
- * returns JSON that is appended to defaultSpec.
+ * API Route location, generates a definition (ComponentDef) for a custom component using Claude,
+ * returns JSON that is appended to the component registry.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { stripCodeFences } from "@/app/utils/helpers";
-import { SPEC_SYSTEM_PROMPT } from "../SKILLS";
+import { DEFINE_SYSTEM_PROMPT } from "../SKILLS";
 
 const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const msg = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 16000,
-    system: SPEC_SYSTEM_PROMPT,
+    system: DEFINE_SYSTEM_PROMPT,
     messages: [{ role: "user", content: `Component type: ${name}` }],
   });
 
@@ -27,13 +27,11 @@ export async function POST(req: Request) {
   const raw = msg.content[0].type === "text" ? msg.content[0].text : "{}";
   const parsed = JSON.parse(stripCodeFences(raw)); // Turn into object
 
-  // Wrap object into the DefaultCompSpec shape to return
+  // Wrap object into the ComponentDef shape to return
   return Response.json({
     name,
     genInstructions: parsed.genInstructions ?? "",
-    spec: {
-      specArr: parsed.specArr ?? [],
-      defaultSpecArrIdx: parsed.defaultSpecArrIdx ?? [],
-    },
+    features: parsed.features ?? [],
+    defaultActiveIdx: parsed.defaultActiveIdx ?? [],
   });
 }

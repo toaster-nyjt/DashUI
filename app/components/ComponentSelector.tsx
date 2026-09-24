@@ -2,7 +2,7 @@ import { Grid2x2, Plus, Loader2 } from 'lucide-react'; // Icon lib
 import { useState } from 'react';
 
 // Popup menu that lets you pick the component to generate.
-// Names of customizations come from the shared registry (defaultSpec)
+// Names of features come from the shared registry (componentRegistry)
 // Custom name triggers LLM preset generation upstream.
 export default function ComponentSelector({ names, loading, onSend }
   : { names: string[]; loading: boolean; onSend: (name: string) => void }) {

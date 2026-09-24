@@ -1,38 +1,38 @@
 import { Grid2x2, Eye, EyeOff, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { CompSpec, DefaultCompSpec } from '../utils/spec';
+import { ComponentInstance, ComponentDef } from '../utils/spec';
 
-// Popup menu (shown after component generated) listing the possible customizations specified within the default spec.
-// Active ones (in compSpec.specArrIdx) are "visible" (eye); the rest are off.
-// Allows for user defined customization that also modifies default spec
-export default function CustomizationSelector({ compSpec, defaultSpec, onSend }
+// Popup menu (shown after component generated) listing the possible features defined within the component definition.
+// Active ones (in instance.activeIdx) are "visible" (eye); the rest are off.
+// Allows for user defined features that also modify the component registry
+export default function CustomizationSelector({ instance, componentRegistry, onSend }
   : {
-      compSpec: CompSpec;
-      defaultSpec: DefaultCompSpec[];
-      onSend: (toAdd: boolean, specName: string) => void;
+      instance: ComponentInstance;
+      componentRegistry: ComponentDef[];
+      onSend: (toAdd: boolean, featureName: string) => void;
     }) {
 
-  // Text for generating a brand new customization
-  const [customSpec, setCustomSpec] = useState('');
+  // Text for generating a brand new feature
+  const [customFeature, setCustomFeature] = useState('');
 
   // The registry entry for the current component type
-  const def = defaultSpec.find((d) => d.name === compSpec.name);
-  const specArr = def?.spec.specArr ?? [];
+  const def = componentRegistry.find((d) => d.name === instance.name);
+  const features = def?.features ?? [];
 
   return (
     <div className="bg-menu rounded-lg p-4 shadow-2xl border border-white/10 w-80">
 
       {/* Header */}
       <div className="flex items-center justify-between gap-2 mb-4">
-        <h3 className="text-white text-sm font-medium truncate">Customize - {compSpec.name}</h3>
+        <h3 className="text-white text-sm font-medium truncate">Customize - {instance.name}</h3>
         <Grid2x2 size={18} className="text-white/60 shrink-0" />
       </div>
 
-      {/* All customizations, toggled with the eye icon */}
+      {/* All features, toggled with the eye icon */}
       <div className="space-y-2 mb-3">
-        {specArr.map((name, index) => {
-          // Check for if each customization in specArr is active in the actual component
-          const active = compSpec.specArrIdx.includes(index);
+        {features.map((name, index) => {
+          // Check for if each feature is active in the actual component
+          const active = instance.activeIdx.includes(index);
           return (
             <div key={index} className="flex items-center gap-2">
 
@@ -55,16 +55,16 @@ export default function CustomizationSelector({ compSpec, defaultSpec, onSend }
         })}
       </div>
 
-      {/* Generate a brand new customization */}
+      {/* Generate a brand new feature */}
       <div className="flex gap-2">
         <input
           type="text"
-          value={customSpec} 
-          onChange={(e) => setCustomSpec(e.target.value)}
+          value={customFeature}
+          onChange={(e) => setCustomFeature(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && customSpec.trim()) {
-              onSend(true, customSpec.trim());
-              setCustomSpec('');
+            if (e.key === 'Enter' && customFeature.trim()) {
+              onSend(true, customFeature.trim());
+              setCustomFeature('');
             }
           }}
           onMouseDown={(e) => e.stopPropagation()}
@@ -74,9 +74,9 @@ export default function CustomizationSelector({ compSpec, defaultSpec, onSend }
 
         <button
           onMouseDown={() => {
-            if (customSpec.trim()) {
-              onSend(true, customSpec.trim());
-              setCustomSpec('');
+            if (customFeature.trim()) {
+              onSend(true, customFeature.trim());
+              setCustomFeature('');
             }
           }}
           className="bg-menubuttons hover:bg-menuhover rounded p-2 text-white/60 hover:text-white/90"

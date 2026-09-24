@@ -1,9 +1,9 @@
 'use client'
 import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
-import { XY, defaultXY, GeneratedBoxProps, DefaultCompSpec, Placement, numGridBlocksWide, numVHTall } from '../utils/spec';
-import { DEFAULT_SPEC } from '../utils/defaultSpec';
-import { validateLayout, validateConnectivity, logDefaultSpec, resolveComponentSpec, buildChannels, validateWiring } from '../utils/helpers';
+import { XY, defaultXY, GeneratedBoxProps, ComponentDef, Placement, numGridBlocksWide, numVHTall } from '../utils/spec';
+import { COMPONENT_REGISTRY } from '../utils/componentRegistry';
+import { validateLayout, validateConnectivity, logRegistry, resolveComponent, buildChannels, validateWiring } from '../utils/helpers';
 
 // How many times to re-ask the layout route for a valid (gap-free) tiling
 const LAYOUT_RETRIES = 3;
@@ -48,12 +48,12 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
 
   // Shared, runtime-extendable registry of components + customizations
   // Passed down to all boxes
-  const [defaultSpec, setDefaultSpec] = useState<DefaultCompSpec[]>(DEFAULT_SPEC);
+  const [componentRegistry, setComponentRegistry] = useState<ComponentDef[]>(COMPONENT_REGISTRY);
 
   // Per-UI style registry: taskRequest.id (taskID) -> the coherent visual style
   // produced for that whole generated UI. Every box of a generated UI
   // carries its taskID and looks its style up here, so independently generated
-  // components share one identity. Passed down to all boxes (like defaultSpec).
+  // components share one identity. Passed down to all boxes (like componentRegistry).
   const [styleSpec, setStyleSpec] = useState<Record<number, string>>({});
 
   // Code hoist: leafKey -> that leaf's finished generated code. Every UI leaf
@@ -75,8 +75,8 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
 
   // Dev: print the component registry on mount and whenever it changes.
   useEffect(() => {
-    logDefaultSpec(defaultSpec);
-  }, [defaultSpec]);
+    logRegistry(componentRegistry);
+  }, [componentRegistry]);
 
   // RUNTIME BUS RELAY (the hub of the bridge). Every UI leaf is an isolated,
   // cross-origin Sandpack iframe, so wired components can't talk directly — they
@@ -133,7 +133,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   // key for layout adjacency and the future path/wiring route, so it's load-bearing:
   // if it can't be made valid within the retry budget, abort (return null) rather
   // than build a UI on broken wiring — the caller treats null as "no boxes".
-  const fetchValidPlan = async (task: string, width: number, height: number): Promise<DefaultCompSpec[] | null> => {
+  const fetchValidPlan = async (task: string, width: number, height: number): Promise<ComponentDef[] | null> => {
     let previousError: string | undefined;
 
     for (let attempt = 1; attempt <= PLAN_RETRIES; attempt++) {
@@ -143,12 +143,12 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
         body: JSON.stringify({ task, width, height, previousError }),
       });
       if (!res.ok) throw new Error(`plan request failed (${res.status})`);
-      const specs = await res.json() as DefaultCompSpec[];
+      const defs = await res.json() as ComponentDef[];
 
-      if (!specs.length) return specs; // empty plan handled by the caller
+      if (!defs.length) return defs; // empty plan handled by the caller
 
-      const { ok, error } = validateConnectivity(specs);
-      if (ok) return specs;
+      const { ok, error } = validateConnectivity(defs);
+      if (ok) return defs;
 
       previousError = error;
       console.error(`Plan attempt ${attempt}/${PLAN_RETRIES} invalid connectivity: ${error}`);
@@ -161,8 +161,8 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   // Calls the layout route and re-asks (feeding back the validation error) until
   // it returns a tiling that fully covers the window with no gaps/overlaps.
   // `components` is the RESOLVED protocol view (same shape STYLE gets and the shape
-  // COMPONENT_SPEC_PROTOCOL documents): name/genInstructions/role/connectivity +
-  // the active include/exclude feature lists. include doubles as a content-density
+  // COMPONENT_PROTOCOL documents): name/genInstructions/role/connectivity +
+  // the active features/excludedFeatures lists. features doubles as a content-density
   // signal for sizing; role/connectivity drive centrality + adjacency.
   const fetchValidLayout = async (task: string, components: Record<string, unknown>[], cols: number, rows: number): Promise<Placement[] | null> => {
     let previousError: string | undefined;
@@ -171,7 +171,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
         const res = await fetch('/api/layout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          // Resolved protocol view (matches the COMPONENT_SPEC_PROTOCOL appended to
+          // Resolved protocol view (matches the COMPONENT_PROTOCOL appended to
           // the layout system prompt) so layout parses exactly the fields it's told to.
           body: JSON.stringify({ task, components, cols, rows, previousError }),
         });
@@ -226,7 +226,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
     return null;
   };
 
-  // Full pipeline: decompose the task into component specs, register them, lay
+  // Full pipeline: decompose the task into component defs, register them, lay
   // them out across the visible window, then drop in self-generating boxes.
   const runUIGeneration = async (task: string, target: GeneratedBoxProps | null): Promise<GeneratedBoxProps | null> => {
     setIsDesigning(true);
@@ -249,41 +249,41 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       //    planner only splits into multiple components if the area justifies it, and
       //    wires the components' roles + intra-UI connectivity. fetchValidPlan retries
       //    until the connectivity names resolve to real siblings (or aborts).
-      const specs = await fetchValidPlan(task, widthPx, heightPx);
-      if (!specs) return null; // exhausted connectivity retries; already logged
-      if (!specs.length) throw new Error('planner returned no components');
+      const defs = await fetchValidPlan(task, widthPx, heightPx);
+      if (!defs) return null; // exhausted connectivity retries; already logged
+      if (!defs.length) throw new Error('planner returned no components');
 
       // 1b. STYLE: derive ONE coherent visual style for this whole UI from its
       //     components, so every box generates with a matching identity. The styler
-      //     gets the specs RESOLVED to the same { name, genInstructions, include,
-      //     exclude } protocol shape the generator sees per component (active set =
+      //     gets the defs RESOLVED to the same { name, genInstructions, features,
+      //     excludedFeatures } protocol shape the generator sees per component (active set =
       //     each preset's defaults). Always called for an auto-gen UI; only manual
       //     boxes (no taskID) skip a style and get the generate route's fallback.
-      const resolvedSpecs = specs.map((s) =>
-        JSON.parse(resolveComponentSpec({ name: s.name, specArrIdx: s.spec.defaultSpecArrIdx }, specs)));
+      const resolvedDefs = defs.map((s) =>
+        JSON.parse(resolveComponent({ name: s.name, activeIdx: s.defaultActiveIdx }, defs)));
       const styleRes = await fetch('/api/style', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, components: resolvedSpecs }),
+        body: JSON.stringify({ task, components: resolvedDefs }),
       });
       if (!styleRes.ok) throw new Error(`style request failed (${styleRes.status})`);
       const style = (await styleRes.json()).style as string;
 
       // 2. Register the new presets + this UI's style. The awaited layout call
       //    below lets this state commit before any boxes are created, so each box
-      //    mounts with a defaultSpec prop that already contains its spec (no
+      //    mounts with a componentRegistry prop that already contains its definition (no
       //    /api/spec re-fetch) and a styleSpec that already holds its style.
-      setDefaultSpec((prev) => [...prev, ...specs]);
+      setComponentRegistry((prev) => [...prev, ...defs]);
       setStyleSpec((prev) => ({ ...prev, [taskRequest!.id]: style }));
 
       // 3. LAYOUT: tile the box interior (w x h).
-      const placements: Placement[] | null = specs.length === 1
+      const placements: Placement[] | null = defs.length === 1
         // Single component -> fill the whole box (nothing to tile/validate).
-        ? [{ name: specs[0].name, colStart: 1, colEnd: w, rowStart: 1, rowEnd: h }]
+        ? [{ name: defs[0].name, colStart: 1, colEnd: w, rowStart: 1, rowEnd: h }]
         // Multiple -> ask the layout route to tile the box interior (w x h). Sent the
-        // RESOLVED specs (reused from the style step above) so layout sees include/role/
+        // RESOLVED defs (reused from the style step above) so layout sees features/role/
         // connectivity exactly as the protocol describes.
-        : await fetchValidLayout(task, resolvedSpecs, w, h);
+        : await fetchValidLayout(task, resolvedDefs, w, h);
       if (!placements) return null; // exhausted retries; already logged
 
       // 4. Wrap the placements as CHILDREN of ONE parent (group) box. Each child
@@ -391,7 +391,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
     // flattenToGlobal doubles as the leaf collector here; wiring needs only each
     // leaf's key + autoName, so the (0,0) global coords it computes are ignored.
     flattenToGlobal(root, 0, 0).map((l) => {
-      const def = defaultSpec.find((d) => d.name === l.autoName);
+      const def = componentRegistry.find((d) => d.name === l.autoName);
       return { key: l.key, name: l.autoName!, code: codeMap[l.key] ?? '', role: def?.role, connectivity: def?.connectivity };
     });
 
@@ -679,8 +679,8 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
             blockSize={gridBlockSize}
             gridRef={gridRef.current!}
             interactMode={interactMode}
-            defaultSpec={defaultSpec}
-            setDefaultSpec={setDefaultSpec}
+            componentRegistry={componentRegistry}
+            setComponentRegistry={setComponentRegistry}
             styleSpec={styleSpec}
             markNonEmpty={markNonEmpty}
             syncBounds={syncBounds}
