@@ -12,13 +12,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { extractComponentCode } from "@/app/utils/helpers";
 import { PATH_SYSTEM_PROMPT } from "../SKILLS";
+import { runLog, usageOf } from "@/app/utils/runLog";
 
 const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
 });
 
 export async function POST(req: Request) {
-  const { components, channels, previousError } = await req.json() as {
+  const { components, channels, previousError, taskID } = await req.json() as {
+    taskID?: number;
     components: { name: string; code: string; role?: string }[];
     channels: { id: string; from: string; to: string; description: string }[];
     previousError?: string;
@@ -70,6 +72,8 @@ export async function POST(req: Request) {
   while ((m = re.exec(raw)) !== null) {
     out.push({ name: m[1].trim(), code: extractComponentCode(m[2]) });
   }
+
+  runLog(taskID, "path", `${out.length} component(s) wired for ${channels.length} channel(s)${previousError ? " (retry)" : ""}`, { channels, previousError, input: components, output: out, ...usageOf(msg) });
 
   return Response.json(out);
 }

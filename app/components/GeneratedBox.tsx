@@ -1,6 +1,6 @@
-import { GeneratedBoxProps, XY, defaultXY, ComponentInstance, ComponentDef } from '../utils/spec';
+import { GeneratedBoxProps, XY, defaultXY, ComponentInstance, ComponentDef, PrimitiveSet, LeafPrimitives } from '../utils/spec';
 import { useGetCode } from '../utils/useGetCode';
-import { resolveComponent } from '../utils/helpers';
+import { resolveComponent, leafLibrary } from '../utils/helpers';
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import ComponentSelector from './ComponentSelector';
 import CustomizationSelector from './CustomizationSelector';
@@ -28,7 +28,7 @@ let pendingDrillPath: string[] | null = null;
 // Created from drag interaction in Spacial Grid, 
 // Contains a bunch of low level visual layer transformations for the boxes,
 // and the main logic behind the prompt routing
-export default function GeneratedBox({ props, path, selectionPath, setSelectionPath, blockSize, gridRef, interactMode, componentRegistry, setComponentRegistry, styleSpec, isChild = false, markNonEmpty, syncBounds, reportCode, wiredCode, wiringLeaves }
+export default function GeneratedBox({ props, path, selectionPath, setSelectionPath, blockSize, gridRef, interactMode, componentRegistry, setComponentRegistry, styleSpec, primitiveSpec, isChild = false, markNonEmpty, syncBounds, reportCode, wiredCode, wiringLeaves }
   : {
       props : GeneratedBoxProps,
       // This box's path from its top-level root, e.g. [rootKey] or [rootKey, childKey].
@@ -45,6 +45,9 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       // its style here by props.taskID; manual boxes have no taskID and get the
       // generate route's fallback style.
       styleSpec : Record<number, string>
+      // Per-UI primitive registry (taskID -> PrimitiveSet). A leaf of a UI that has one
+      // builds from its primitives; everything else is hand-built.
+      primitiveSpec : Record<number, PrimitiveSet>
       // True for any box rendered inside a parent (any depth). Only the root (false) drags.
       isChild? : boolean
       // Targeting groundwork: a box reports when it first generates (no longer empty).
@@ -182,6 +185,13 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   const resolveStyle = (taskID? : number) =>
     taskID !== undefined ? styleSpec[taskID] : undefined;
 
+  // This box's UI primitives (undefined for manual boxes and UIs without primitives), and
+  // the part of them the generate route needs: the usable library + floors.
+  const resolvePrims = (taskID? : number) =>
+    taskID !== undefined ? primitiveSpec[taskID] : undefined;
+  const leafPrims = (prims? : PrimitiveSet) : LeafPrimitives | undefined =>
+    prims && { library: leafLibrary(prims), floors: prims.floors };
+
   // Finds and generates existing component in the registry or generates the ComponentDef for a custom component, sets the instance
   const handleUpdateNameAndSend = async (name : string, taskID? : number) => {
     let def = componentRegistry.find((d) => d.name === name) as ComponentDef;
@@ -221,7 +231,8 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
     // THIS IS WHERE ALL COMPONENT DEFINITIONS -> CODE. style (if any) keeps this box visually
     // coherent with the rest of its generated UI.
-    handleSend(resolveComponent(next, registryList), true, boxSize, resolveStyle(taskID));
+    const prims = resolvePrims(taskID);
+    handleSend(resolveComponent(next, registryList, prims), true, boxSize, resolveStyle(taskID), leafPrims(prims), { taskID, leafKey: props.key });
   }
 
   /* MAIN FEATURE HANDLER */
@@ -251,7 +262,8 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       setInstance(next); // Modifies the instance
 
       // Calls code setter with rebuild instuction prompt and new appended registry, initiates new code gen stream
-      handleSend(resolveComponent(next, registryList), true, boxSize, resolveStyle(props.taskID));
+      const prims = resolvePrims(props.taskID);
+      handleSend(resolveComponent(next, registryList, prims), true, boxSize, resolveStyle(props.taskID), leafPrims(prims), { taskID: props.taskID, leafKey: props.key });
       return;
     }
 
@@ -264,7 +276,8 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
     setInstance(next);
 
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
-    handleSend(resolveComponent(next, componentRegistry), true, boxSize, resolveStyle(props.taskID));
+    const prims = resolvePrims(props.taskID);
+    handleSend(resolveComponent(next, componentRegistry, prims), true, boxSize, resolveStyle(props.taskID), leafPrims(prims), { taskID: props.taskID, leafKey: props.key });
   }
 
   /* AUTO GENERATION LOGIC (from UI generator) */
@@ -611,6 +624,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
                 componentRegistry={componentRegistry}
                 setComponentRegistry={setComponentRegistry}
                 styleSpec={styleSpec}
+                primitiveSpec={primitiveSpec}
                 reportCode={reportCode}
                 wiredCode={wiredCode}
                 wiringLeaves={wiringLeaves}
@@ -633,6 +647,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
             boxSize={boxSize}
             isSideDragging={isSideDragging}
             taskID={props.taskID}
+            primitives={resolvePrims(props.taskID)?.code}
           />
         )}
 

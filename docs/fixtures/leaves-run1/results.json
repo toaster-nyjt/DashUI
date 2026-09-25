@@ -1,0 +1,117 @@
+{
+  "LEAVES": [
+    {
+      "name": "DJ Table: Deck A (Left)",
+      "box": {
+        "x": 448,
+        "y": 416
+      }
+    },
+    {
+      "name": "DJ Table: Central Mixer",
+      "box": {
+        "x": 384,
+        "y": 416
+      }
+    },
+    {
+      "name": "DJ Table: Deck B (Right)",
+      "box": {
+        "x": 448,
+        "y": 416
+      }
+    }
+  ],
+  "results": [
+    {
+      "mode": "prim",
+      "i": 0,
+      "name": "DJ Table: Deck A (Left)",
+      "box": {
+        "x": 448,
+        "y": 416
+      },
+      "secs": 53.098,
+      "out": 5381,
+      "stop": "end_turn",
+      "errs": [],
+      "notes": [
+        "uses Fader×1, Button×3, ToggleButton×4, Pad×1, JogWheel×1, Waveform×1, Readout×4"
+      ]
+    },
+    {
+      "mode": "prim",
+      "i": 1,
+      "name": "DJ Table: Central Mixer",
+      "box": {
+        "x": 384,
+        "y": 416
+      },
+      "secs": 33.754,
+      "out": 3353,
+      "stop": "end_turn",
+      "errs": [],
+      "notes": [
+        "uses Knob×4, Fader×2, ToggleButton×1, LevelMeter×1"
+      ]
+    },
+    {
+      "mode": "prim",
+      "i": 2,
+      "name": "DJ Table: Deck B (Right)",
+      "box": {
+        "x": 448,
+        "y": 416
+      },
+      "secs": 56.672,
+      "out": 5697,
+      "stop": "end_turn",
+      "errs": [],
+      "notes": [
+        "uses Fader×1, Button×3, ToggleButton×4, Pad×1, JogWheel×1, Waveform×1, Readout×3"
+      ]
+    },
+    {
+      "mode": "base",
+      "i": 0,
+      "name": "DJ Table: Deck A (Left)",
+      "box": {
+        "x": 448,
+        "y": 416
+      },
+      "secs": 66.392,
+      "out": 6788,
+      "stop": "end_turn",
+      "errs": [],
+      "notes": []
+    },
+    {
+      "mode": "base",
+      "i": 1,
+      "name": "DJ Table: Central Mixer",
+      "box": {
+        "x": 384,
+        "y": 416
+      },
+      "secs": 57.236,
+      "out": 5786,
+      "stop": "end_turn",
+      "errs": [],
+      "notes": []
+    },
+    {
+      "mode": "base",
+      "i": 2,
+      "name": "DJ Table: Deck B (Right)",
+      "box": {
+        "x": 448,
+        "y": 416
+      },
+      "secs": 76.512,
+      "out": 7786,
+      "stop": "end_turn",
+      "errs": [],
+      "notes": []
+    }
+  ]
+}

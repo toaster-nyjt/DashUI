@@ -1,0 +1,15 @@
+hoist 40s  3846 out  valid=true  types=14
+  JogWheel         {"spinAngle?":"number","onScrub":"(deltaRevolutions:number)=>void","onTouchChange?":"(touching:boolean)=>void"}
+  Knob             {"value":"number","onChange":"(v:number)=>void","min":"number","max":"number","mode?":"'continuous' | 'stepped'","steps?":"number[]","detents?":"number[]","bipolar?":"boolean"}
+  Fader            {"value":"number","onChange":"(v:number)=>void","min":"number","max":"number","orientation?":"'vertical' | 'horizontal'","steps?":"number[]","centerDetent?":"boolean"}
+  PushButton       {"onPress":"()=>void","onRelease?":"()=>void","active?":"boolean","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  ToggleButton     {"on":"boolean","onChange":"(on:boolean)=>void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  CuePad           {"assigned":"boolean","onTrigger":"()=>void","onClear?":"()=>void","triggered?":"boolean","children?":"React.ReactNode"}
+  SegmentedSelector {"options":"{ id: string; label: string }[]","value":"string","onChange":"(id:string)=>void"}
+  Readout          {"fields":"{ id: string; label?: string; value: string | number; unit?: string }[]"}
+  LevelMeter       {"levels":"number[]","peaks?":"number[]","orientation?":"'vertical' | 'horizontal'"}
+  StatusIndicator  {"active":"boolean","tone?":"'neutral' | 'accent' | 'danger'"}
+  WaveformLane     {"peaks":"number[]","duration":"number","playhead":"number","zoom?":"number","beatgrid?":"number[]","markers?":"{ id: string; time: number; label?: string }[]","onSeek?":"(timeSeconds:number)=>void"}
+  SearchInput      {"value":"string","onChange":"(q:string)=>void","onSubmit?":"(q:string)=>void","placeholder?":"string"}
+  TreeSelector     {"nodes":"{ id: string; label: string; children?: any[] }[]","value":"string","onChange":"(id:string)=>void","expanded?":"string[]","onExpandedChange?":"(ids:string[])=>void"}
+  TrackListTable   {"columns":"{ id: string; label: string }[]","rows":"{ id: string; [field: string]: string | number }[]","value":"string","onChange":"(id:string)=>void","onActivate?":"(id:string)=>void","sortKey?":"string","sortDir?":"'asc' | 'desc'","onSortChange?":"(key:string, dir:'asc'|'desc')=>void"}

@@ -1,0 +1,16 @@
+hoist 39s  3849 out  valid=true  types=15
+  Knob             {"min":"number","max":"number","value":"number","onChange":"(v:number)=>void","mode?":"'continuous' | 'stepped'","steps?":"number[]","defaultValue?":"number"}
+  Fader            {"min":"number","max":"number","value":"number","onChange":"(v:number)=>void","orientation?":"'vertical' | 'horizontal'","detents?":"number[]","bipolar?":"boolean"}
+  JogWheel         {"angle?":"number","spinning?":"boolean","onScrub":"(deltaRevolutions:number)=>void","onTouchChange?":"(touching:boolean)=>void"}
+  PushButton       {"onPress":"()=>void","onRelease?":"()=>void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  ToggleButton     {"on":"boolean","onChange":"(on:boolean)=>void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  CuePad           {"assigned":"boolean","active?":"boolean","onPress":"()=>void","onClear?":"()=>void","children?":"React.ReactNode"}
+  SegmentedSelector {"options":"{ id: string; label: string }[]","value":"string","onChange":"(id:string)=>void","orientation?":"'horizontal' | 'vertical'"}
+  TextInput        {"value":"string","onChange":"(text:string)=>void","placeholder?":"string","onSubmit?":"(text:string)=>void"}
+  WaveformLane     {"peaks":"number[]","durationSeconds":"number","playheadSeconds":"number","beatGridSeconds?":"number[]","markers?":"{ id: string; timeSeconds: number; label?: string }[]","zoomSeconds?":"number","onSeek?":"(timeSeconds:number)=>void"}
+  LevelMeter       {"level":"number","levelRight?":"number","peak?":"number","orientation?":"'vertical' | 'horizontal'"}
+  Readout          {"fields":"{ label?: string; value: string | number }[]"}
+  Indicator        {"active":"boolean","tone?":"'neutral' | 'accent' | 'danger'"}
+  ProgressBar      {"value":"number","max":"number"}
+  TreeSelector     {"nodes":"{ id: string; label: string; children?: any[] }[]","value":"string","onChange":"(id:string)=>void","expanded?":"string[]","onExpandedChange?":"(ids:string[])=>void"}
+  TrackListTable   {"rows":"{ id: string; title: string; artist?: string; bpm?: number; key?: string; lengthSeconds?: number }[]","columns":"{ id: string; label: string; sortable?: boolean }[]","value":"string","onChange":"(id:string)=>void","onActivate?":"(id:string)=>void","sortBy?":"string","sortDir?":"'asc' | 'desc'","onSortChange?":"(field:string, dir:'asc' | 'desc')=>void"}

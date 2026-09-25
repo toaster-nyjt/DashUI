@@ -1,0 +1,7 @@
+C-budget-o48off-2: budget=true claude-opus-4-8 disabled max — wall 71s
+  Waveform Display          47s  out  4709 = code  4705 + think     4  end_turn  budget-comment:2  (post-processed)
+  Deck A (Left Player)      71s  out  7037 = code  7033 + think     4  end_turn  budget-comment:2  (post-processed)
+  Central Mixer             56s  out  5810 = code  5806 + think     4  end_turn  budget-comment:2  (post-processed)
+  Deck B (Right Player)     69s  out  6753 = code  6749 + think     4  end_turn  budget-comment:2  (post-processed)
+  Track Library Browser     51s  out  4976 = code  4972 + think     4  end_turn  budget-comment:2  (post-processed)
+  Effects Rack              48s  out  4955 = code  4951 + think     4  end_turn  budget-comment:2  (post-processed)

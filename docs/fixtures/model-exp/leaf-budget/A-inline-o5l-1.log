@@ -1,0 +1,7 @@
+A-inline-o5l-1: budget=false claude-opus-5 adaptive low — wall 73s
+  Waveform Display          38s  out  3540 = code  2878 + think   662  end_turn  budget-comment:0  (post-processed)
+  Deck A (Left Player)      60s  out  6207 = code  4770 + think  1437  end_turn  budget-comment:0  (post-processed)
+  Central Mixer             46s  out  4826 = code  3964 + think   862  end_turn  budget-comment:0  (post-processed)
+  Deck B (Right Player)     72s  out  6747 = code  4896 + think  1851  end_turn  budget-comment:0  (post-processed)
+  Track Library Browser     41s  out  4193 = code  3763 + think   430  end_turn  budget-comment:0  (post-processed)
+  Effects Rack              45s  out  4246 = code  4060 + think   186  end_turn  budget-comment:0  (post-processed)

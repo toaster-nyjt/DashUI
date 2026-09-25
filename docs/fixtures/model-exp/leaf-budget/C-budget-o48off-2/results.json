@@ -1,0 +1,119 @@
+{
+  "config": {
+    "budget": true,
+    "MODEL": "claude-opus-4-8",
+    "THINKING": "disabled",
+    "EFFORT": "max"
+  },
+  "wall": 71.239,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "DJ Table: Waveform Display",
+      "box": {
+        "x": 2497,
+        "y": 277.44444444444446
+      },
+      "secs": 46.779,
+      "outTok": 4709,
+      "codeTok": 4705,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + gap 0.5 + laneStack(2 × WaveformLane 3 = 6 + gap 0.5 = 6.5) + gap 0.5 + minimap 1.5 + footer 1.75 + padding 1.0 = 14.0 ≤ 17.3",
+        "// BUDGET width: pad 0.75 + zoomCol(2.5 Knob) + gap 0.75 + lanes flex-1 (≈ 148.6) + gap 0.75 + pad 0.75 = ≈ 154.1 ≤ 156.1"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 1,
+      "leaf": "DJ Table: Deck A (Left Player)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 70.929,
+      "outTok": 7037,
+      "codeTok": 7033,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + [displays 3.4 + jog 12 + transport 2.6 + tempoRow 6 + loopRow 2.5 + hotcue 5.2] body(≈32.9 in flex-1) + footer 1.75 ≈ 36.9 ≤ 41.6",
+        "// BUDGET width: left col (jog 12) + gap 0.75 + right col (Fader 2.2 stack ≈ fills) ... main body two-col ≈ 51.5 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 2,
+      "leaf": "DJ Table: Central Mixer",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 56.307,
+      "outTok": 5810,
+      "codeTok": 5806,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + body(gain-row 2.5 + eq-stack 3*2.5=7.5 + cue 1.75 + fader 6 + label ~1) + gaps ~2 + padding 0.75 = ~23.75 ≤ 41.6",
+        "// BUDGET width: chA(2.5) + master-col(4) + chB(2.5) ... using flex-1 columns; primitive floors: Knob 2.5, Fader 2.2, LevelMeter 1, ToggleButton 3. total well within 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 3,
+      "leaf": "DJ Table: Deck B (Right Player)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 69.385,
+      "outTok": 6753,
+      "codeTok": 6749,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + p-3(0.75*2=1.5) + displays 3.2 + gap 0.75 + [transport col: play 2.6 + cue 1.75 + sync 1.75 + keylock 1.5 + gaps ~2 = 9.6] vs [platter 9.6] + gap 0.75 + loops 2.6 + gap 0.75 + cuepads 5.4 + gap 0.75 + footer 1.75 = ~26.3 ≤ 41.6",
+        "// BUDGET width: p-3(1.5) + tempo 2.2 + gap 0.75 + platter 9.6 + gap 0.75 + [transport 8] + ... within body; grid fills 52.0 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 4,
+      "leaf": "DJ Table: Track Library Browser",
+      "box": {
+        "x": 1498.2,
+        "y": 332.93333333333334
+      },
+      "secs": 50.971,
+      "outTok": 4976,
+      "codeTok": 4972,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + body 18.55 (>= TreeSelector 4, TrackTable 6) + footer 0 = 20.8 <= 20.8",
+        "// BUDGET width: p-3 0.75 + tree 15 + gap 0.75 + [table 60 (min TrackTable 11) over PreviewPlayer 9] + gap 0.75 + rightRail 15 + p-3 0.75 = 93 <= 93.6"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 5,
+      "leaf": "DJ Table: Effects Rack",
+      "box": {
+        "x": 998.8,
+        "y": 332.93333333333334
+      },
+      "secs": 48.186,
+      "outTok": 4955,
+      "codeTok": 4951,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + body[ selector row 2.4 + knob row (max child 2.5 knob + ~1 label = 3.5) ] + gaps 0.75*2 + padding 0.75*2 = ~11.6 ≤ 20.8",
+        "// BUDGET width: routing 8 + selector flex + drywet 3 + beatmult 3 + param 3*3=9 + on/off 4 + gaps ≈ fits within 62.4 ≤ 62.4"
+      ],
+      "postProcessed": true
+    }
+  ]
+}

@@ -1,0 +1,258 @@
+[
+  {
+    "name": "DJ Table: Deck A Player",
+    "genInstructions": "Build the left turntable deck with a large central jog wheel, transport controls (play/pause, cue), a vertical tempo/pitch fader, sync and keylock toggles, loop controls, and a track info panel showing title, BPM, key, and elapsed/remaining time. This is the primary playback surface for the left channel track.",
+    "role": "The left-hand playback engine that plays and manipulates one track and feeds its audio, position, and tempo to the mixer and waveform display.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "DJ Table: Track Library Browser",
+          "description": "When the user loads a highlighted track to Deck A, the browser sends the track's audio file, title, BPM, key, and duration; Deck A resets its playhead to the start, populates its info panel, and becomes ready to play."
+        },
+        {
+          "name": "DJ Table: Dual Waveform Display",
+          "description": "When the user clicks or drags on Deck A's waveform lane, the display emits the target time position; Deck A moves its playhead to that position (scrub/seek) and continues from there."
+        },
+        {
+          "name": "DJ Table: Deck B Player",
+          "description": "When the user presses Sync on Deck B (with A as master), Deck B reads Deck A's current BPM and beat phase; conversely Deck A can consume B's BPM when A is the follower, aligning tempo and beatgrid."
+        },
+        {
+          "name": "DJ Table: FX & Performance Pads",
+          "description": "When a pad assigned to Deck A is pressed, it sends a trigger (hot-cue jump, loop-roll length, or sample play) and Deck A responds by jumping to the cue point, engaging the loop, or playing the sample against its timeline."
+        }
+      ],
+      "targets": [
+        {
+          "name": "DJ Table: Dual Waveform Display",
+          "description": "Deck A continuously streams its decoded waveform, current playhead position, BPM, and beatgrid to the top lane of the display, which renders the scrolling waveform and moving playhead in real time."
+        },
+        {
+          "name": "DJ Table: Central Mixer",
+          "description": "Deck A routes its live audio signal and level into mixer Channel A, and exposes its BPM; the mixer applies Channel A gain, EQ, filter, fader, and crossfader position to this signal before summing to master."
+        },
+        {
+          "name": "DJ Table: Deck B Player",
+          "description": "When Deck A is the sync master and the user presses Sync on Deck B, Deck A supplies its BPM and beat phase so Deck B can match tempo and align beats."
+        }
+      ]
+    },
+    "features": [
+      "Jog Wheel",
+      "Play Pause Button",
+      "Cue Button",
+      "Tempo Fader",
+      "Sync Button",
+      "Keylock Toggle",
+      "Loop Controls",
+      "Pitch Bend",
+      "Track Info Panel",
+      "Time Display",
+      "BPM Readout"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "DJ Table: Deck B Player",
+    "genInstructions": "Build the right turntable deck mirroring Deck A: a large jog wheel, transport controls (play/pause, cue), a vertical tempo/pitch fader, sync and keylock toggles, loop controls, and a track info panel with title, BPM, key, and time. This is the primary playback surface for the right channel track.",
+    "role": "The right-hand playback engine that plays and manipulates a second track and feeds its audio, position, and tempo to the mixer and waveform display.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "DJ Table: Track Library Browser",
+          "description": "When the user loads a highlighted track to Deck B, the browser sends the track's audio file, title, BPM, key, and duration; Deck B resets its playhead, populates its info panel, and becomes ready to play."
+        },
+        {
+          "name": "DJ Table: Dual Waveform Display",
+          "description": "When the user clicks or drags on Deck B's waveform lane, the display emits the target time position; Deck B moves its playhead to that position (scrub/seek) and continues from there."
+        },
+        {
+          "name": "DJ Table: Deck A Player",
+          "description": "When Deck A is the sync master and the user presses Sync on Deck B, Deck B reads Deck A's BPM and beat phase and adjusts its own tempo fader value and beat phase to align."
+        },
+        {
+          "name": "DJ Table: FX & Performance Pads",
+          "description": "When a pad assigned to Deck B is pressed, it sends a trigger (hot-cue jump, loop-roll length, or sample play) and Deck B responds by jumping to the cue point, engaging the loop, or playing the sample against its timeline."
+        }
+      ],
+      "targets": [
+        {
+          "name": "DJ Table: Dual Waveform Display",
+          "description": "Deck B continuously streams its decoded waveform, current playhead position, BPM, and beatgrid to the bottom lane of the display, which renders the scrolling waveform and moving playhead in real time."
+        },
+        {
+          "name": "DJ Table: Central Mixer",
+          "description": "Deck B routes its live audio signal and level into mixer Channel B, and exposes its BPM; the mixer applies Channel B gain, EQ, filter, fader, and crossfader position to this signal before summing to master."
+        },
+        {
+          "name": "DJ Table: Deck A Player",
+          "description": "When Deck B is the sync master and the user presses Sync on Deck A, Deck B supplies its BPM and beat phase so Deck A can match tempo and align beats."
+        }
+      ]
+    },
+    "features": [
+      "Jog Wheel",
+      "Play Pause Button",
+      "Cue Button",
+      "Tempo Fader",
+      "Sync Button",
+      "Keylock Toggle",
+      "Loop Controls",
+      "Pitch Bend",
+      "Track Info Panel",
+      "Time Display",
+      "BPM Readout"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "DJ Table: Central Mixer",
+    "genInstructions": "Build the central two-channel mixer with per-channel gain knobs, 3-band EQ (high/mid/low), filter knobs, vertical channel volume faders with VU meters, cue/PFL buttons, and a horizontal crossfader at the bottom, plus a master volume and master VU. This blends the two decks into the master output.",
+    "role": "The central blending hub that receives both decks' audio, shapes and levels each channel, and crossfades them into the master output the DJ hears.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "DJ Table: Deck A Player",
+          "description": "Deck A feeds its live audio signal and level into Channel A; the mixer displays it on the Channel A VU meter and processes it through Channel A gain, EQ, filter, fader, and the crossfader before summing to master."
+        },
+        {
+          "name": "DJ Table: Deck B Player",
+          "description": "Deck B feeds its live audio signal and level into Channel B; the mixer displays it on the Channel B VU meter and processes it through Channel B gain, EQ, filter, fader, and the crossfader before summing to master."
+        },
+        {
+          "name": "DJ Table: FX & Performance Pads",
+          "description": "When an effect is armed and its wet/dry is engaged for a target channel or master, the FX unit sends the processed effect parameters; the mixer inserts the effect into that channel's signal path and reflects the change in its output and meters."
+        }
+      ],
+      "targets": [
+        {
+          "name": "DJ Table: FX & Performance Pads",
+          "description": "The mixer exposes which channel is selected/cued and its current level so the FX unit knows which channel signal to apply effects to; selecting a channel's FX-assign routes that channel's audio into the effect processor."
+        }
+      ]
+    },
+    "features": [
+      "Channel A Strip",
+      "Channel B Strip",
+      "Gain Knobs",
+      "Three Band EQ",
+      "Filter Knobs",
+      "Channel Faders",
+      "Channel VU Meters",
+      "Cue PFL Buttons",
+      "Crossfader",
+      "Master Volume",
+      "Master VU Meter",
+      "FX Assign Buttons"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "DJ Table: Dual Waveform Display",
+    "genInstructions": "Build a wide dual-lane scrolling waveform display across the top, one lane per deck, showing color-coded frequency waveforms, beatgrid markers, hot-cue markers, loop regions, and a fixed center playhead. Let the user click/drag a lane to scrub, and show beat-alignment between the two lanes.",
+    "role": "The top-mounted visual monitor that renders both decks' tracks for beatmatching and lets the DJ scrub either deck by interacting with its lane.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "DJ Table: Deck A Player",
+          "description": "Deck A streams its decoded waveform, playhead position, BPM, and beatgrid, which the display renders in the top lane with a moving playhead and beat markers in real time."
+        },
+        {
+          "name": "DJ Table: Deck B Player",
+          "description": "Deck B streams its decoded waveform, playhead position, BPM, and beatgrid, which the display renders in the bottom lane with a moving playhead and beat markers in real time."
+        }
+      ],
+      "targets": [
+        {
+          "name": "DJ Table: Deck A Player",
+          "description": "When the user clicks or drags within the top lane, the display emits the corresponding time position and Deck A seeks its playhead to that point."
+        },
+        {
+          "name": "DJ Table: Deck B Player",
+          "description": "When the user clicks or drags within the bottom lane, the display emits the corresponding time position and Deck B seeks its playhead to that point."
+        }
+      ]
+    },
+    "features": [
+      "Deck A Waveform Lane",
+      "Deck B Waveform Lane",
+      "Frequency Coloring",
+      "Beatgrid Markers",
+      "Hot Cue Markers",
+      "Loop Region Overlay",
+      "Center Playhead",
+      "Click Drag Scrub",
+      "Beat Alignment View"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "DJ Table: Track Library Browser",
+    "genInstructions": "Build a bottom track library browser with a searchable, sortable track list (title, artist, BPM, key, duration), folder/playlist tree, a search bar, and Load-to-Deck-A / Load-to-Deck-B buttons. This is where the DJ finds and loads music onto the decks.",
+    "role": "The music source that lets the DJ search and browse the collection and load a chosen track onto either deck.",
+    "connectivity": {
+      "effectors": [],
+      "targets": [
+        {
+          "name": "DJ Table: Deck A Player",
+          "description": "When the user selects a track and presses Load to Deck A, the browser sends that track's audio file, title, BPM, key, and duration to Deck A, which loads it and readies playback."
+        },
+        {
+          "name": "DJ Table: Deck B Player",
+          "description": "When the user selects a track and presses Load to Deck B, the browser sends that track's audio file, title, BPM, key, and duration to Deck B, which loads it and readies playback."
+        }
+      ]
+    },
+    "features": [
+      "Search Bar",
+      "Playlist Tree",
+      "Track List",
+      "Sortable Columns",
+      "BPM Key Columns",
+      "Load To Deck A",
+      "Load To Deck B",
+      "Preview Row"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "DJ Table: FX & Performance Pads",
+    "genInstructions": "Build a performance section with two banks of 8 velocity-style pads (one per deck) for hot cues, loop rolls, and sampler triggers, plus an effects unit with selectable effect types, wet/dry and parameter knobs, beat-division selectors, and per-deck/master assign toggles.",
+    "role": "The hands-on performance layer that triggers cues, loops, and samples on the decks and applies real-time effects to the mixer channels or master.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "DJ Table: Central Mixer",
+          "description": "The mixer tells the FX unit which channel is currently selected/FX-assigned so the effect processor knows which channel signal to operate on; the assign state determines the effect's routing target."
+        }
+      ],
+      "targets": [
+        {
+          "name": "DJ Table: Deck A Player",
+          "description": "Pressing a Deck A pad sends a trigger to Deck A: hot-cue pads jump the playhead to stored cue points, loop-roll pads engage a beat-length loop, and sampler pads play a one-shot against Deck A's timeline."
+        },
+        {
+          "name": "DJ Table: Deck B Player",
+          "description": "Pressing a Deck B pad sends a trigger to Deck B: hot-cue pads jump the playhead to stored cue points, loop-roll pads engage a beat-length loop, and sampler pads play a one-shot against Deck B's timeline."
+        },
+        {
+          "name": "DJ Table: Central Mixer",
+          "description": "When an effect is engaged with a channel or master assign, the FX unit sends the effect type, wet/dry level, beat-division, and parameters, and the mixer inserts the effect into that channel/master signal path."
+        }
+      ]
+    },
+    "features": [
+      "Deck A Pad Bank",
+      "Deck B Pad Bank",
+      "Hot Cue Mode",
+      "Loop Roll Mode",
+      "Sampler Mode",
+      "Effect Type Selector",
+      "Wet Dry Knob",
+      "Parameter Knobs",
+      "Beat Division Selector",
+      "Channel Assign Toggles"
+    ],
+    "excludedFeatures": []
+  }
+]

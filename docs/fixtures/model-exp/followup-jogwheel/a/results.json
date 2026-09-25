@@ -1,0 +1,42 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000
+    },
+    "wall": 32.37,
+    "passedFirstTry": 1,
+    "passed": 1,
+    "types": 1,
+    "totalAttempts": 1,
+    "outTokens": 2717,
+    "cost": 0.107
+  },
+  "results": [
+    {
+      "type": "JogWheel",
+      "attempts": [
+        {
+          "secs": 32.369,
+          "out": 2717,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 32.37,
+      "inTok": 7769,
+      "outTok": 2717,
+      "floor": {
+        "base": [
+          4,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

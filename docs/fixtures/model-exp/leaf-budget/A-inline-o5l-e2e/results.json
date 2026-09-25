@@ -1,0 +1,53 @@
+{
+  "config": {
+    "budget": false,
+    "MODEL": "claude-opus-5",
+    "THINKING": "adaptive",
+    "EFFORT": "low",
+    "source": "end-to-end run 1790351266686"
+  },
+  "results": [
+    {
+      "i": 0,
+      "leaf": "DJ Table: Waveform Display",
+      "secs": 37.371,
+      "outTok": 3772,
+      "budgetLines": []
+    },
+    {
+      "i": 1,
+      "leaf": "DJ Table: Deck A (Left Player)",
+      "secs": 67.656,
+      "outTok": 6699,
+      "budgetLines": []
+    },
+    {
+      "i": 2,
+      "leaf": "DJ Table: Central Mixer",
+      "secs": 44.451,
+      "outTok": 4459,
+      "budgetLines": []
+    },
+    {
+      "i": 3,
+      "leaf": "DJ Table: Deck B (Right Player)",
+      "secs": 65.339,
+      "outTok": 6320,
+      "budgetLines": []
+    },
+    {
+      "i": 4,
+      "leaf": "DJ Table: Track Library Browser",
+      "secs": 47.32,
+      "outTok": 4657,
+      "budgetLines": []
+    },
+    {
+      "i": 5,
+      "leaf": "DJ Table: Effects Rack",
+      "secs": 39.12,
+      "outTok": 4306,
+      "budgetLines": []
+    }
+  ]
+}

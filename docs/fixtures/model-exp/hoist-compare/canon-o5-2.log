@@ -1,0 +1,15 @@
+hoist 35s  3253 out  valid=true  types=14
+  SearchInput      {"value":"string","onChange":"(v: string) => void","placeholder?":"string"}
+  TreeSelector     {"nodes":"{ id: string; label: string; children?: any[] }[]","value":"string","onChange":"(id: string) => void"}
+  TrackList        {"items":"{ id: string; [field: string]: string | number }[]","columns":"string[]","value":"string","onChange":"(id: string) => void","onActivate?":"(id: string) => void"}
+  SortHeaders      {"columns":"{ id: string; label: string }[]","sortKey":"string","direction":"'asc' | 'desc'","onChange":"(key: string, direction: 'asc' | 'desc') => void"}
+  PushButton       {"onPress":"() => void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  ToggleButton     {"on":"boolean","onChange":"(on: boolean) => void","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  Knob             {"value":"number","onChange":"(v: number) => void","min":"number","max":"number","mode?":"'continuous' | 'stepped'","steps?":"number[]","detents?":"number[]"}
+  Fader            {"value":"number","onChange":"(v: number) => void","min":"number","max":"number","orientation?":"'vertical' | 'horizontal'","steps?":"number[]","detents?":"number[]"}
+  JogWheel         {"onRotate":"(deltaRevolutions: number) => void","onTouchChange?":"(touching: boolean) => void","angle?":"number","spinning?":"boolean"}
+  WaveformDisplay  {"data":"number[]","duration":"number","playhead":"number","beatGrid?":"number[]","zoom?":"number","cues?":"{ id: string; position: number }[]","onScrub?":"(seconds: number) => void"}
+  Readout          {"value":"string | number | (string | number)[]","unit?":"string"}
+  LevelMeter       {"level":"number","peak?":"number","orientation?":"'vertical' | 'horizontal'"}
+  Pad              {"onPress":"() => void","onRelease?":"() => void","active?":"boolean","children?":"React.ReactNode"}
+  SegmentedSelector {"options":"{ id: string; label: string }[]","value":"string","onChange":"(id: string) => void"}

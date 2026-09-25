@@ -1,0 +1,350 @@
+{
+  "library": [
+    {
+      "type": "JogWheel",
+      "description": "Large rotary platter for scratch/nudge; onScrub emits an angular delta (positive = forward), value is the current rotation angle in radians for visual spin.",
+      "props": {
+        "value": "number",
+        "onScrub": "(delta: number) => void",
+        "playing?": "boolean"
+      }
+    },
+    {
+      "type": "Button",
+      "description": "Momentary push button; fires onPress while/when pressed. children is optional face content.",
+      "props": {
+        "onPress": "() => void",
+        "onRelease?": "() => void",
+        "children?": "React.ReactNode",
+        "tone?": "'neutral' | 'accent' | 'danger'"
+      }
+    },
+    {
+      "type": "Toggle",
+      "description": "Latching on/off control; on is current state, onChange emits the new boolean state.",
+      "props": {
+        "on": "boolean",
+        "onChange": "(on: boolean) => void",
+        "children?": "React.ReactNode",
+        "tone?": "'neutral' | 'accent' | 'danger'"
+      }
+    },
+    {
+      "type": "Fader",
+      "description": "Linear travel control; value within min..max, onChange emits the new value. orientation selects vertical or horizontal travel.",
+      "props": {
+        "value": "number",
+        "onChange": "(v: number) => void",
+        "min": "number",
+        "max": "number",
+        "orientation?": "'vertical' | 'horizontal'"
+      }
+    },
+    {
+      "type": "Knob",
+      "description": "Rotary control; value within min..max, onChange emits new value. mode continuous or stepped; steps lists the allowed snap values when stepped; bipolar centers the detent at zero.",
+      "props": {
+        "value": "number",
+        "onChange": "(v: number) => void",
+        "min": "number",
+        "max": "number",
+        "mode?": "'continuous' | 'stepped'",
+        "steps?": "number[]",
+        "bipolar?": "boolean"
+      }
+    },
+    {
+      "type": "Pad",
+      "description": "Velocity-style performance pad; onPress fires with a 0-1 velocity, on optionally lights the pad as active.",
+      "props": {
+        "onPress": "(velocity: number) => void",
+        "on?": "boolean",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "LevelMeter",
+      "description": "Read-only signal meter; level is normalized 0-1 current amplitude, peak optional normalized peak-hold value.",
+      "props": {
+        "level": "number",
+        "peak?": "number"
+      }
+    },
+    {
+      "type": "Waveform",
+      "description": "Scrolling waveform lane; data is the sample envelope, playhead is current position in seconds, with optional bpm/beatgrid/cue/loop overlays. onScrub emits a target time in seconds when the user clicks/drags.",
+      "props": {
+        "data": "number[]",
+        "playhead": "number",
+        "durationSec": "number",
+        "bpm?": "number",
+        "beatgrid?": "number[]",
+        "cues?": "{ id: string; timeSec: number }[]",
+        "loop?": "{ startSec: number; endSec: number } | null",
+        "onScrub?": "(timeSec: number) => void"
+      }
+    },
+    {
+      "type": "Readout",
+      "description": "Read-only text/number display; value is the primary string to show, children optional richer multi-field content.",
+      "props": {
+        "value?": "string",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "Selector",
+      "description": "Segmented single-choice selector over a set of labeled options; value is the selected option id, onChange emits the chosen id.",
+      "props": {
+        "options": "{ id: string; label: string }[]",
+        "value": "string",
+        "onChange": "(id: string) => void"
+      }
+    },
+    {
+      "type": "TextInput",
+      "description": "Single-line text entry; value is current text, onChange emits new text, placeholder optional hint.",
+      "props": {
+        "value": "string",
+        "onChange": "(v: string) => void",
+        "placeholder?": "string"
+      }
+    },
+    {
+      "type": "TrackList",
+      "description": "Selectable list of multi-field track rows; value is selected row id, onChange selects, onActivate loads/previews. onSort requests reordering by a column key.",
+      "props": {
+        "options": "{ id: string; title: string; artist: string; bpm: number; key: string; duration: string }[]",
+        "value": "string",
+        "onChange": "(id: string) => void",
+        "onActivate?": "(id: string) => void",
+        "onSort?": "(columnKey: string) => void"
+      }
+    },
+    {
+      "type": "Tree",
+      "description": "Selectable nested tree of folders/playlists; value is selected node id, onChange emits the chosen node id.",
+      "props": {
+        "options": "{ id: string; label: string; children?: any[] }[]",
+        "value": "string",
+        "onChange": "(id: string) => void"
+      }
+    }
+  ],
+  "components": [
+    {
+      "name": "DJ Table: Deck A Player",
+      "features": {
+        "Jog Wheel": [
+          "JogWheel"
+        ],
+        "Play Pause Button": [
+          "Toggle"
+        ],
+        "Cue Button": [
+          "Button"
+        ],
+        "Tempo Fader": [
+          "Fader"
+        ],
+        "Sync Button": [
+          "Toggle"
+        ],
+        "Keylock Toggle": [
+          "Toggle"
+        ],
+        "Loop Controls": [
+          "Button",
+          "Selector"
+        ],
+        "Pitch Bend": [
+          "Button"
+        ],
+        "Track Info Panel": [
+          "Readout"
+        ],
+        "Time Display": [
+          "Readout"
+        ],
+        "BPM Readout": [
+          "Readout"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Deck B Player",
+      "features": {
+        "Jog Wheel": [
+          "JogWheel"
+        ],
+        "Play Pause Button": [
+          "Toggle"
+        ],
+        "Cue Button": [
+          "Button"
+        ],
+        "Tempo Fader": [
+          "Fader"
+        ],
+        "Sync Button": [
+          "Toggle"
+        ],
+        "Keylock Toggle": [
+          "Toggle"
+        ],
+        "Loop Controls": [
+          "Button",
+          "Selector"
+        ],
+        "Pitch Bend": [
+          "Button"
+        ],
+        "Track Info Panel": [
+          "Readout"
+        ],
+        "Time Display": [
+          "Readout"
+        ],
+        "BPM Readout": [
+          "Readout"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Central Mixer",
+      "features": {
+        "Channel A Strip": [],
+        "Channel B Strip": [],
+        "Gain Knobs": [
+          "Knob"
+        ],
+        "Three Band EQ": [
+          "Knob"
+        ],
+        "Filter Knobs": [
+          "Knob"
+        ],
+        "Channel Faders": [
+          "Fader"
+        ],
+        "Channel VU Meters": [
+          "LevelMeter"
+        ],
+        "Cue PFL Buttons": [
+          "Toggle"
+        ],
+        "Crossfader": [
+          "Fader"
+        ],
+        "Master Volume": [
+          "Knob"
+        ],
+        "Master VU Meter": [
+          "LevelMeter"
+        ],
+        "FX Assign Buttons": [
+          "Toggle"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Dual Waveform Display",
+      "features": {
+        "Deck A Waveform Lane": [
+          "Waveform"
+        ],
+        "Deck B Waveform Lane": [
+          "Waveform"
+        ],
+        "Frequency Coloring": [
+          "Waveform"
+        ],
+        "Beatgrid Markers": [
+          "Waveform"
+        ],
+        "Hot Cue Markers": [
+          "Waveform"
+        ],
+        "Loop Region Overlay": [
+          "Waveform"
+        ],
+        "Center Playhead": [
+          "Waveform"
+        ],
+        "Click Drag Scrub": [
+          "Waveform"
+        ],
+        "Beat Alignment View": [
+          "Waveform"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Track Library Browser",
+      "features": {
+        "Search Bar": [
+          "TextInput"
+        ],
+        "Playlist Tree": [
+          "Tree"
+        ],
+        "Track List": [
+          "TrackList"
+        ],
+        "Sortable Columns": [],
+        "BPM Key Columns": [],
+        "Load To Deck A": [
+          "Button"
+        ],
+        "Load To Deck B": [
+          "Button"
+        ],
+        "Preview Row": [
+          "Button"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: FX & Performance Pads",
+      "features": {
+        "Deck A Pad Bank": [
+          "Pad"
+        ],
+        "Deck B Pad Bank": [
+          "Pad"
+        ],
+        "Hot Cue Mode": [
+          "Selector"
+        ],
+        "Loop Roll Mode": [
+          "Selector"
+        ],
+        "Sampler Mode": [
+          "Selector"
+        ],
+        "Effect Type Selector": [
+          "Selector"
+        ],
+        "Wet Dry Knob": [
+          "Knob"
+        ],
+        "Parameter Knobs": [
+          "Knob"
+        ],
+        "Beat Division Selector": [
+          "Selector"
+        ],
+        "Channel Assign Toggles": [
+          "Toggle"
+        ]
+      }
+    }
+  ],
+  "_meta": {
+    "model": "claude-opus-4-8",
+    "secs": 70.317,
+    "outTok": 6187,
+    "inTok": 9129,
+    "stop": "end_turn"
+  }
+}

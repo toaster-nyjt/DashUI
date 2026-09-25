@@ -5,6 +5,7 @@ import {
   SandpackLayout,
 } from "@codesandbox/sandpack-react";
 import { XY } from '../utils/spec';
+import { FIT_TEXT_SOURCE } from '../api/SKILLS';
 
 // Container for the Sandpack iframe
 // Controls zooming and scaling logic AFTER initial load in
@@ -13,12 +14,14 @@ export default function Preview({
   code,
   isSideDragging = false, // Determines the scaling logic
   boxSize, // Dimensions of the box
-  taskID // Set for a UI leaf: injects the runtime bus so wired components can talk
+  taskID, // Set for a UI leaf: injects the runtime bus so wired components can talk
+  primitives // Set for a leaf of a UI with primitives: type name -> generated source
 }: {
   code: string;
   isSideDragging?: boolean;
   boxSize: XY // Dimensions in pix of Generated box
   taskID?: number
+  primitives?: Record<string, string>
 }) {
 
   // Runtime message bus injected into every UI leaf (taskID defined). It gives the
@@ -44,12 +47,22 @@ const bus = {
 `
     : "";
 
-  // Hook imports (unless the code already imports from "react"), THEN the bus shim,
-  // THEN the code — imports stay first so the common (no-import) case never emits a
-  // statement before an import.
+  // The UI's shared primitives, in one file: hooks, the host's FitText, then every
+  // generated primitive (each exports its type + its _MIN floor). The leaf imports the
+  // types, so its own code stays import-free. Absent for manual boxes / hand-built UIs.
+  const primitiveNames = primitives ? Object.keys(primitives) : [];
+  const primitivesFile = primitiveNames.length
+    ? `import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";\n\n`
+      + FIT_TEXT_SOURCE + "\n" + primitiveNames.map((t) => primitives![t]).join("\n\n")
+    : "";
+  const primitiveImport = primitiveNames.length ? `import { ${primitiveNames.join(", ")} } from "./primitives";\n` : "";
+
+  // Hook imports (unless the code already imports from "react"), THEN the primitive
+  // import, THEN the bus shim, THEN the code — imports stay first so the common
+  // (no-import) case never emits a statement before an import.
   const hasReactImport = /\bimport\b[^\n]*\bfrom\s*['"]react['"]/.test(code);
-  const reactImport = hasReactImport ? "" : `import { useState, useEffect, useRef, useMemo, useCallback } from "react";\n\n`;
-  const componentCode = reactImport + busShim + code;
+  const reactImport = hasReactImport ? "" : `import { useState, useEffect, useRef, useMemo, useCallback } from "react";\n`;
+  const componentCode = reactImport + primitiveImport + "\n" + busShim + code;
 
   // Wrap the generated component in an App that fills the iframe. All
   // scaling lives host-side (below) because props can't cross the iframe
@@ -71,9 +84,10 @@ export default function App() {${taskID !== undefined ? `
   );
 }`;
 
-  const files = {
+  const files: Record<string, string> = {
     "/App.tsx": appCode,
     "/GeneratedComponent.tsx": componentCode,
+    ...(primitivesFile ? { "/primitives.tsx": primitivesFile } : {}),
   };
 
   // Baseline = the "100% zoom" design resolution. scale = boxSize / baseSize.

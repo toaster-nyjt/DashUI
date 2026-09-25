@@ -1,0 +1,46 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000
+    },
+    "wall": 22.051,
+    "passedFirstTry": 1,
+    "passed": 1,
+    "types": 1,
+    "totalAttempts": 1,
+    "outTokens": 2190,
+    "cost": 0.094
+  },
+  "results": [
+    {
+      "type": "Fader",
+      "attempts": [
+        {
+          "secs": 22.05,
+          "out": 2190,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 22.051,
+      "inTok": 7859,
+      "outTok": 2190,
+      "floor": {
+        "base": [
+          2,
+          6
+        ],
+        "orientation:horizontal": [
+          6,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

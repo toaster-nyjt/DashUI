@@ -1,0 +1,160 @@
+{
+  "meta": {
+    "task": "Build me a checkout page for an online store",
+    "model": "claude-opus-4-8",
+    "effort": "medium",
+    "secs": 32.947,
+    "outTok": 2600,
+    "inTok": 2885,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 4,
+    "features": 30,
+    "edges": 3,
+    "meanEdgeDescChars": 310,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Checkout: Cart Items Review Panel",
+      "genInstructions": "Build a scrollable panel listing each cart line item with product image, name, variant/options, unit price, an editable quantity stepper, a remove button, and per-line subtotal. It lets the shopper review and adjust exactly what they are buying before paying.",
+      "role": "The item-level editing surface where the shopper confirms and adjusts the contents of their order, feeding quantities and prices to the Order Summary.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Checkout: Order Summary & Place Order Rail",
+            "description": "Whenever a line quantity changes or an item is removed, emit the updated list of {itemId, unitPrice, quantity} and total item count; the Order Summary recomputes the subtotal line and re-derives tax and grand total, and if the cart becomes empty it disables the Place Order button."
+          }
+        ]
+      },
+      "features": [
+        "Line Item Rows",
+        "Product Thumbnail",
+        "Variant Labels",
+        "Quantity Stepper",
+        "Remove Item Button",
+        "Per-Line Subtotal",
+        "Scrollable List"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "name": "Checkout: Shipping & Contact Form",
+      "genInstructions": "Build a form capturing contact email/phone and full shipping address (name, street, city, state, postal code, country) plus a selectable list of shipping methods (standard/express/overnight) each showing price and delivery estimate. It collects where the order goes and how fast.",
+      "role": "The delivery-details collector that determines destination and shipping speed, driving shipping cost and tax in the Order Summary.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Checkout: Order Summary & Place Order Rail",
+            "description": "When a shipping method is selected or the destination address (region/postal code/country) changes, emit the chosen method's shipping cost, the delivery estimate, and destination locale; the Order Summary updates its shipping line, recalculates region-based tax, and refreshes the grand total. Also emits address-form validity so Place Order stays disabled until required fields are valid."
+          }
+        ]
+      },
+      "features": [
+        "Contact Fields",
+        "Address Fields",
+        "Country Selector",
+        "Shipping Method Options",
+        "Method Price Display",
+        "Delivery Estimates",
+        "Field Validation"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "name": "Checkout: Payment Details Form",
+      "genInstructions": "Build a payment form with method tabs (card, PayPal, etc.), card number/expiry/CVC inputs with formatting and inline validation, a billing-address toggle (same as shipping), and a card-brand indicator. It securely captures how the shopper pays.",
+      "role": "The payment-capture surface that gathers and validates payment credentials, signaling readiness to the Order Summary so the order can be placed.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Checkout: Order Summary & Place Order Rail",
+            "description": "Emit a payment-valid boolean and the selected payment method whenever the card fields pass/fail validation or the method changes; the Order Summary enables the Place Order button only when payment is valid and reflects the chosen method label near the button."
+          }
+        ]
+      },
+      "features": [
+        "Payment Method Tabs",
+        "Card Number Input",
+        "Expiry Input",
+        "CVC Input",
+        "Card Brand Indicator",
+        "Billing Address Toggle",
+        "Inline Validation"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "name": "Checkout: Order Summary & Place Order Rail",
+      "genInstructions": "Build a sticky right-side summary showing itemized subtotal, shipping cost, tax, discount, and bold grand total, a promo-code input with apply button, and a prominent Place Order button with a secure-checkout note. It aggregates all costs and finalizes the purchase.",
+      "role": "The financial aggregation and checkout-completion hub that totals every input from cart, shipping, and payment and lets the shopper commit the order.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Cart Items Review Panel",
+            "description": "Receives updated line prices, quantities, and item count on every cart edit; recomputes the subtotal, re-derives tax and grand total, and disables Place Order when the cart is empty."
+          },
+          {
+            "name": "Checkout: Shipping & Contact Form",
+            "description": "Receives selected shipping cost, delivery estimate, destination locale, and address validity; updates the shipping line, recalculates region-based tax, refreshes the grand total, and blocks Place Order until the address is valid."
+          },
+          {
+            "name": "Checkout: Payment Details Form",
+            "description": "Receives payment-valid state and selected method; enables the Place Order button only when payment is valid and displays the chosen method label."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Subtotal Line",
+        "Shipping Line",
+        "Tax Line",
+        "Discount Line",
+        "Grand Total",
+        "Promo Code Input",
+        "Apply Promo Button",
+        "Place Order Button",
+        "Secure Checkout Note"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    }
+  ]
+}

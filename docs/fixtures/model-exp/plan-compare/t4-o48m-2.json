@@ -1,0 +1,236 @@
+{
+  "meta": {
+    "task": "Smart home control panel",
+    "model": "claude-opus-4-8",
+    "effort": "medium",
+    "secs": 38.408,
+    "outTok": 3375,
+    "inTok": 2880,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 6,
+    "features": 37,
+    "edges": 7,
+    "meanEdgeDescChars": 163,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Smart Home: Room Navigation Sidebar",
+      "genInstructions": "Build a vertical sidebar listing all rooms/zones of the home (Living Room, Kitchen, Bedroom, etc.) with icons, active-device counts, and a currently-selected highlight; selecting a room scopes the rest of the panel to that room.",
+      "role": "The primary navigation surface that scopes which room's devices and climate the rest of the panel displays.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "When the user selects a room in the sidebar, emit the selected room ID; the Device Control Grid re-queries and re-renders only the devices (lights, switches, plugs, blinds) belonging to that room."
+          },
+          {
+            "name": "Smart Home: Climate Control Panel",
+            "description": "When the user selects a room, emit the room ID; the Climate Control Panel switches to display and control that room's thermostat/zone setpoint and current readings."
+          }
+        ]
+      },
+      "features": [
+        "Room List",
+        "Room Icons",
+        "Active Device Count",
+        "Selected Highlight",
+        "Add Room Button",
+        "Search Rooms"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "Smart Home: Device Control Grid",
+      "genInstructions": "Build a responsive grid of device control cards for the selected room — each card toggles a device on/off and exposes inline controls (light dimmer/color, plug toggle, blind slider, fan speed) with live status.",
+      "role": "The main hands-on control surface where the user directly operates the devices of the currently selected room.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigation Sidebar",
+            "description": "Receives the selected room ID and rebuilds the grid to show only that room's devices with their current states."
+          },
+          {
+            "name": "Smart Home: Scenes & Automation Panel",
+            "description": "When a scene is activated, receives the scene's target device states (on/off, brightness, color, blind position) and updates the matching device cards to reflect those new states."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Energy Usage Dashboard",
+            "description": "Whenever a device is turned on/off or a dimmer/plug level changes, emit the device's updated power draw so the Energy Dashboard recomputes and re-renders current total and per-device consumption."
+          }
+        ]
+      },
+      "features": [
+        "Device Cards",
+        "On Off Toggle",
+        "Brightness Slider",
+        "Color Picker",
+        "Blind Slider",
+        "Fan Speed Control",
+        "Live Status Badge",
+        "Group Toggle All"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Climate Control Panel",
+      "genInstructions": "Build a thermostat control panel with a circular temperature dial, current vs target temperature, heat/cool/auto mode selector, humidity readout, and fan mode for the selected room's zone.",
+      "role": "The dedicated climate hub that sets and displays temperature and HVAC mode for the selected room and reports HVAC load to the energy dashboard.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigation Sidebar",
+            "description": "Receives the selected room ID and loads that room/zone's current temperature, target setpoint, humidity, and mode into the dial."
+          },
+          {
+            "name": "Smart Home: Scenes & Automation Panel",
+            "description": "When a scene is activated, receives the scene's target temperature and HVAC mode and updates the dial setpoint and mode selector accordingly."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Energy Usage Dashboard",
+            "description": "When the setpoint or heat/cool mode changes, emit the resulting HVAC power/energy estimate so the Energy Dashboard updates the climate portion of total consumption."
+          }
+        ]
+      },
+      "features": [
+        "Temperature Dial",
+        "Current Temp Readout",
+        "Mode Selector",
+        "Humidity Readout",
+        "Fan Mode",
+        "Schedule Preview"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "Smart Home: Security & Camera Panel",
+      "genInstructions": "Build a security panel with live camera feed thumbnails, per-door lock toggles, an alarm arm/disarm control with modes (home/away/disarmed), and a recent event/motion log.",
+      "role": "The home-wide security hub for monitoring cameras and controlling locks and the alarm, driven by scene activations.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Scenes & Automation Panel",
+            "description": "When a scene is activated (e.g. 'Away' or 'Goodnight'), receives the scene's security directive and sets the alarm mode and lock states accordingly (arm away, lock all doors)."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Camera Thumbnails",
+        "Camera Live View",
+        "Door Lock Toggles",
+        "Alarm Mode Selector",
+        "Event Log",
+        "Motion Alerts"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "Smart Home: Scenes & Automation Panel",
+      "genInstructions": "Build a panel of one-tap scene tiles (Good Morning, Away, Movie Night, Goodnight) and a list of automation rules with enable toggles; activating a scene pushes preset states across devices, climate, and security.",
+      "role": "The orchestration surface that applies coordinated preset states to devices, climate, and security in a single action.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "On scene activation, emit the scene's device state map (which lights/plugs/blinds on/off and their levels); the grid applies these states to the corresponding device cards."
+          },
+          {
+            "name": "Smart Home: Climate Control Panel",
+            "description": "On scene activation, emit the scene's target temperature and HVAC mode; the Climate panel updates its dial setpoint and mode selector."
+          },
+          {
+            "name": "Smart Home: Security & Camera Panel",
+            "description": "On scene activation, emit the scene's security directive; the Security panel sets alarm mode and lock states to match."
+          }
+        ]
+      },
+      "features": [
+        "Scene Tiles",
+        "Activate Button",
+        "Automation Rules List",
+        "Rule Enable Toggle",
+        "Create Scene Button",
+        "Schedule Trigger"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "Smart Home: Energy Usage Dashboard",
+      "genInstructions": "Build an energy monitoring dashboard with a real-time total-consumption gauge, a per-device/per-category breakdown chart, and a historical usage trend line for the home.",
+      "role": "The analytics surface that aggregates and visualizes real-time and historical power consumption driven by device and climate activity.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "Receives updated per-device power draw whenever devices are toggled or dimmed, and recomputes the total gauge and per-device breakdown."
+          },
+          {
+            "name": "Smart Home: Climate Control Panel",
+            "description": "Receives HVAC power/energy estimates when climate setpoint or mode changes, and updates the climate segment of the consumption breakdown and total."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Total Consumption Gauge",
+        "Device Breakdown Chart",
+        "Usage Trend Line",
+        "Time Range Selector",
+        "Cost Estimate"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  ]
+}

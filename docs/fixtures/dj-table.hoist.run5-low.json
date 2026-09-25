@@ -1,0 +1,309 @@
+{
+  "library": [
+    {
+      "type": "Knob",
+      "description": "Rotary control; drag maps to a value in min..max. Continuous by default, or snaps to the provided steps values when in stepped mode.",
+      "props": {
+        "min": "number",
+        "max": "number",
+        "value": "number",
+        "onChange": "(v: number) => void",
+        "mode?": "'continuous' | 'stepped'",
+        "steps?": "number[]"
+      }
+    },
+    {
+      "type": "Fader",
+      "description": "Linear slider; drag maps to a value in min..max along its orientation. Used vertically for channel/pitch and horizontally for crossfade/zoom.",
+      "props": {
+        "min": "number",
+        "max": "number",
+        "value": "number",
+        "onChange": "(v: number) => void",
+        "orientation?": "'vertical' | 'horizontal'"
+      }
+    },
+    {
+      "type": "Button",
+      "description": "Momentary push button; fires onPress on each press. Optional face content.",
+      "props": {
+        "onPress": "() => void",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "ToggleButton",
+      "description": "Latching button; on reflects current state, onChange emits the new boolean when toggled. Optional face content.",
+      "props": {
+        "on": "boolean",
+        "onChange": "(on: boolean) => void",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "Pad",
+      "description": "Trigger pad; fires onPress when hit. active indicates a stored/lit state. Optional face content.",
+      "props": {
+        "onPress": "() => void",
+        "active?": "boolean",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "JogWheel",
+      "description": "Rotary platter; drag/spin emits a normalized angular delta for scratching and pitch-bend. value is current angle in radians.",
+      "props": {
+        "value?": "number",
+        "onScrub": "(delta: number) => void"
+      }
+    },
+    {
+      "type": "Waveform",
+      "description": "Waveform display; renders amplitude data with an optional beat grid and a playhead at a normalized 0-1 position. Optional onScrub emits a normalized 0-1 seek/scratch position; zoom is a normalized magnification factor.",
+      "props": {
+        "data": "number[]",
+        "playhead": "number",
+        "beatGrid?": "number[]",
+        "zoom?": "number",
+        "onScrub?": "(pos: number) => void"
+      }
+    },
+    {
+      "type": "LevelMeter",
+      "description": "Signal level meter; shows level normalized 0-1.",
+      "props": {
+        "level": "number"
+      }
+    },
+    {
+      "type": "Readout",
+      "description": "Passive text/numeric readout surface; displays supplied content such as time, BPM or track metadata.",
+      "props": {
+        "value?": "string | number",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "SearchInput",
+      "description": "Text input for search queries; value is current text, onChange emits new text.",
+      "props": {
+        "value": "string",
+        "onChange": "(v: string) => void"
+      }
+    },
+    {
+      "type": "TreeSelect",
+      "description": "Hierarchical tree selection of nested nodes (folders/crates); onChange emits the selected node id.",
+      "props": {
+        "options": "{ id: string; label: string; children?: any[] }[]",
+        "value": "string",
+        "onChange": "(id: string) => void"
+      }
+    },
+    {
+      "type": "TrackList",
+      "description": "Multi-column list selection of tracks; each option carries several fields. value is the selected track id; onChange selects a row; onActivate loads/opens it.",
+      "props": {
+        "options": "{ id: string; title: string; artist: string; bpm: number; key: string; duration: string }[]",
+        "value": "string",
+        "onChange": "(id: string) => void",
+        "onActivate?": "(id: string) => void"
+      }
+    },
+    {
+      "type": "SortHeaders",
+      "description": "Column-header selection controlling sort field and direction; value carries the active field, onChange emits the chosen field/direction.",
+      "props": {
+        "options": "{ id: string; label: string }[]",
+        "value": "{ field: string; dir: 'asc' | 'desc' }",
+        "onChange": "(v: { field: string; dir: 'asc' | 'desc' }) => void"
+      }
+    },
+    {
+      "type": "Selector",
+      "description": "Single-choice selection among labeled options (e.g. effect type); onChange emits the chosen option id.",
+      "props": {
+        "options": "{ id: string; label: string }[]",
+        "value": "string",
+        "onChange": "(id: string) => void"
+      }
+    }
+  ],
+  "components": [
+    {
+      "name": "DJ Table: Track Library Browser",
+      "features": {
+        "Search Bar": [
+          "SearchInput"
+        ],
+        "Folder Crate Tree": [
+          "TreeSelect"
+        ],
+        "Track List": [
+          "TrackList"
+        ],
+        "Sort Headers": [
+          "SortHeaders"
+        ],
+        "BPM Key Columns": [],
+        "Preview Button": [
+          "Button"
+        ],
+        "Load To Deck A": [
+          "Button"
+        ],
+        "Load To Deck B": [
+          "Button"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Master Waveform Display",
+      "features": {
+        "Dual Waveform Lanes": [
+          "Waveform"
+        ],
+        "Playhead Markers": [
+          "Waveform"
+        ],
+        "Beat Grid": [
+          "Waveform"
+        ],
+        "Time Display": [
+          "Readout"
+        ],
+        "Zoom Control": [
+          "Fader"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Deck A (Left)",
+      "features": {
+        "Jog Wheel": [
+          "JogWheel"
+        ],
+        "Play Pause Button": [
+          "ToggleButton"
+        ],
+        "Cue Button": [
+          "Button"
+        ],
+        "Pitch Fader": [
+          "Fader"
+        ],
+        "Waveform Strip": [
+          "Waveform"
+        ],
+        "Hot Cue Pads": [
+          "Pad"
+        ],
+        "Loop Controls": [
+          "Button",
+          "Readout"
+        ],
+        "Sync Button": [
+          "ToggleButton"
+        ],
+        "Track Info Display": [
+          "Readout"
+        ],
+        "BPM Display": [
+          "Readout"
+        ],
+        "Keylock Toggle": [
+          "ToggleButton"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Central Mixer",
+      "features": {
+        "Channel Faders": [
+          "Fader"
+        ],
+        "Crossfader": [
+          "Fader"
+        ],
+        "EQ Knobs": [
+          "Knob"
+        ],
+        "Gain Trim": [
+          "Knob"
+        ],
+        "Channel VU Meters": [
+          "LevelMeter"
+        ],
+        "Cue PFL Buttons": [
+          "ToggleButton"
+        ],
+        "Master Volume": [
+          "Knob"
+        ],
+        "Headphone Mix": [
+          "Knob"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Deck B (Right)",
+      "features": {
+        "Jog Wheel": [
+          "JogWheel"
+        ],
+        "Play Pause Button": [
+          "ToggleButton"
+        ],
+        "Cue Button": [
+          "Button"
+        ],
+        "Pitch Fader": [
+          "Fader"
+        ],
+        "Waveform Strip": [
+          "Waveform"
+        ],
+        "Hot Cue Pads": [
+          "Pad"
+        ],
+        "Loop Controls": [
+          "Button",
+          "Readout"
+        ],
+        "Sync Button": [
+          "ToggleButton"
+        ],
+        "Track Info Display": [
+          "Readout"
+        ],
+        "BPM Display": [
+          "Readout"
+        ],
+        "Keylock Toggle": [
+          "ToggleButton"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Effects Rack",
+      "features": {
+        "FX Unit Slots": [],
+        "Effect Selector": [
+          "Selector"
+        ],
+        "Dry Wet Knob": [
+          "Knob"
+        ],
+        "Beat Multiplier": [
+          "Knob"
+        ],
+        "Assign Deck Buttons": [
+          "ToggleButton"
+        ],
+        "On Off Toggle": [
+          "ToggleButton"
+        ]
+      }
+    }
+  ]
+}

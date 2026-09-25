@@ -1,0 +1,355 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000
+    },
+    "wall": 49.284,
+    "passedFirstTry": 13,
+    "passed": 14,
+    "types": 14,
+    "totalAttempts": 15,
+    "outTokens": 30429,
+    "cost": 1.346
+  },
+  "results": [
+    {
+      "type": "Knob",
+      "attempts": [
+        {
+          "secs": 28.276,
+          "out": 2976,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 28.277,
+      "inTok": 7892,
+      "outTok": 2976,
+      "floor": {
+        "base": [
+          2.5,
+          2.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Fader",
+      "attempts": [
+        {
+          "secs": 26.848,
+          "out": 2468,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 26.849,
+      "inTok": 7863,
+      "outTok": 2468,
+      "floor": {
+        "base": [
+          1.75,
+          6
+        ],
+        "orientation:horizontal": [
+          6,
+          1.75
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Button",
+      "attempts": [
+        {
+          "secs": 15.656,
+          "out": 1513,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 15.656,
+      "inTok": 7853,
+      "outTok": 1513,
+      "floor": {
+        "base": [
+          2.5,
+          1.75
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "ToggleButton",
+      "attempts": [
+        {
+          "secs": 16.618,
+          "out": 1575,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 16.618,
+      "inTok": 7951,
+      "outTok": 1575,
+      "floor": {
+        "base": [
+          3,
+          1.75
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Pad",
+      "attempts": [
+        {
+          "secs": 13.327,
+          "out": 1272,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 13.327,
+      "inTok": 7747,
+      "outTok": 1272,
+      "floor": {
+        "base": [
+          2.5,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "JogWheel",
+      "attempts": [
+        {
+          "secs": 25.086,
+          "out": 2564,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": [
+            "syntax: Identifier expected. at line 96: `<circle cx=\"50\" cy=\"50\" r=\"48\" fill=\"url(#\" + \"\" />`",
+            "syntax: Unexpected token. Did you mean `{'>'}` or `&gt;`? at line 96: `<circle cx=\"50\" cy=\"50\" r=\"48\" fill=\"url(#\" + \"\" />`"
+          ]
+        },
+        {
+          "secs": 24.177,
+          "out": 2655,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 49.265,
+      "inTok": 15559,
+      "outTok": 5219,
+      "floor": {
+        "base": [
+          4,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": false
+    },
+    {
+      "type": "Waveform",
+      "attempts": [
+        {
+          "secs": 27.902,
+          "out": 2865,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 27.902,
+      "inTok": 7905,
+      "outTok": 2865,
+      "floor": {
+        "base": [
+          6,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "LevelMeter",
+      "attempts": [
+        {
+          "secs": 27.362,
+          "out": 2194,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 27.362,
+      "inTok": 7670,
+      "outTok": 2194,
+      "floor": {
+        "base": [
+          1.25,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Readout",
+      "attempts": [
+        {
+          "secs": 12.935,
+          "out": 1305,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 12.936,
+      "inTok": 7863,
+      "outTok": 1305,
+      "floor": {
+        "base": [
+          3,
+          1.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "SearchInput",
+      "attempts": [
+        {
+          "secs": 18.847,
+          "out": 1844,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 18.848,
+      "inTok": 7686,
+      "outTok": 1844,
+      "floor": {
+        "base": [
+          7,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "TreeSelect",
+      "attempts": [
+        {
+          "secs": 20.852,
+          "out": 2032,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 20.852,
+      "inTok": 7730,
+      "outTok": 2032,
+      "floor": {
+        "base": [
+          7,
+          3.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "TrackList",
+      "attempts": [
+        {
+          "secs": 24.087,
+          "out": 2118,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 24.088,
+      "inTok": 7767,
+      "outTok": 2118,
+      "floor": {
+        "base": [
+          11,
+          5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "SortHeaders",
+      "attempts": [
+        {
+          "secs": 16.838,
+          "out": 1620,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 16.847,
+      "inTok": 7762,
+      "outTok": 1620,
+      "floor": {
+        "base": [
+          8,
+          1.75
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Selector",
+      "attempts": [
+        {
+          "secs": 14.342,
+          "out": 1428,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 14.343,
+      "inTok": 7715,
+      "outTok": 1428,
+      "floor": {
+        "base": [
+          6,
+          2.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

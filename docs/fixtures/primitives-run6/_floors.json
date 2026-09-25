@@ -1,0 +1,90 @@
+{
+  "Knob": {
+    "base": [
+      2,
+      2
+    ]
+  },
+  "Fader": {
+    "base": [
+      1.6,
+      6
+    ],
+    "orientation:horizontal": [
+      6,
+      1.6
+    ]
+  },
+  "Button": {
+    "base": [
+      2.5,
+      1.75
+    ]
+  },
+  "ToggleButton": {
+    "base": [
+      2,
+      1.5
+    ]
+  },
+  "Pad": {
+    "base": [
+      3,
+      2.25
+    ]
+  },
+  "Waveform": {
+    "base": [
+      6,
+      2
+    ]
+  },
+  "LevelMeter": {
+    "base": [
+      1.5,
+      4
+    ]
+  },
+  "Readout": {
+    "base": [
+      3,
+      1.25
+    ]
+  },
+  "SearchInput": {
+    "base": [
+      7,
+      1.75
+    ]
+  },
+  "TreeSelect": {
+    "base": [
+      9,
+      5
+    ]
+  },
+  "TrackList": {
+    "base": [
+      13,
+      7
+    ]
+  },
+  "SortHeaders": {
+    "base": [
+      8,
+      1.5
+    ]
+  },
+  "Selector": {
+    "base": [
+      6,
+      3
+    ]
+  },
+  "JogWheel": {
+    "base": [
+      4,
+      4
+    ]
+  }
+}

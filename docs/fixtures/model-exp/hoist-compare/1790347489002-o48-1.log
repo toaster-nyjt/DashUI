@@ -1,0 +1,15 @@
+hoist 69s  6044 out  valid=true  types=14
+  JogWheel         {"value":"number","onChange":"(delta: number) => void"}
+  Button           {"onPress":"() => void","children?":"React.ReactNode","tone?":"'neutral' | 'accent' | 'danger'"}
+  Toggle           {"on":"boolean","onChange":"(on: boolean) => void","children?":"React.ReactNode","tone?":"'neutral' | 'accent' | 'danger'"}
+  Fader            {"value":"number","onChange":"(v: number) => void","min":"number","max":"number","orientation?":"'vertical' | 'horizontal'"}
+  Knob             {"value":"number","onChange":"(v: number) => void","min":"number","max":"number","mode?":"'continuous' | 'stepped'","steps?":"number[]"}
+  Readout          {"value":"string | number"}
+  InfoDisplay      {"fields":"{ label: string; value: string }[]"}
+  LevelMeter       {"level":"number","peak?":"number"}
+  Waveform         {"data":"number[]","playhead":"number","bpm?":"number","beatgrid?":"number[]","cues?":"{ time: number; label?: string }[]","loops?":"{ start: number; end: number }[]","onScrub?":"(time: number) => void"}
+  Pad              {"onPress":"(velocity: number) => void","active?":"boolean","children?":"React.ReactNode"}
+  SearchInput      {"value":"string","onChange":"(q: string) => void","placeholder?":"string"}
+  TreeSelector     {"options":"{ id: string; label: string; children?: any[] }[]","value":"string","onChange":"(id: string) => void"}
+  TrackList        {"options":"{ id: string; title: string; artist: string; bpm: number; key: string; duration: string }[]","value":"string","onChange":"(id: string) => void","onActivate?":"(id: string) => void","sortBy?":"string","onSortChange?":"(column: string) => void"}
+  OptionSelector   {"options":"{ id: string; label: string }[]","value":"string","onChange":"(id: string) => void"}

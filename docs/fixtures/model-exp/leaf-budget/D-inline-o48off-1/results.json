@@ -1,0 +1,101 @@
+{
+  "config": {
+    "budget": false,
+    "MODEL": "claude-opus-4-8",
+    "THINKING": "disabled",
+    "EFFORT": "max"
+  },
+  "wall": 64.994,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "DJ Table: Waveform Display",
+      "box": {
+        "x": 2497,
+        "y": 277.44444444444446
+      },
+      "secs": 47.381,
+      "outTok": 4710,
+      "codeTok": 4706,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [],
+      "postProcessed": true
+    },
+    {
+      "i": 1,
+      "leaf": "DJ Table: Deck A (Left Player)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 51.932,
+      "outTok": 5282,
+      "codeTok": 5278,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [],
+      "postProcessed": true
+    },
+    {
+      "i": 2,
+      "leaf": "DJ Table: Central Mixer",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 45.467,
+      "outTok": 4590,
+      "codeTok": 4586,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [],
+      "postProcessed": true
+    },
+    {
+      "i": 3,
+      "leaf": "DJ Table: Deck B (Right Player)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 64.684,
+      "outTok": 6504,
+      "codeTok": 6500,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [],
+      "postProcessed": true
+    },
+    {
+      "i": 4,
+      "leaf": "DJ Table: Track Library Browser",
+      "box": {
+        "x": 1498.2,
+        "y": 332.93333333333334
+      },
+      "secs": 61.336,
+      "outTok": 6196,
+      "codeTok": 6192,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [],
+      "postProcessed": true
+    },
+    {
+      "i": 5,
+      "leaf": "DJ Table: Effects Rack",
+      "box": {
+        "x": 998.8,
+        "y": 332.93333333333334
+      },
+      "secs": 41.365,
+      "outTok": 4291,
+      "codeTok": 4287,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [],
+      "postProcessed": true
+    }
+  ]
+}

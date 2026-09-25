@@ -1,0 +1,176 @@
+{
+  "meta": {
+    "task": "I want to listen to music",
+    "model": "claude-opus-4-8",
+    "effort": "medium",
+    "secs": 31.195,
+    "outTok": 2579,
+    "inTok": 2880,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 4,
+    "features": 29,
+    "edges": 5,
+    "meanEdgeDescChars": 204,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Music Player: Now Playing Bar",
+      "genInstructions": "Build a fixed bottom transport bar showing the current track's title, artist, and mini thumbnail, with play/pause, previous, next, shuffle, repeat controls, a scrubbable progress bar with elapsed/total time, and a volume slider with mute. This is the primary playback control surface for the whole player.",
+      "role": "The central playback controller that governs which track is playing and its position/volume, driven by and driving the queue, library, and art display.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Queue Side Panel",
+            "description": "When the user double-clicks or selects a track in the queue, the queue emits that track (id, title, artist, duration, art URL) and the Now Playing Bar loads it as the current track, resets the progress bar to 0, and begins playback."
+          },
+          {
+            "name": "Music Player: Library Browser",
+            "description": "When the user double-clicks a song in the library, the library emits that track and the Now Playing Bar immediately loads and plays it, replacing the current track and resetting the progress bar."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Music Player: Queue Side Panel",
+            "description": "When the user presses Next/Previous or a track finishes, the bar emits an advance/retreat event so the queue moves its highlighted 'now playing' pointer to the adjacent track and returns that track for the bar to load; shuffle/repeat state also alters which track the queue serves next."
+          },
+          {
+            "name": "Music Player: Now Playing Art Display",
+            "description": "Whenever the current track changes, the bar emits the new track's art URL, title, and artist so the Art Display swaps to that album artwork and metadata; play/pause state is also emitted so the display can start/stop its visualizer animation."
+          }
+        ]
+      },
+      "features": [
+        "Track Info Label",
+        "Mini Thumbnail",
+        "Play Pause Button",
+        "Previous Button",
+        "Next Button",
+        "Shuffle Toggle",
+        "Repeat Toggle",
+        "Progress Scrubber",
+        "Time Display",
+        "Volume Slider",
+        "Mute Button"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "Music Player: Now Playing Art Display",
+      "genInstructions": "Build a large central panel showing the current track's full-size album artwork, title, artist, and album name, with an animated audio visualizer beneath the art. This gives the user an immersive focus on what is currently playing.",
+      "role": "The visual centerpiece that displays the currently playing track's artwork and metadata, reacting to the Now Playing Bar's track and play state.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Now Playing Bar",
+            "description": "Receives the current track's art URL, title, artist, and album when the track changes and renders them full-size; also receives play/pause state to run or freeze the visualizer animation."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Album Artwork",
+        "Track Title",
+        "Artist Name",
+        "Album Name",
+        "Audio Visualizer"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "name": "Music Player: Library Browser",
+      "genInstructions": "Build a scrollable library panel with a search bar and filter tabs (Songs, Albums, Artists, Playlists) listing tracks in rows with title, artist, album, and duration, where each row has play and 'add to queue' actions. This is where the user finds and picks music to play.",
+      "role": "The music discovery surface that lets the user search and browse the catalog and send chosen tracks to the player or the queue.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Music Player: Now Playing Bar",
+            "description": "When the user double-clicks a library row or hits its play action, emit that full track object so the Now Playing Bar loads and plays it immediately."
+          },
+          {
+            "name": "Music Player: Queue Side Panel",
+            "description": "When the user clicks a row's 'add to queue' action (or adds a whole album/playlist), emit the track(s) so the Queue Side Panel appends them to the end of the current queue list."
+          }
+        ]
+      },
+      "features": [
+        "Search Bar",
+        "Filter Tabs",
+        "Track Row List",
+        "Column Headers",
+        "Row Play Button",
+        "Add To Queue Button",
+        "Duration Column"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "name": "Music Player: Queue Side Panel",
+      "genInstructions": "Build a right-hand side panel listing the upcoming play queue as reorderable rows (drag handle, thumbnail, title, artist), highlighting the currently playing track, with per-row remove and a clear-queue action. This lets the user manage playback order.",
+      "role": "The playback order manager that holds and reorders the upcoming tracks, feeding the Now Playing Bar the next track and receiving additions from the library.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Now Playing Bar",
+            "description": "Receives advance/retreat events on Next/Previous or track-end and moves its 'now playing' highlight to the adjacent queue item, returning that track to the bar; honors shuffle (random next) and repeat (loop) state when selecting the next item."
+          },
+          {
+            "name": "Music Player: Library Browser",
+            "description": "Receives track(s) from the library's 'add to queue' action and appends them to the bottom of the queue list."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Music Player: Now Playing Bar",
+            "description": "When the user double-clicks or selects a queue row, emit that track so the Now Playing Bar loads and plays it and updates the queue's now-playing highlight to that row."
+          }
+        ]
+      },
+      "features": [
+        "Queue Row List",
+        "Drag Reorder Handle",
+        "Row Thumbnail",
+        "Now Playing Highlight",
+        "Remove Row Button",
+        "Clear Queue Button"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  ]
+}

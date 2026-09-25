@@ -1,0 +1,319 @@
+{
+  "library": [
+    {
+      "type": "Knob",
+      "description": "Rotary control; drag maps to a value within min..max. Continuous by default, or snaps to the values in 'steps' when provided.",
+      "props": {
+        "min": "number",
+        "max": "number",
+        "value": "number",
+        "onChange": "(v: number) => void",
+        "mode?": "'continuous' | 'stepped'",
+        "steps?": "number[]"
+      }
+    },
+    {
+      "type": "Fader",
+      "description": "Linear slider; handle position maps to a value within min..max. Orientation selectable for vertical channel faders or horizontal crossfaders.",
+      "props": {
+        "min": "number",
+        "max": "number",
+        "value": "number",
+        "onChange": "(v: number) => void",
+        "orientation?": "'vertical' | 'horizontal'"
+      }
+    },
+    {
+      "type": "Button",
+      "description": "Momentary push button; fires onPress on each press. Face content supplied via children.",
+      "props": {
+        "onPress": "() => void",
+        "tone?": "'neutral' | 'accent' | 'danger'",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "Toggle",
+      "description": "Latching on/off control; reflects 'on' and emits new state via onChange. Face content supplied via children.",
+      "props": {
+        "on": "boolean",
+        "onChange": "(on: boolean) => void",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "CuePad",
+      "description": "Trigger pad; onPress jumps to/sets its cue point, 'on' shows whether a cue is stored. Face content via children.",
+      "props": {
+        "onPress": "() => void",
+        "on?": "boolean",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "JogWheel",
+      "description": "Large rotary platter for scratching and pitch-bend; emits angular movement as a delta.",
+      "props": {
+        "angle": "number",
+        "onScrub": "(deltaRadians: number) => void"
+      }
+    },
+    {
+      "type": "Waveform",
+      "description": "Audio waveform display; renders sample/peak data with an optional beat grid overlay and playhead position (normalized 0-1), optionally scrubbable.",
+      "props": {
+        "data": "number[]",
+        "playhead": "number",
+        "beatGrid?": "number[]",
+        "zoom?": "number",
+        "onScrub?": "(position: number) => void"
+      }
+    },
+    {
+      "type": "Readout",
+      "description": "Passive text/numeric display showing a supplied value (e.g. BPM, elapsed/remaining time, track title/artist).",
+      "props": {
+        "value": "React.ReactNode"
+      }
+    },
+    {
+      "type": "SearchInput",
+      "description": "Single-line text input for search queries; emits current text.",
+      "props": {
+        "value": "string",
+        "onChange": "(v: string) => void",
+        "placeholder?": "string"
+      }
+    },
+    {
+      "type": "TrackList",
+      "description": "Selectable list of multi-field track rows; value is the selected row id, onChange selects, onActivate loads/previews it.",
+      "props": {
+        "options": "{ id: string; title: string; artist: string; bpm: number; key: string; duration: string }[]",
+        "value": "string",
+        "onChange": "(id: string) => void",
+        "onActivate?": "(id: string) => void"
+      }
+    },
+    {
+      "type": "SortHeaders",
+      "description": "Clickable column headers that select the sort column and toggle sort direction.",
+      "props": {
+        "columns": "{ id: string; label: string }[]",
+        "value": "{ column: string; direction: 'asc' | 'desc' }",
+        "onChange": "(sort: { column: string; direction: 'asc' | 'desc' }) => void"
+      }
+    },
+    {
+      "type": "TreeSelector",
+      "description": "Selectable hierarchical tree of nested nodes (folders/crates); value is the selected node id.",
+      "props": {
+        "options": "{ id: string; label: string; children?: any[] }[]",
+        "value": "string",
+        "onChange": "(id: string) => void"
+      }
+    },
+    {
+      "type": "OptionSelector",
+      "description": "Selection among a set of single-label options; value is the chosen option id.",
+      "props": {
+        "options": "{ id: string; label: string }[]",
+        "value": "string",
+        "onChange": "(id: string) => void"
+      }
+    },
+    {
+      "type": "LevelMeter",
+      "description": "Signal level meter displaying an audio level, normalized 0-1.",
+      "props": {
+        "level": "number"
+      }
+    }
+  ],
+  "components": [
+    {
+      "name": "DJ Table: Track Library Browser",
+      "features": {
+        "Search Bar": [
+          "SearchInput"
+        ],
+        "Folder Crate Tree": [
+          "TreeSelector"
+        ],
+        "Track List": [
+          "TrackList"
+        ],
+        "Sort Headers": [
+          "SortHeaders"
+        ],
+        "BPM Key Columns": [
+          "TrackList"
+        ],
+        "Preview Button": [
+          "Button"
+        ],
+        "Load To Deck A": [
+          "Button"
+        ],
+        "Load To Deck B": [
+          "Button"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Master Waveform Display",
+      "features": {
+        "Dual Waveform Lanes": [
+          "Waveform"
+        ],
+        "Playhead Markers": [
+          "Waveform"
+        ],
+        "Beat Grid": [
+          "Waveform"
+        ],
+        "Time Display": [
+          "Readout"
+        ],
+        "Zoom Control": [
+          "Knob"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Deck A (Left)",
+      "features": {
+        "Jog Wheel": [
+          "JogWheel"
+        ],
+        "Play Pause Button": [
+          "Button"
+        ],
+        "Cue Button": [
+          "Button"
+        ],
+        "Pitch Fader": [
+          "Fader"
+        ],
+        "Waveform Strip": [
+          "Waveform"
+        ],
+        "Hot Cue Pads": [
+          "CuePad"
+        ],
+        "Loop Controls": [
+          "Button",
+          "Readout"
+        ],
+        "Sync Button": [
+          "Button"
+        ],
+        "Track Info Display": [
+          "Readout"
+        ],
+        "BPM Display": [
+          "Readout"
+        ],
+        "Keylock Toggle": [
+          "Toggle"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Central Mixer",
+      "features": {
+        "Channel Faders": [
+          "Fader"
+        ],
+        "Crossfader": [
+          "Fader"
+        ],
+        "EQ Knobs": [
+          "Knob"
+        ],
+        "Gain Trim": [
+          "Knob"
+        ],
+        "Channel VU Meters": [
+          "LevelMeter"
+        ],
+        "Cue PFL Buttons": [
+          "Toggle"
+        ],
+        "Master Volume": [
+          "Knob"
+        ],
+        "Headphone Mix": [
+          "Knob"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Deck B (Right)",
+      "features": {
+        "Jog Wheel": [
+          "JogWheel"
+        ],
+        "Play Pause Button": [
+          "Button"
+        ],
+        "Cue Button": [
+          "Button"
+        ],
+        "Pitch Fader": [
+          "Fader"
+        ],
+        "Waveform Strip": [
+          "Waveform"
+        ],
+        "Hot Cue Pads": [
+          "CuePad"
+        ],
+        "Loop Controls": [
+          "Button",
+          "Readout"
+        ],
+        "Sync Button": [
+          "Button"
+        ],
+        "Track Info Display": [
+          "Readout"
+        ],
+        "BPM Display": [
+          "Readout"
+        ],
+        "Keylock Toggle": [
+          "Toggle"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Effects Rack",
+      "features": {
+        "FX Unit Slots": [],
+        "Effect Selector": [
+          "OptionSelector"
+        ],
+        "Dry Wet Knob": [
+          "Knob"
+        ],
+        "Beat Multiplier": [
+          "Knob"
+        ],
+        "Assign Deck Buttons": [
+          "Toggle"
+        ],
+        "On Off Toggle": [
+          "Toggle"
+        ]
+      }
+    }
+  ],
+  "_meta": {
+    "model": "claude-opus-4-8",
+    "secs": 51.571,
+    "outTok": 4400,
+    "inTok": 8297,
+    "stop": "end_turn"
+  }
+}

@@ -1,9 +1,9 @@
 'use client'
 import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
-import { XY, defaultXY, GeneratedBoxProps, ComponentDef, Placement, numGridBlocksWide, numVHTall } from '../utils/spec';
+import { XY, defaultXY, GeneratedBoxProps, ComponentDef, Placement, numGridBlocksWide, numVHTall, HoistResult, PrimitiveSet, PrimitiveFloor } from '../utils/spec';
 import { COMPONENT_REGISTRY } from '../utils/componentRegistry';
-import { validateLayout, validateConnectivity, logRegistry, resolveComponent, buildChannels, validateWiring } from '../utils/helpers';
+import { validateLayout, validateConnectivity, logRegistry, resolveComponent, buildChannels, validateWiring, validateStyleSheet, validateHoist } from '../utils/helpers';
 
 // How many times to re-ask the layout route for a valid (gap-free) tiling
 const LAYOUT_RETRIES = 3;
@@ -11,6 +11,10 @@ const LAYOUT_RETRIES = 3;
 const PLAN_RETRIES = 3;
 // How many times to re-ask the path route for valid (channel-injected) wiring
 const PATH_RETRIES = 3;
+// How many times to re-ask the style route for an appearance-only token sheet
+const STYLE_RETRIES = 3;
+// How many times to re-ask the hoist route for a library that covers every feature
+const HOIST_RETRIES = 3;
 
 export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning, setHasEmptyTarget, canvasWidth, setCanvasWidth }
   : { interactMode: boolean; taskRequest: { prompt: string; id: number } | null; setIsDesigning: React.Dispatch<React.SetStateAction<boolean>>; setHasEmptyTarget: React.Dispatch<React.SetStateAction<boolean>>;
@@ -55,6 +59,11 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   // carries its taskID and looks its style up here, so independently generated
   // components share one identity. Passed down to all boxes (like componentRegistry).
   const [styleSpec, setStyleSpec] = useState<Record<number, string>>({});
+
+  // Per-UI primitive registry: taskID -> the hoist, generated primitive code and floors of
+  // that generated UI. Its leaves build their features from these (see resolveComponent)
+  // and Preview injects the code. Absent for UIs without primitives and for manual boxes.
+  const [primitiveSpec, setPrimitiveSpec] = useState<Record<number, PrimitiveSet>>({});
 
   // Code hoist: leafKey -> that leaf's finished generated code. Every UI leaf
   // reports here when it finishes (reportCode), so the Wire action can collect a
@@ -133,6 +142,13 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   // key for layout adjacency and the future path/wiring route, so it's load-bearing:
   // if it can't be made valid within the retry budget, abort (return null) rather
   // than build a UI on broken wiring — the caller treats null as "no boxes".
+  // Dev run log: the client adds its own verdicts (validated / rejected / exhausted, dropped
+  // primitives, stage timings) to the run log the routes write (see app/utils/runLog.ts).
+  const logRun = (taskID: number | undefined, stage: string, summary: string, data?: Record<string, unknown>) => {
+    if (process.env.NODE_ENV === "production") return;
+    fetch("/api/log", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ taskID, stage, summary, data }) }).catch(() => {});
+  };
+
   const fetchValidPlan = async (task: string, width: number, height: number): Promise<ComponentDef[] | null> => {
     let previousError: string | undefined;
 
@@ -140,7 +156,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       const res = await fetch('/api/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, width, height, previousError }),
+        body: JSON.stringify({ task, width, height, previousError, taskID: taskRequest!.id }),
       });
       if (!res.ok) throw new Error(`plan request failed (${res.status})`);
       const defs = await res.json() as ComponentDef[];
@@ -148,13 +164,15 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       if (!defs.length) return defs; // empty plan handled by the caller
 
       const { ok, error } = validateConnectivity(defs);
-      if (ok) return defs;
+      if (ok) { logRun(taskRequest!.id, "plan:valid", `attempt ${attempt}`); return defs; }
 
       previousError = error;
       console.error(`Plan attempt ${attempt}/${PLAN_RETRIES} invalid connectivity: ${error}`);
+      logRun(taskRequest!.id, "plan:rejected", `attempt ${attempt}/${PLAN_RETRIES}: ${error}`);
     }
 
     console.error(`Plan connectivity failed after ${PLAN_RETRIES} attempts. Last error: ${previousError}`);
+    logRun(taskRequest!.id, "plan:exhausted", `UI aborted. Last error: ${previousError}`);
     return null;
   };
 
@@ -173,23 +191,108 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
           headers: { 'Content-Type': 'application/json' },
           // Resolved protocol view (matches the COMPONENT_PROTOCOL appended to
           // the layout system prompt) so layout parses exactly the fields it's told to.
-          body: JSON.stringify({ task, components, cols, rows, previousError }),
+          body: JSON.stringify({ task, components, cols, rows, previousError, taskID: taskRequest!.id }),
         });
         if (!res.ok) throw new Error(`request failed (${res.status})`);
         const placements = await res.json() as Placement[];
 
         const { ok, error } = validateLayout(placements, cols, rows);
-        if (ok) return placements;
+        if (ok) { logRun(taskRequest!.id, "layout:valid", `attempt ${attempt}`); return placements; }
 
         previousError = error;
         console.error(`Layout attempt ${attempt}/${LAYOUT_RETRIES} invalid: ${error}`);
+        logRun(taskRequest!.id, "layout:rejected", `attempt ${attempt}/${LAYOUT_RETRIES}: ${error}`);
       } catch (e) {
         previousError = e instanceof Error ? e.message : String(e);
         console.error(`Layout attempt ${attempt}/${LAYOUT_RETRIES} errored:`, e);
+        logRun(taskRequest!.id, "layout:errored", `attempt ${attempt}/${LAYOUT_RETRIES}: ${previousError}`);
       }
     }
     console.error(`Layout failed after ${LAYOUT_RETRIES} attempts. Last error: ${previousError}`);
+    logRun(taskRequest!.id, "layout:exhausted", `UI aborted. Last error: ${previousError}`);
     return null;
+  };
+
+  // Calls the style route and re-asks (feeding back the validation error) until the sheet
+  // is APPEARANCE ONLY. A sheet still failing after the budget is used anyway: a stray
+  // layout class degrades the leaves, but a UI with no style at all is worse.
+  const fetchValidStyle = async (task: string, components: Record<string, unknown>[]): Promise<string> => {
+    let previousError: string | undefined;
+    let sheet = '';
+    for (let attempt = 1; attempt <= STYLE_RETRIES; attempt++) {
+      const res = await fetch('/api/style', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task, components, previousError, taskID: taskRequest!.id }),
+      });
+      if (!res.ok) throw new Error(`style request failed (${res.status})`);
+      sheet = (await res.json()).style as string;
+
+      const { ok, error } = validateStyleSheet(sheet);
+      if (ok) { logRun(taskRequest!.id, "style:valid", `attempt ${attempt}`); return sheet; }
+
+      previousError = error;
+      console.error(`Style attempt ${attempt}/${STYLE_RETRIES} invalid: ${error}`);
+      logRun(taskRequest!.id, "style:rejected", `attempt ${attempt}/${STYLE_RETRIES}: ${error}`);
+    }
+    console.error(`Style still invalid after ${STYLE_RETRIES} attempts; using the last sheet. Last error: ${previousError}`);
+    logRun(taskRequest!.id, "style:exhausted", `using the last sheet. Last error: ${previousError}`);
+    return sheet;
+  };
+
+  // Calls the hoist route and re-asks (feeding back the validation error) until every
+  // component and feature is covered by a valid library. null = no primitives for this UI:
+  // the caller falls back to hand-built leaves (today's pipeline), never aborts the UI.
+  const fetchValidHoist = async (task: string, components: { name: string; features: string[] }[]): Promise<HoistResult | null> => {
+    let previousError: string | undefined;
+    for (let attempt = 1; attempt <= HOIST_RETRIES; attempt++) {
+      try {
+        const res = await fetch('/api/hoist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task, components, previousError, taskID: taskRequest!.id }),
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`);
+
+        const { ok, error } = validateHoist(body as HoistResult, components);
+        if (ok) { logRun(taskRequest!.id, "hoist:valid", `attempt ${attempt}`); return body as HoistResult; }
+
+        previousError = error;
+        console.error(`Hoist attempt ${attempt}/${HOIST_RETRIES} invalid: ${error}`);
+        logRun(taskRequest!.id, "hoist:rejected", `attempt ${attempt}/${HOIST_RETRIES}: ${error}`);
+      } catch (e) {
+        previousError = e instanceof Error ? e.message : String(e);
+        console.error(`Hoist attempt ${attempt}/${HOIST_RETRIES} errored:`, e);
+        logRun(taskRequest!.id, "hoist:errored", `attempt ${attempt}/${HOIST_RETRIES}: ${previousError}`);
+      }
+    }
+    console.error(`Hoist failed after ${HOIST_RETRIES} attempts; building this UI without primitives. Last error: ${previousError}`);
+    logRun(taskRequest!.id, "hoist:exhausted", `building this UI without primitives. Last error: ${previousError}`);
+    return null;
+  };
+
+  // Generates every library type through ONE request to the primitives route, which runs
+  // them in parallel on the server, each with its own validate-and-retry loop (one request,
+  // so the browser's per-host connection limit can't queue them). A type that never passes
+  // is left out of `code`; resolveComponent then hands its features to the leaf as null
+  // (build it yourself), so one bad primitive never costs the whole library. A failed
+  // request means no primitives at all: the UI is built by hand.
+  const fetchValidPrimitives = async (task: string, hoist: HoistResult, style: string): Promise<PrimitiveSet> => {
+    try {
+      const res = await fetch("/api/primitives", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task, hoist, style, taskID: taskRequest!.id }),
+      });
+      if (!res.ok) throw new Error(`request failed (${res.status})`);
+      const { code, floors } = await res.json() as { code: Record<string, string>; floors: Record<string, PrimitiveFloor> };
+      return { hoist, code, floors };
+    } catch (e) {
+      console.error("Primitive stage failed; building this UI without primitives:", e);
+      logRun(taskRequest!.id, "primitives:failed", `building this UI without primitives: ${e instanceof Error ? e.message : String(e)}`);
+      return { hoist, code: {}, floors: {} };
+    }
   };
 
   // Calls the path route and re-asks (feeding back the validation error) until every
@@ -200,6 +303,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   const fetchValidWiring = async (
     components: Record<string, unknown>[],
     channels: ReturnType<typeof buildChannels>,
+    taskID?: number,
   ): Promise<{ name: string; code: string }[] | null> => {
     let previousError: string | undefined;
     for (let attempt = 1; attempt <= PATH_RETRIES; attempt++) {
@@ -207,22 +311,24 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
         const res = await fetch('/api/path', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ components, channels, previousError }),
+          body: JSON.stringify({ components, channels, previousError, taskID }),
         });
         if (!res.ok) throw new Error(`request failed (${res.status})`);
         const wired = await res.json() as { name: string; code: string }[];
 
         const { ok, error } = validateWiring(wired, channels);
-        if (ok) return wired;
+        if (ok) { logRun(taskID, "path:valid", `attempt ${attempt}`); return wired; }
 
         previousError = error;
         console.error(`Path attempt ${attempt}/${PATH_RETRIES} invalid: ${error}`);
+        logRun(taskID, "path:rejected", `attempt ${attempt}/${PATH_RETRIES}: ${error}`);
       } catch (e) {
         previousError = e instanceof Error ? e.message : String(e);
         console.error(`Path attempt ${attempt}/${PATH_RETRIES} errored:`, e);
       }
     }
     console.error(`Path failed after ${PATH_RETRIES} attempts. Last error: ${previousError}`);
+    logRun(taskID, "path:exhausted", `Last error: ${previousError}`);
     return null;
   };
 
@@ -249,44 +355,52 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       //    planner only splits into multiple components if the area justifies it, and
       //    wires the components' roles + intra-UI connectivity. fetchValidPlan retries
       //    until the connectivity names resolve to real siblings (or aborts).
+      const t0 = Date.now();
+      const secs = () => ((Date.now() - t0) / 1000).toFixed(1) + "s";
+      logRun(taskRequest!.id, "run:start", `"${task}" in ${w}x${h} blocks (${widthPx}x${heightPx}px)`, { task, bounds: { colStart, colEnd, rowStart, rowEnd }, widthPx, heightPx });
       const defs = await fetchValidPlan(task, widthPx, heightPx);
+      if (defs) logRun(taskRequest!.id, "run:plan", `done at ${secs()}`);
       if (!defs) return null; // exhausted connectivity retries; already logged
       if (!defs.length) throw new Error('planner returned no components');
 
-      // 1b. STYLE: derive ONE coherent visual style for this whole UI from its
-      //     components, so every box generates with a matching identity. The styler
-      //     gets the defs RESOLVED to the same { name, genInstructions, features,
-      //     excludedFeatures } protocol shape the generator sees per component (active set =
-      //     each preset's defaults). Always called for an auto-gen UI; only manual
-      //     boxes (no taskID) skip a style and get the generate route's fallback.
+      // 2. STYLE | HOIST | LAYOUT, in parallel — each needs only the resolved defs (the
+      //    same { name, genInstructions, role, connectivity, features, excludedFeatures }
+      //    protocol shape the generator sees per component; active set = each preset's
+      //    defaults):
+      //    - STYLE: ONE coherent visual style for the whole UI, so every box matches.
+      //      Only manual boxes (no taskID) skip it and get the generate route's fallback.
+      //    - HOIST: the UI's shared primitive types + each feature's types. null -> this
+      //      UI is built without primitives (hand-built leaves), never aborted.
+      //    - LAYOUT: tile the box interior (w x h); a single component fills it.
       const resolvedDefs = defs.map((s) =>
         JSON.parse(resolveComponent({ name: s.name, activeIdx: s.defaultActiveIdx }, defs)));
-      const styleRes = await fetch('/api/style', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task, components: resolvedDefs }),
-      });
-      if (!styleRes.ok) throw new Error(`style request failed (${styleRes.status})`);
-      const style = (await styleRes.json()).style as string;
+      const [style, hoist, placements] = await Promise.all([
+        fetchValidStyle(task, resolvedDefs),
+        fetchValidHoist(task, resolvedDefs),
+        defs.length === 1
+          ? Promise.resolve<Placement[]>([{ name: defs[0].name, colStart: 1, colEnd: w, rowStart: 1, rowEnd: h }])
+          : fetchValidLayout(task, resolvedDefs, w, h),
+      ]);
+      if (!placements) return null; // exhausted retries; already logged
+      logRun(taskRequest!.id, "run:style|hoist|layout", `done at ${secs()}${hoist ? "" : " (no hoist: hand-built UI)"}`, { resolvedDefs, placements });
 
-      // 2. Register the new presets + this UI's style. The awaited layout call
-      //    below lets this state commit before any boxes are created, so each box
-      //    mounts with a componentRegistry prop that already contains its definition (no
-      //    /api/spec re-fetch) and a styleSpec that already holds its style.
+      // 3. Register the new presets + this UI's style. The awaited primitive step below
+      //    lets this state commit before any boxes are created, so each box mounts with a
+      //    componentRegistry prop that already contains its definition (no /api/spec
+      //    re-fetch) and a styleSpec that already holds its style.
       setComponentRegistry((prev) => [...prev, ...defs]);
       setStyleSpec((prev) => ({ ...prev, [taskRequest!.id]: style }));
 
-      // 3. LAYOUT: tile the box interior (w x h).
-      const placements: Placement[] | null = defs.length === 1
-        // Single component -> fill the whole box (nothing to tile/validate).
-        ? [{ name: defs[0].name, colStart: 1, colEnd: w, rowStart: 1, rowEnd: h }]
-        // Multiple -> ask the layout route to tile the box interior (w x h). Sent the
-        // RESOLVED defs (reused from the style step above) so layout sees features/role/
-        // connectivity exactly as the protocol describes.
-        : await fetchValidLayout(task, resolvedDefs, w, h);
-      if (!placements) return null; // exhausted retries; already logged
+      // 4. PRIMITIVES: generate every hoisted type once, in this UI's style (needs both).
+      //    Stored per taskID beside the style; a UI with no usable primitive stores none,
+      //    so its leaves generate exactly as manual boxes do.
+      if (hoist) {
+        const prims = await fetchValidPrimitives(task, hoist, style);
+        logRun(taskRequest!.id, "run:primitives", `done at ${secs()}`);
+        if (Object.keys(prims.code).length) setPrimitiveSpec((prev) => ({ ...prev, [taskRequest!.id]: prims }));
+      }
 
-      // 4. Wrap the placements as CHILDREN of ONE parent (group) box. Each child
+      // 5. Wrap the placements as CHILDREN of ONE parent (group) box. Each child
       //    keeps its local coords + autoName and self-generates on mount.
       const parentKey = `group-${taskRequest!.id}`;
       const children: GeneratedBoxProps[] = placements.map((p, i) => ({
@@ -303,6 +417,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       // The parent occupies the target bounds (drawn box or full window); the
       // effect appends it to elementArr (replacing the targeted empty box). It also
       // carries the taskID so the Wire action can find this UI's leaves + style.
+      logRun(taskRequest!.id, "run:boxes", `${children.length} leaf box(es) created at ${secs()}; leaves generate now`, { leaves: children.map((c) => ({ key: c.key, name: c.autoName })) });
       return { colStart, colEnd, rowStart, rowEnd, key: parentKey, children, taskID: taskRequest!.id };
     } catch (e) {
       console.error('UI generation error:', e);
@@ -413,7 +528,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
     try {
       // Send only what the route reads (name/code/role); channels carry the wiring.
       const payload = components.map((c) => ({ name: c.name, code: c.code, role: c.role }));
-      const wired = await fetchValidWiring(payload, channels);
+      const wired = await fetchValidWiring(payload, channels, root.taskID);
       if (!wired) return; // exhausted retries; already logged
       setWiredCode((prev) => {
         const next = { ...prev };
@@ -682,6 +797,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
             componentRegistry={componentRegistry}
             setComponentRegistry={setComponentRegistry}
             styleSpec={styleSpec}
+            primitiveSpec={primitiveSpec}
             markNonEmpty={markNonEmpty}
             syncBounds={syncBounds}
             reportCode={reportCode}

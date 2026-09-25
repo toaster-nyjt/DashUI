@@ -1,0 +1,244 @@
+{
+  "meta": {
+    "task": "DJ Table",
+    "model": "claude-opus-4-8",
+    "effort": "medium",
+    "secs": 54.507,
+    "outTok": 4643,
+    "inTok": 2878,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 5,
+    "features": 42,
+    "edges": 8,
+    "meanEdgeDescChars": 252,
+    "issues": [
+      "DJ Table: Track Library Browser: feature over 4 words: \"Load To Deck A Button\"",
+      "DJ Table: Track Library Browser: feature over 4 words: \"Load To Deck B Button\""
+    ]
+  },
+  "defs": [
+    {
+      "name": "DJ Table: Deck A Player",
+      "genInstructions": "Build the left-hand playback deck with a large scrolling waveform, a central jog wheel, transport controls (play/pause, cue), a vertical pitch/tempo fader, hot-cue and loop pads, and a BPM/time readout. This deck plays and manipulates the track loaded into channel A.",
+      "role": "The left playback engine that plays and manipulates track A, feeding its signal to the mixer and receiving loads, EQ/volume, and effects from the other components.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "DJ Table: Track Library Browser",
+            "description": "When the user clicks 'Load to Deck A' (or drags a track onto this deck) in the library, the selected track's audio, title/artist metadata, BPM, and waveform data are sent here; this deck resets to the track start, renders the new waveform, and updates the track info and BPM display."
+          },
+          {
+            "name": "DJ Table: Central Mixer",
+            "description": "The mixer's Channel A fader, gain knob, and 3-band EQ knobs set this deck's output volume and per-band EQ in real time; the crossfader position further scales channel A's contribution. Values are applied continuously to this deck's audio output as the user moves the controls."
+          },
+          {
+            "name": "DJ Table: Effects Rack",
+            "description": "When an FX unit is assigned to channel A and toggled on, the rack sends the selected effect type, dry/wet amount, beat-multiplier, and parameter values; this deck routes its playing audio through that effect chain and reflects it in the output."
+          }
+        ],
+        "targets": [
+          {
+            "name": "DJ Table: Central Mixer",
+            "description": "This deck continuously emits its post-fader audio level and play/BPM state to the mixer so the Channel A VU meter and cue routing reflect the live signal; on play/pause the running state is pushed so the meter animates only while playing."
+          }
+        ]
+      },
+      "features": [
+        "Scrolling Waveform",
+        "Jog Wheel",
+        "Play Pause Button",
+        "Cue Button",
+        "Pitch Tempo Fader",
+        "Track Info Display",
+        "BPM Display",
+        "Time Elapsed Remaining",
+        "Hot Cue Pads",
+        "Loop Controls"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "name": "DJ Table: Deck B Player",
+      "genInstructions": "Build the right-hand playback deck mirroring Deck A: large scrolling waveform, central jog wheel, transport controls (play/pause, cue), vertical pitch/tempo fader, hot-cue and loop pads, and BPM/time readout. This deck plays and manipulates the track loaded into channel B.",
+      "role": "The right playback engine that plays and manipulates track B, feeding its signal to the mixer and receiving loads, EQ/volume, and effects from the other components.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "DJ Table: Track Library Browser",
+            "description": "When the user clicks 'Load to Deck B' (or drags a track onto this deck) in the library, the selected track's audio, title/artist metadata, BPM, and waveform data are sent here; this deck resets to the track start, renders the new waveform, and updates the track info and BPM display."
+          },
+          {
+            "name": "DJ Table: Central Mixer",
+            "description": "The mixer's Channel B fader, gain knob, and 3-band EQ knobs set this deck's output volume and per-band EQ in real time; the crossfader position further scales channel B's contribution. Values are applied continuously to this deck's audio output as the user moves the controls."
+          },
+          {
+            "name": "DJ Table: Effects Rack",
+            "description": "When an FX unit is assigned to channel B and toggled on, the rack sends the selected effect type, dry/wet amount, beat-multiplier, and parameter values; this deck routes its playing audio through that effect chain and reflects it in the output."
+          }
+        ],
+        "targets": [
+          {
+            "name": "DJ Table: Central Mixer",
+            "description": "This deck continuously emits its post-fader audio level and play/BPM state to the mixer so the Channel B VU meter and cue routing reflect the live signal; on play/pause the running state is pushed so the meter animates only while playing."
+          }
+        ]
+      },
+      "features": [
+        "Scrolling Waveform",
+        "Jog Wheel",
+        "Play Pause Button",
+        "Cue Button",
+        "Pitch Tempo Fader",
+        "Track Info Display",
+        "BPM Display",
+        "Time Elapsed Remaining",
+        "Hot Cue Pads",
+        "Loop Controls"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "name": "DJ Table: Central Mixer",
+      "genInstructions": "Build the central mixer console sitting between the two decks: two channel volume faders, a horizontal crossfader, per-channel 3-band EQ knobs and gain, dual VU meters, cue/headphone buttons, and a master volume knob. This is the audio-blending hub of the table.",
+      "role": "The central blending hub that sets each deck's volume, gain, and EQ and crossfades between them, driven by the live signal meters the decks report back.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "DJ Table: Deck A Player",
+            "description": "Deck A streams its live post-fader audio level and play state to the mixer; the Channel A VU meter renders this level and animates only while Deck A is playing."
+          },
+          {
+            "name": "DJ Table: Deck B Player",
+            "description": "Deck B streams its live post-fader audio level and play state to the mixer; the Channel B VU meter renders this level and animates only while Deck B is playing."
+          }
+        ],
+        "targets": [
+          {
+            "name": "DJ Table: Deck A Player",
+            "description": "Moving the Channel A fader, gain knob, or 3-band EQ knobs sets Deck A's output volume and per-band EQ in real time; the crossfader position additionally scales channel A's level (full at the left end, silent at the right end). Changes are emitted continuously as the user drags."
+          },
+          {
+            "name": "DJ Table: Deck B Player",
+            "description": "Moving the Channel B fader, gain knob, or 3-band EQ knobs sets Deck B's output volume and per-band EQ in real time; the crossfader position additionally scales channel B's level (full at the right end, silent at the left end). Changes are emitted continuously as the user drags."
+          }
+        ]
+      },
+      "features": [
+        "Channel A Fader",
+        "Channel B Fader",
+        "Crossfader",
+        "Channel A EQ Knobs",
+        "Channel B EQ Knobs",
+        "Gain Knobs",
+        "Dual VU Meters",
+        "Cue Headphone Buttons",
+        "Master Volume Knob"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "name": "DJ Table: Effects Rack",
+      "genInstructions": "Build an effects rack panel with an effect-type selector (reverb, delay, filter, flanger, etc.), dry/wet knob, beat-multiplier control, parameter knobs, an on/off toggle, and a channel-assign switch to route the effect to Deck A or Deck B. Applies real-time FX to the chosen deck.",
+      "role": "The effects processor that applies real-time audio effects to whichever deck it is assigned to, augmenting the signal the decks play.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "DJ Table: Deck A Player",
+            "description": "When the channel-assign switch is set to A and the FX on/off is enabled, the rack sends the selected effect type, dry/wet amount, beat-multiplier, and parameter values; Deck A routes its playing audio through this effect chain and updates its output continuously as the knobs change."
+          },
+          {
+            "name": "DJ Table: Deck B Player",
+            "description": "When the channel-assign switch is set to B and the FX on/off is enabled, the rack sends the selected effect type, dry/wet amount, beat-multiplier, and parameter values; Deck B routes its playing audio through this effect chain and updates its output continuously as the knobs change."
+          }
+        ]
+      },
+      "features": [
+        "Effect Type Selector",
+        "Dry Wet Knob",
+        "Beat Multiplier",
+        "FX Parameter Knobs",
+        "FX On Off Toggle",
+        "Channel Assign Switch"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "DJ Table: Track Library Browser",
+      "genInstructions": "Build a track library browser with a search bar, a folder/crate tree, and a scrollable track list showing title, artist, BPM, and key, plus 'Load to Deck A' and 'Load to Deck B' buttons and a short preview player. This is where the DJ finds and loads music.",
+      "role": "The music source panel where the DJ searches, browses, and previews tracks and loads them onto either deck.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "DJ Table: Deck A Player",
+            "description": "Clicking 'Load to Deck A' (or dragging a track onto Deck A) sends the highlighted track's audio, title/artist, BPM, and waveform data to Deck A, which loads it, renders the waveform, and resets to the start."
+          },
+          {
+            "name": "DJ Table: Deck B Player",
+            "description": "Clicking 'Load to Deck B' (or dragging a track onto Deck B) sends the highlighted track's audio, title/artist, BPM, and waveform data to Deck B, which loads it, renders the waveform, and resets to the start."
+          }
+        ]
+      },
+      "features": [
+        "Search Bar",
+        "Folder Crate Tree",
+        "Track List",
+        "BPM Key Columns",
+        "Load To Deck A Button",
+        "Load To Deck B Button",
+        "Preview Player"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    }
+  ]
+}

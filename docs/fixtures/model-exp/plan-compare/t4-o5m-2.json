@@ -1,0 +1,380 @@
+{
+  "meta": {
+    "task": "Smart home control panel",
+    "model": "claude-opus-5",
+    "effort": "medium",
+    "secs": 73.234,
+    "outTok": 6270,
+    "inTok": 2880,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 8,
+    "features": 69,
+    "edges": 13,
+    "meanEdgeDescChars": 232,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Smart Home: Home Status Header Bar",
+      "genInstructions": "Build a full-width top bar showing the home name, current time, outdoor weather, connectivity status, an active-alert badge, and a segmented Home Mode selector (Home / Away / Night / Vacation) with a global 'All Off' action. It sets the house-wide operating mode that other panels react to.",
+      "role": "The system's global state bar that sets the house-wide mode and surfaces at-a-glance conditions and alerts for every other panel.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Security & Camera Panel",
+            "description": "When the security panel detects a triggered sensor, an unlocked door, or a motion event, it emits an alert object (severity, device, timestamp) which the header renders as a colored alert badge with a count; clearing or acknowledging the alert in the security panel removes the badge."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Climate Thermostat Dial",
+            "description": "Selecting a Home Mode emits the mode id; the thermostat dial switches to that mode's preset setpoint profile (e.g. Away drops to eco setback, Night applies sleep temperature), updates the displayed target temperature and mode label, and marks the change as mode-driven rather than manual."
+          },
+          {
+            "name": "Smart Home: Security & Camera Panel",
+            "description": "Selecting a Home Mode emits the mode id; the security panel automatically sets its arm state (Away -> armed away, Night -> armed perimeter, Home -> disarmed), updates lock states for exterior doors, and shows the resulting arm status in its header."
+          },
+          {
+            "name": "Smart Home: Automation Routines Timeline",
+            "description": "Selecting a Home Mode emits the mode id; the timeline filters/highlights routines scoped to that mode and marks mode-incompatible routines as paused, and the 'All Off' action emits a kill-switch event that cancels any currently running routine."
+          }
+        ]
+      },
+      "features": [
+        "Home Name Title",
+        "Live Clock",
+        "Outdoor Weather",
+        "Home Mode Selector",
+        "Alert Badge",
+        "Connectivity Status",
+        "All Off Button",
+        "Quick Mode Icons"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Room Navigator Sidebar",
+      "genInstructions": "Build a vertical left sidebar listing the house floors and rooms with icons, per-room device counts, an 'All Rooms' entry, active-device indicators, and a device search field. Selecting a room scopes the rest of the dashboard to that room.",
+      "role": "The spatial scope selector that determines which room's devices, lights, climate zone, and energy data the rest of the dashboard displays.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "On room selection the sidebar emits the roomId (or 'all'); the grid re-queries and renders only device cards belonging to that room, and typing in the search field emits a query string that further filters the grid's cards by device name and type in real time."
+          },
+          {
+            "name": "Smart Home: Lighting Scene Controller",
+            "description": "On room selection the sidebar emits the roomId; the lighting controller loads that room's light group — its brightness, color temperature, and the scenes saved for that room — and applies any subsequent scene or slider change only to lights in that room."
+          },
+          {
+            "name": "Smart Home: Climate Thermostat Dial",
+            "description": "On room selection the sidebar emits the roomId; the dial switches to that room's climate zone, showing its current temperature, humidity, and setpoint, and writes future setpoint changes to that zone."
+          },
+          {
+            "name": "Smart Home: Energy Usage Dashboard",
+            "description": "On room selection the sidebar emits the roomId; the energy dashboard rescopes its charts and top-consumer list to that room's devices only, or shows whole-home totals when 'All Rooms' is selected."
+          }
+        ]
+      },
+      "features": [
+        "Floor Groups",
+        "Room List Items",
+        "Room Icons",
+        "Device Count Badges",
+        "All Rooms Entry",
+        "Active Device Indicator",
+        "Device Search Field",
+        "Selected Room Highlight"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Device Control Grid",
+      "genInstructions": "Build the central grid of device cards (lights, plugs, fans, blinds, speakers, sensors) each with an icon, name, live state, on/off toggle, and inline slider or setting control, plus category filter chips and a list/grid view switch. It is the main hands-on control surface for individual devices.",
+      "role": "The primary device-level control surface where the user directly toggles and adjusts every device in the selected scope.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected roomId and search query and renders only the matching device cards, resetting scroll and category chips to the new scope."
+          },
+          {
+            "name": "Smart Home: Lighting Scene Controller",
+            "description": "When a scene is activated or the brightness/color sliders are moved, it emits the resulting per-light state set; the grid updates the affected light cards' toggles, brightness values, and color swatches without a page reload."
+          },
+          {
+            "name": "Smart Home: Automation Routines Timeline",
+            "description": "When a routine is run manually or fires on schedule, the timeline emits the routine's device action list; the grid animates the corresponding device cards to their new states and flags them with a 'set by routine' marker."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Energy Usage Dashboard",
+            "description": "Every device toggle or level change emits a device state event (deviceId, on/off, level, rated watts); the energy dashboard updates its live load reading, the device's entry in the top-consumer list, and the current point of the live consumption chart."
+          }
+        ]
+      },
+      "features": [
+        "Device Cards",
+        "Device Type Icons",
+        "On Off Toggles",
+        "Inline Level Sliders",
+        "Live State Labels",
+        "Category Filter Chips",
+        "Grid List Toggle",
+        "Favorite Pinning",
+        "Offline Device State",
+        "Card Detail Expand"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "name": "Smart Home: Lighting Scene Controller",
+      "genInstructions": "Build a lighting panel with a scene tile gallery (Relax, Bright, Movie, Sunset), a large brightness slider, a color temperature slider, a color wheel/swatch picker, and a per-light group list with individual dimmers. It controls the lights of the currently selected room.",
+      "role": "The dedicated lighting authority that applies scenes and light levels to the selected room and pushes the resulting states into the device grid.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected roomId and loads that room's light group, saved scenes, and current brightness/color values, scoping all subsequent control actions to those fixtures."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "Activating a scene or moving the brightness/color-temperature/color controls emits the computed per-light state payload (deviceId, on/off, brightness %, color); the grid immediately reflects those values on the matching light cards."
+          }
+        ]
+      },
+      "features": [
+        "Scene Tile Gallery",
+        "Brightness Slider",
+        "Color Temperature Slider",
+        "Color Wheel Picker",
+        "Light Group List",
+        "Per Light Dimmers",
+        "Scene Save Button",
+        "All Lights Toggle",
+        "Live Room Preview"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "name": "Smart Home: Climate Thermostat Dial",
+      "genInstructions": "Build a circular thermostat with a draggable setpoint ring, large current-temperature readout, humidity and air-quality sub-readouts, HVAC mode buttons (Heat/Cool/Auto/Off), fan speed control, and a 24-hour temperature trend sparkline. It controls the selected room's climate zone.",
+      "role": "The climate control hub for the selected zone, taking its profile from the home mode and routines and feeding HVAC load back to the energy dashboard.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected roomId and switches to that zone's sensor readings and setpoint, writing subsequent adjustments to that zone."
+          },
+          {
+            "name": "Smart Home: Home Status Header Bar",
+            "description": "Receives the selected Home Mode and applies that mode's setpoint profile (eco setback for Away, sleep temp for Night, comfort for Home), updating the ring position and mode label."
+          },
+          {
+            "name": "Smart Home: Automation Routines Timeline",
+            "description": "When a climate step of a routine runs, the timeline emits the scheduled target temperature and HVAC mode; the dial animates its setpoint ring to the new value and labels it as schedule-driven until manually overridden."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Energy Usage Dashboard",
+            "description": "Changing the setpoint or HVAC/fan mode emits the new heating/cooling demand; the energy dashboard recalculates the HVAC share of the load in its breakdown chart and updates the projected daily cost estimate."
+          }
+        ]
+      },
+      "features": [
+        "Circular Setpoint Ring",
+        "Current Temp Readout",
+        "Humidity Readout",
+        "Air Quality Readout",
+        "HVAC Mode Buttons",
+        "Fan Speed Control",
+        "Temperature Trend Sparkline",
+        "Zone Name Label",
+        "Eco Mode Indicator"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "name": "Smart Home: Energy Usage Dashboard",
+      "genInstructions": "Build an energy panel with a live wattage gauge, a stacked consumption area chart over selectable time ranges (day/week/month), a category breakdown donut (lighting, HVAC, appliances), a top-consumers list, and a cost estimate with solar/grid balance. It reports the energy consequences of device and climate activity.",
+      "role": "The analytics readout that quantifies the energy and cost impact of the device, lighting, and climate controls in the currently scoped room or home.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected roomId and rescopes all charts, the consumer list, and cost figures to that room's devices, or to whole-home totals for 'All Rooms'."
+          },
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "Receives device state events (deviceId, on/off, level, watts) as the user toggles or dims devices and updates the live wattage gauge, the top-consumers ranking, and the newest point of the consumption chart."
+          },
+          {
+            "name": "Smart Home: Climate Thermostat Dial",
+            "description": "Receives setpoint and HVAC mode changes and recomputes the HVAC slice of the breakdown donut plus the projected daily cost estimate."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Live Wattage Gauge",
+        "Consumption Area Chart",
+        "Time Range Tabs",
+        "Category Breakdown Donut",
+        "Top Consumers List",
+        "Cost Estimate Panel",
+        "Solar Grid Balance",
+        "Usage Comparison Delta"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Security & Camera Panel",
+      "genInstructions": "Build a security panel with a camera feed thumbnail grid plus a selected live view, an arm/disarm control (Armed Away / Armed Home / Disarmed), a door-and-window sensor status list, smart lock toggles, and a recent motion/event log. It monitors and secures the home.",
+      "role": "The safety and surveillance module that enforces the home's arm state and escalates security events to the global status bar.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Home Status Header Bar",
+            "description": "Receives the selected Home Mode and automatically sets its arm state and exterior lock states accordingly (Away -> armed away + lock all, Night -> armed perimeter, Home -> disarmed), reflecting the change in its status header."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Home Status Header Bar",
+            "description": "On a triggered sensor, motion detection, or door left unlocked, emits an alert object (severity, device name, timestamp) to the header, which shows it as an alert badge with count; acknowledging or clearing the event here emits a clear event that removes the badge."
+          }
+        ]
+      },
+      "features": [
+        "Camera Thumbnail Grid",
+        "Selected Live View",
+        "Arm Disarm Control",
+        "Sensor Status List",
+        "Smart Lock Toggles",
+        "Motion Event Log",
+        "Alert Acknowledge Button",
+        "Siren Panic Button"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Automation Routines Timeline",
+      "genInstructions": "Build an automation panel with a horizontal 24-hour timeline of scheduled routines, a routine card list showing trigger, actions and enable toggles, a manual 'Run Now' button per routine, and a create-routine entry point. It orchestrates scheduled device and climate actions.",
+      "role": "The scheduling brain that runs time- and mode-based routines and pushes their resulting device and climate states into the rest of the dashboard.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Home Status Header Bar",
+            "description": "Receives the selected Home Mode and filters/highlights routines scoped to it while marking incompatible routines paused; an 'All Off' event from the header cancels any currently running routine."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "When a routine is triggered by schedule or 'Run Now', emits its device action list (deviceId, target state, level); the grid updates the matching device cards and tags them as routine-driven."
+          },
+          {
+            "name": "Smart Home: Climate Thermostat Dial",
+            "description": "When a routine containing a climate step fires, emits the target temperature and HVAC mode; the dial moves its setpoint ring to that value and displays a schedule-driven indicator."
+          }
+        ]
+      },
+      "features": [
+        "24 Hour Timeline",
+        "Routine Cards",
+        "Trigger Condition Labels",
+        "Action Summary Chips",
+        "Enable Toggles",
+        "Run Now Buttons",
+        "Create Routine Button",
+        "Next Run Countdown",
+        "Routine Filter Tabs"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    }
+  ]
+}

@@ -1,0 +1,235 @@
+{
+  "meta": {
+    "task": "I want to listen to music",
+    "model": "claude-opus-5",
+    "effort": "medium",
+    "secs": 42.479,
+    "outTok": 3644,
+    "inTok": 2880,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 5,
+    "features": 47,
+    "edges": 6,
+    "meanEdgeDescChars": 282,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Music Player: Now Playing Transport Bar",
+      "genInstructions": "Build a full-width bottom transport bar with current track thumbnail/title/artist, play-pause, previous/next, shuffle, repeat, a scrubbable progress bar with elapsed/total time, and a volume slider with mute; it is the single source of truth for playback state, current track, and playhead position.",
+      "role": "The central playback engine and control surface that plays whatever the queue feeds it and broadcasts playback state and time to the art stage and lyrics panel.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Queue Side Panel",
+            "description": "When the user clicks or double-clicks a queue row, or drags rows to reorder, the queue emits the newly-selected track object (id, title, artist, album, artwork, duration, audio src) and its index; the transport bar loads that track, resets the playhead to 0:00, and begins playback, updating its metadata display."
+          },
+          {
+            "name": "Music Player: Lyrics & Credits Panel",
+            "description": "Clicking a timestamped lyric line emits that line's timestamp in seconds; the transport bar seeks the playhead to that exact time and continues playing from there, updating the progress bar and elapsed-time readout."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Music Player: Queue Side Panel",
+            "description": "On track end, or when the user presses next/previous, or toggles shuffle/repeat, the transport bar emits the new current index and playback mode; the queue highlights the now-playing row, auto-scrolls it into view, moves played items behind the playhead, and reorders/loops according to shuffle and repeat-one/repeat-all mode."
+          },
+          {
+            "name": "Music Player: Album Art Stage",
+            "description": "The transport bar continuously emits current track metadata (artwork URL, title, artist, album, year), the play/pause state, and the normalized playhead progress; the art stage swaps the hero artwork with a crossfade, updates the title block, and starts/stops and modulates its audio visualizer accordingly."
+          },
+          {
+            "name": "Music Player: Lyrics & Credits Panel",
+            "description": "The transport bar emits the current track id on track change and the currentTime (ticking ~4x/sec) during playback; the lyrics panel loads that track's lyrics and credits, highlights the active timed line, and auto-scrolls it to center, pausing the auto-scroll while playback is paused."
+          }
+        ]
+      },
+      "features": [
+        "Track Thumbnail",
+        "Title And Artist",
+        "Play Pause Button",
+        "Previous Next Buttons",
+        "Seekable Progress Bar",
+        "Elapsed Total Time",
+        "Shuffle Toggle",
+        "Repeat Mode Toggle",
+        "Volume Slider",
+        "Mute Button",
+        "Like Track Button"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "Music Player: Album Art Stage",
+      "genInstructions": "Build a large centered hero panel showing the current track's album artwork with an ambient color-bleed background, large title/artist/album typography, and a reactive waveform or bar visualizer beneath it that animates only while audio is playing.",
+      "role": "The visual centerpiece of the player that renders the currently playing track's artwork, metadata, and audio visualization driven entirely by the transport bar.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Now Playing Transport Bar",
+            "description": "Receives current track metadata (artwork URL, title, artist, album, year), play/pause state, and normalized progress from the transport bar; crossfades to the new artwork, updates the metadata typography and ambient background color, and runs the visualizer animation only while state is playing."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Hero Album Artwork",
+        "Ambient Color Backdrop",
+        "Track Title Block",
+        "Artist Album Line",
+        "Audio Visualizer Bars",
+        "Artwork Crossfade Transition",
+        "Vinyl Spin Animation"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "name": "Music Player: Library Browser Grid",
+      "genInstructions": "Build a scrollable library panel with a search field, genre/artist filter chips, a toggle between album grid and track list views, and rows/cards showing artwork, title, artist, album and duration with hover play and 'add to queue' actions.",
+      "role": "The discovery surface where the user searches and browses the catalog and pushes chosen tracks or albums into the queue.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Music Player: Queue Side Panel",
+            "description": "Clicking a card's play button emits the selected track (or an album's full ordered track list) and replaces the queue starting playback at index 0, while the 'add to queue' action appends the same track objects to the end of the existing queue; the queue re-renders its rows and updates its total count and duration."
+          }
+        ]
+      },
+      "features": [
+        "Search Input",
+        "Genre Filter Chips",
+        "Artist Filter Chips",
+        "Album Grid View",
+        "Track List View",
+        "View Mode Toggle",
+        "Artwork Thumbnails",
+        "Track Duration Column",
+        "Hover Play Button",
+        "Add To Queue Button",
+        "Sort Dropdown",
+        "Scrollable Container"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "name": "Music Player: Queue Side Panel",
+      "genInstructions": "Build a right-hand vertical panel listing the upcoming playback queue with drag-to-reorder rows, remove buttons, a now-playing highlight, and a header showing track count, total remaining time, and a clear-queue action.",
+      "role": "The playlist backbone that holds the ordered set of tracks fed by the library and tells the transport bar what to play next.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Library Browser Grid",
+            "description": "Receives either a full replacement list (album/track play action) or appended track objects (add-to-queue action) from the library; rebuilds or extends the ordered row list and recomputes the header's track count and total remaining duration."
+          },
+          {
+            "name": "Music Player: Now Playing Transport Bar",
+            "description": "Receives the current track index and shuffle/repeat mode on track end or next/previous presses; moves the now-playing highlight, auto-scrolls that row into view, greys out already-played rows, and applies shuffle ordering or repeat looping to the upcoming list."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Music Player: Now Playing Transport Bar",
+            "description": "On row click/double-click the queue emits the chosen track object and index for immediate playback; on drag-reorder it emits the updated ordering so the transport bar's next/previous navigation follows the new sequence, and on removal of the current track it emits the following track to load."
+          }
+        ]
+      },
+      "features": [
+        "Queue Header Count",
+        "Total Remaining Time",
+        "Queue Track Rows",
+        "Now Playing Highlight",
+        "Drag Reorder Handles",
+        "Remove Track Button",
+        "Clear Queue Button",
+        "Up Next Divider",
+        "Scrollable List"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "name": "Music Player: Lyrics & Credits Panel",
+      "genInstructions": "Build a tall panel showing time-synced lyrics that auto-scroll and highlight the active line as playback advances, with clickable lines for seeking, plus a collapsible credits block listing album, year, genre, and writers for the current track.",
+      "role": "The contextual detail surface that follows the transport bar's playhead with synced lyrics and track credits, and can seek playback by lyric line.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Now Playing Transport Bar",
+            "description": "Receives the current track id on every track change and a ticking currentTime value during playback; loads the matching lyrics and credits, highlights the lyric line whose timestamp range contains currentTime, auto-scrolls it to center, and freezes scrolling while paused."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Music Player: Now Playing Transport Bar",
+            "description": "When a lyric line is clicked, emits that line's start timestamp in seconds; the transport bar seeks the audio playhead to that time and resumes playback from there."
+          }
+        ]
+      },
+      "features": [
+        "Synced Lyric Lines",
+        "Active Line Highlight",
+        "Auto Scroll Follow",
+        "Click Line To Seek",
+        "Track Credits Block",
+        "Album Year Genre",
+        "Font Size Control",
+        "Scrollable Container"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  ]
+}

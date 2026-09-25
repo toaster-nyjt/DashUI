@@ -1,0 +1,1778 @@
+<title>Primitive Gallery</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { color-scheme: dark; }
+  body { background: #070707; color: #d4d4d4; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; }
+  .wrap { padding: 20px 16px 60px; max-width: 1400px; margin: 0 auto; }
+  h1 { font-size: 18px; margin: 0 0 4px; color: #fbbf24; }
+  .sub { font-size: 12px; color: #737373; margin-bottom: 20px; }
+  section { border-top: 1px solid #262626; padding: 18px 0; }
+  h2 { font-size: 15px; margin: 0 0 2px; color: #f5f5f5; }
+  .desc { font-size: 12px; color: #737373; margin: 0 0 4px; }
+  .contract { font: 11px ui-monospace, monospace; color: #a3a3a3; margin: 0 0 12px; overflow-x: auto; white-space: pre; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
+  .vlabel { font: 11px ui-monospace, monospace; color: #fbbf24; width: 100%; margin: 4px 0 -6px; }
+  .cell { display: flex; flex-direction: column; gap: 4px; }
+  .cap { font-size: 10px; color: #525252; }
+  .slot { position: relative; overflow: hidden; border-radius: 10px; outline: 1px dashed #3f3f46;
+          background: linear-gradient(to bottom, rgba(38,38,38,.7), rgba(23,23,23,.9)); }
+  .err { color: #fb7185; font: 11px ui-monospace, monospace; padding: 6px; white-space: pre-wrap; }
+  .log { position: fixed; right: 12px; bottom: 12px; background: #171717; border: 1px solid #333; border-radius: 8px;
+         padding: 6px 10px; font: 11px ui-monospace, monospace; color: #fbbf24; max-width: 60vw; }
+  .ctrls { font-size: 12px; margin-bottom: 16px; display: flex; gap: 16px; flex-wrap: wrap; }
+</style>
+<div id="root"></div>
+<script>
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+function Button(props) {
+    const tone = props.tone ?? 'neutral';
+    const active = props.active ?? false;
+    const [pressed, setPressed] = useState(false);
+    const [ripples, setRipples] = useState([]);
+    const rippleId = useRef(0);
+    const rootRef = useRef(null);
+    const ButtonSpawnRipple = (clientX, clientY) => {
+        const el = rootRef.current;
+        if (!el)
+            return;
+        const rect = el.getBoundingClientRect();
+        const x = ((clientX - rect.left) / Math.max(1, rect.width)) * 100;
+        const y = ((clientY - rect.top) / Math.max(1, rect.height)) * 100;
+        const id = rippleId.current++;
+        setRipples((r) => [...r, { id, x, y }]);
+        window.setTimeout(() => {
+            setRipples((r) => r.filter((rr) => rr.id !== id));
+        }, 560);
+    };
+    const ButtonTones = {
+        neutral: {
+            accentRGB: '245,158,11',
+            accentSoft: 'rgba(245,158,11,0.5)',
+            idleBg: 'linear-gradient(to bottom, rgba(64,64,64,0.9), rgba(23,23,23,0.95))',
+            idleText: 'text-neutral-300',
+            idleBorder: 'border-neutral-600/50',
+            activeBg: 'linear-gradient(to bottom, rgba(251,191,36,1), rgba(245,158,11,1))',
+            activeText: 'text-neutral-950',
+            activeBorder: 'border-amber-300/60',
+            glow: 'rgba(245,158,11,0.6)',
+            hoverGlow: 'rgba(245,158,11,0.5)',
+            sheen: 'rgba(245,158,11,0.16)',
+            idleDot: 'rgba(245,158,11,0.35)',
+        },
+        accent: {
+            accentRGB: '45,212,191',
+            accentSoft: 'rgba(45,212,191,0.5)',
+            idleBg: 'linear-gradient(to bottom, rgba(64,64,64,0.9), rgba(23,23,23,0.95))',
+            idleText: 'text-teal-200',
+            idleBorder: 'border-teal-500/30',
+            activeBg: 'linear-gradient(to bottom, rgba(94,234,212,1), rgba(20,184,166,1))',
+            activeText: 'text-neutral-950',
+            activeBorder: 'border-teal-200/60',
+            glow: 'rgba(20,184,166,0.6)',
+            hoverGlow: 'rgba(45,212,191,0.5)',
+            sheen: 'rgba(45,212,191,0.18)',
+            idleDot: 'rgba(45,212,191,0.4)',
+        },
+        danger: {
+            accentRGB: '251,113,133',
+            accentSoft: 'rgba(251,113,133,0.5)',
+            idleBg: 'linear-gradient(to bottom, rgba(64,64,64,0.9), rgba(23,23,23,0.95))',
+            idleText: 'text-rose-200',
+            idleBorder: 'border-rose-500/30',
+            activeBg: 'linear-gradient(to bottom, rgba(253,164,175,1), rgba(244,63,94,1))',
+            activeText: 'text-neutral-950',
+            activeBorder: 'border-rose-200/60',
+            glow: 'rgba(244,63,94,0.6)',
+            hoverGlow: 'rgba(251,113,133,0.5)',
+            sheen: 'rgba(251,113,133,0.18)',
+            idleDot: 'rgba(251,113,133,0.4)',
+        },
+    };
+    const t = ButtonTones[tone];
+    const surfaceBg = active ? t.activeBg : t.idleBg;
+    const textClass = active ? t.activeText : t.idleText;
+    const borderClass = active ? t.activeBorder : t.idleBorder;
+    const baseShadow = active
+        ? 'inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -2px 5px rgba(0,0,0,0.25), 0 4px 10px rgba(0,0,0,0.5), 0 0 18px -2px ' +
+            t.glow
+        : 'inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -3px 7px rgba(0,0,0,0.6), 0 4px 10px rgba(0,0,0,0.45)';
+    return (React.createElement("button", { ref: rootRef, type: "button", onPointerDown: (e) => {
+            e.currentTarget.setPointerCapture?.(e.pointerId);
+            setPressed(true);
+            ButtonSpawnRipple(e.clientX, e.clientY);
+        }, onPointerUp: (e) => {
+            if (pressed) {
+                setPressed(false);
+                props.onPress();
+            }
+        }, onPointerLeave: () => setPressed(false), onPointerCancel: () => setPressed(false), onKeyDown: (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (!pressed)
+                    setPressed(true);
+            }
+        }, onKeyUp: (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setPressed(false);
+                props.onPress();
+            }
+        }, className: 'group relative h-full w-full min-w-0 min-h-0 select-none touch-none overflow-hidden rounded-lg border ' +
+            borderClass +
+            ' ' +
+            textClass +
+            ' [container-type:size] transition-all duration-200 ease-out outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 focus-visible:ring-offset-0 motion-reduce:transition-none ' +
+            (pressed ? 'scale-[0.955]' : 'hover:-translate-y-px active:translate-y-0'), style: {
+            backgroundImage: surfaceBg,
+            boxShadow: baseShadow,
+            transform: pressed ? 'translateY(0) scale(0.955)' : undefined,
+        } },
+        React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-lg", style: {
+                background: active
+                    ? 'linear-gradient(to bottom, rgba(255,255,255,0.28), rgba(255,255,255,0))'
+                    : 'linear-gradient(to bottom, rgba(255,255,255,0.07), rgba(255,255,255,0))',
+            } }),
+        !active && (React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 motion-reduce:transition-none", style: {
+                background: 'radial-gradient(120% 100% at 50% 120%, ' + t.sheen + ' 0%, rgba(0,0,0,0) 70%)',
+            } })),
+        active && (React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-[1px] rounded-[7px] animate-pulse motion-reduce:animate-none", style: {
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.35), inset 0 0 12px -2px ' + t.hoverGlow,
+            } })),
+        React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-0 rounded-lg transition-opacity duration-100 ease-out", style: {
+                opacity: pressed ? 1 : 0,
+                background: active
+                    ? 'radial-gradient(80% 80% at 50% 50%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 70%)'
+                    : 'radial-gradient(80% 80% at 50% 50%, rgba(' + t.accentRGB + ',0.4) 0%, rgba(0,0,0,0) 70%)',
+            } }),
+        ripples.map((r) => (React.createElement("span", { key: "ripple-" + r.id, "aria-hidden": true, className: "pointer-events-none absolute rounded-full", style: {
+                left: r.x + '%',
+                top: r.y + '%',
+                width: '10cqmax',
+                height: '10cqmax',
+                transform: 'translate(-50%, -50%) scale(0)',
+                background: active
+                    ? 'radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 70%)'
+                    : 'radial-gradient(circle, rgba(' + t.accentRGB + ',0.55) 0%, rgba(' + t.accentRGB + ',0) 70%)',
+                animation: 'buttonRipple 560ms ease-out forwards',
+            } }))),
+        React.createElement("span", { className: "pointer-events-none absolute inset-0 flex items-center justify-center" },
+            React.createElement("svg", { viewBox: "0 0 100 100", preserveAspectRatio: "xMidYMid meet", className: "h-[58cqmin] w-[58cqmin]", style: {
+                    filter: active
+                        ? 'drop-shadow(0 0 4px rgba(0,0,0,0.35))'
+                        : 'drop-shadow(0 1px 1px rgba(0,0,0,0.6))',
+                } },
+                React.createElement("circle", { cx: "50", cy: "50", r: "34", fill: "none", stroke: active ? 'rgba(0,0,0,0.55)' : 'rgba(' + t.accentRGB + ',0.55)', strokeWidth: active ? 7 : 6, strokeLinecap: "round", strokeDasharray: "170 44", strokeDashoffset: "21", transform: "rotate(-90 50 50)", className: "origin-center transition-all duration-200 ease-out" }),
+                React.createElement("circle", { cx: "50", cy: "14", r: active ? 7 : 5.5, fill: active ? 'rgba(0,0,0,0.65)' : 'rgba(' + t.accentRGB + ',0.9)', className: "transition-all duration-200 ease-out" }))),
+        React.createElement("style", null, '@keyframes buttonRipple { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0.9; } 100% { transform: translate(-50%,-50%) scale(3.4); opacity: 0; } }')));
+}
+
+function Fader(props) {
+    const { min, max, value, onChange } = props;
+    const orientation = props.orientation ?? "vertical";
+    const isVert = orientation === "vertical";
+    const trackRef = useRef(null);
+    const [dragging, setDragging] = useState(false);
+    const [hovered, setHovered] = useState(false);
+    const span = max - min || 1;
+    const clamped = Math.min(max, Math.max(min, value));
+    const frac = (clamped - min) / span; // 0..1 min->max
+    const pct = frac * 100;
+    const FaderPosFromEvent = (clientX, clientY) => {
+        const el = trackRef.current;
+        if (!el)
+            return clamped;
+        const rect = el.getBoundingClientRect();
+        let t;
+        if (isVert) {
+            const raw = (rect.bottom - clientY) / (rect.height || 1);
+            t = Math.min(1, Math.max(0, raw));
+        }
+        else {
+            const raw = (clientX - rect.left) / (rect.width || 1);
+            t = Math.min(1, Math.max(0, raw));
+        }
+        return min + t * span;
+    };
+    const handleDown = (e) => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        setDragging(true);
+        onChange(FaderPosFromEvent(e.clientX, e.clientY));
+    };
+    const handleMove = (e) => {
+        if (!dragging)
+            return;
+        onChange(FaderPosFromEvent(e.clientX, e.clientY));
+    };
+    const handleUp = (e) => {
+        if (!dragging)
+            return;
+        e.currentTarget.releasePointerCapture?.(e.pointerId);
+        setDragging(false);
+    };
+    // Tick marks along the travel
+    const FaderTickCount = 11;
+    const ticks = Array.from({ length: FaderTickCount }, (_, i) => i / (FaderTickCount - 1));
+    const active = dragging || hovered;
+    // ---- VERTICAL ----
+    if (isVert) {
+        return (React.createElement("div", { className: "h-full w-full min-w-0 min-h-0 [container-type:size] flex items-stretch justify-center select-none", onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false) },
+            React.createElement("div", { className: "relative h-full flex items-stretch justify-center px-[10%]" },
+                React.createElement("div", { className: "relative h-full w-[14%] mr-[6%] shrink" }, ticks.map((t, i) => {
+                    const major = i === 0 || i === FaderTickCount - 1 || i === (FaderTickCount - 1) / 2;
+                    return (React.createElement("div", { key: "vt-" + i, className: "absolute right-0 rounded-full transition-colors duration-200 " +
+                            (major ? "bg-amber-400/40 h-[2px] w-full" : "bg-neutral-700/70 h-[1px] w-[60%]"), style: { bottom: t * 100 + "%", transform: "translateY(50%)" } }));
+                })),
+                React.createElement("div", { ref: trackRef, onPointerDown: handleDown, onPointerMove: handleMove, onPointerUp: handleUp, onPointerCancel: handleUp, className: "relative h-full w-[26%] max-w-[44px] min-w-0 touch-none cursor-pointer" },
+                    React.createElement("div", { className: "absolute inset-y-0 left-1/2 -translate-x-1/2 w-[34%] rounded-full bg-neutral-950/80 shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)] border border-neutral-700/70 overflow-hidden" },
+                        React.createElement("div", { className: "absolute inset-x-0 bottom-0 transition-all ease-out " +
+                                (active ? "duration-100" : "duration-150"), style: { height: pct + "%" } },
+                            React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-amber-600/70 to-amber-400/90 transition-[box-shadow,opacity] duration-200 " +
+                                    (active
+                                        ? "opacity-100 shadow-[0_0_16px_-2px] shadow-amber-500/60"
+                                        : "opacity-80") }))),
+                    React.createElement("div", { className: "absolute left-1/2 -translate-x-1/2 w-[220%] max-w-[46px]", style: {
+                            bottom: pct + "%",
+                            transform: "translate(-50%, 50%)",
+                            transition: active ? "bottom 100ms linear" : "bottom 150ms ease-out",
+                        } },
+                        React.createElement("div", { className: "relative aspect-[7/4] w-full rounded-md border shadow-md shadow-black/40 " +
+                                "bg-gradient-to-b from-neutral-600 to-neutral-900 transition-all duration-200 ease-out " +
+                                (active
+                                    ? "border-amber-400/60 shadow-[0_0_16px_-2px] shadow-amber-500/60 scale-[1.04]"
+                                    : "border-neutral-600/60") },
+                            React.createElement("div", { className: "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[2px] w-[70%] rounded-full transition-colors duration-200 " +
+                                    (active ? "bg-amber-300" : "bg-amber-400/70") }),
+                            React.createElement("div", { className: "absolute left-1/2 top-[26%] -translate-x-1/2 h-[1px] w-[50%] rounded-full bg-black/50" }),
+                            React.createElement("div", { className: "absolute left-1/2 bottom-[26%] -translate-x-1/2 h-[1px] w-[50%] rounded-full bg-black/50" })))))));
+    }
+    // ---- HORIZONTAL ----
+    return (React.createElement("div", { className: "h-full w-full min-w-0 min-h-0 [container-type:size] flex flex-col items-stretch justify-center select-none", onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false) },
+        React.createElement("div", { className: "relative w-full flex flex-col items-stretch justify-center py-[8%]" },
+            React.createElement("div", { ref: trackRef, onPointerDown: handleDown, onPointerMove: handleMove, onPointerUp: handleUp, onPointerCancel: handleUp, className: "relative w-full h-[52%] max-h-[52px] min-h-0 touch-none cursor-pointer" },
+                React.createElement("div", { className: "absolute inset-x-0 top-1/2 -translate-y-1/2 h-[34%] rounded-full bg-neutral-950/80 shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)] border border-neutral-700/70 overflow-hidden" },
+                    React.createElement("div", { className: "absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[2px] bg-neutral-700/80" }),
+                    React.createElement("div", { className: "absolute inset-y-0 transition-all ease-out " +
+                            (active ? "duration-100" : "duration-150"), style: frac >= 0.5
+                            ? { left: "50%", width: (frac - 0.5) * 100 + "%" }
+                            : { right: "50%", width: (0.5 - frac) * 100 + "%" } },
+                        React.createElement("div", { className: "absolute inset-0 bg-gradient-to-r from-amber-600/70 to-amber-400/90 transition-[box-shadow,opacity] duration-200 " +
+                                (active
+                                    ? "opacity-100 shadow-[0_0_16px_-2px] shadow-amber-500/60"
+                                    : "opacity-80") }))),
+                React.createElement("div", { className: "absolute top-1/2 h-[220%] max-h-[52px]", style: {
+                        left: pct + "%",
+                        transform: "translate(-50%, -50%)",
+                        transition: active ? "left 100ms linear" : "left 150ms ease-out",
+                    } },
+                    React.createElement("div", { className: "relative h-full aspect-[4/7] rounded-md border shadow-md shadow-black/40 " +
+                            "bg-gradient-to-b from-neutral-600 to-neutral-900 transition-all duration-200 ease-out " +
+                            (active
+                                ? "border-amber-400/60 shadow-[0_0_16px_-2px] shadow-amber-500/60 scale-[1.04]"
+                                : "border-neutral-600/60") },
+                        React.createElement("div", { className: "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[2px] h-[70%] rounded-full transition-colors duration-200 " +
+                                (active ? "bg-amber-300" : "bg-amber-400/70") }),
+                        React.createElement("div", { className: "absolute top-1/2 left-[26%] -translate-y-1/2 w-[1px] h-[50%] rounded-full bg-black/50" }),
+                        React.createElement("div", { className: "absolute top-1/2 right-[26%] -translate-y-1/2 w-[1px] h-[50%] rounded-full bg-black/50" })))),
+            React.createElement("div", { className: "relative w-full h-[16%] mt-[6%] shrink" }, ticks.map((t, i) => {
+                const major = i === 0 || i === FaderTickCount - 1 || i === (FaderTickCount - 1) / 2;
+                return (React.createElement("div", { key: "ht-" + i, className: "absolute top-0 rounded-full transition-colors duration-200 " +
+                        (major ? "bg-amber-400/40 w-[2px] h-full" : "bg-neutral-700/70 w-[1px] h-[60%]"), style: { left: t * 100 + "%", transform: "translateX(-50%)" } }));
+            })))));
+}
+
+function JogWheel(props) {
+    const { onScrub, playing } = props;
+    const svgRef = useRef(null);
+    const centerRef = useRef({ x: 0, y: 0 });
+    const lastAngleRef = useRef(0);
+    const spinRef = useRef(0);
+    const rafRef = useRef(null);
+    const lastTsRef = useRef(0);
+    const velocityRef = useRef(0);
+    const [spin, setSpin] = useState(0);
+    const [dragging, setDragging] = useState(false);
+    const [scrubDir, setScrubDir] = useState(0);
+    const [hovered, setHovered] = useState(false);
+    const [pressGlow, setPressGlow] = useState(0);
+    const scrubTimeoutRef = useRef(null);
+    // Continuous auto-spin loop when playing (and not being scratched)
+    useEffect(() => {
+        const step = (ts) => {
+            const last = lastTsRef.current || ts;
+            const dt = Math.min(64, ts - last);
+            lastTsRef.current = ts;
+            if (playing && !dragging) {
+                // ~ 33.3 rpm platter feel -> 0.72 rev/s -> deg/ms
+                const degPerMs = 360 * 0.4 / 1000;
+                spinRef.current = (spinRef.current + degPerMs * dt) % 360;
+                setSpin(spinRef.current);
+            }
+            else if (!dragging) {
+                // inertial decay of any residual velocity
+                if (Math.abs(velocityRef.current) > 0.001) {
+                    spinRef.current = (spinRef.current + velocityRef.current * dt) % 360;
+                    velocityRef.current *= Math.pow(0.9, dt / 16);
+                    setSpin(spinRef.current);
+                }
+            }
+            rafRef.current = requestAnimationFrame(step);
+        };
+        rafRef.current = requestAnimationFrame(step);
+        return () => {
+            if (rafRef.current != null)
+                cancelAnimationFrame(rafRef.current);
+            lastTsRef.current = 0;
+        };
+    }, [playing, dragging]);
+    const angleFromEvent = (e) => {
+        const c = centerRef.current;
+        const dx = e.clientX - c.x;
+        const dy = e.clientY - c.y;
+        return Math.atan2(dy, dx) * (180 / Math.PI);
+    };
+    const clearScrubDir = () => {
+        if (scrubTimeoutRef.current != null)
+            window.clearTimeout(scrubTimeoutRef.current);
+        scrubTimeoutRef.current = window.setTimeout(() => setScrubDir(0), 140);
+    };
+    const handlePointerDown = (e) => {
+        const svg = svgRef.current;
+        if (!svg)
+            return;
+        const rect = svg.getBoundingClientRect();
+        centerRef.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        lastAngleRef.current = angleFromEvent(e);
+        velocityRef.current = 0;
+        setDragging(true);
+        setPressGlow(1);
+        e.target.setPointerCapture?.(e.pointerId);
+    };
+    const handlePointerMove = (e) => {
+        if (!dragging)
+            return;
+        const a = angleFromEvent(e);
+        let delta = a - lastAngleRef.current;
+        if (delta > 180)
+            delta -= 360;
+        if (delta < -180)
+            delta += 360;
+        lastAngleRef.current = a;
+        if (delta !== 0) {
+            spinRef.current = (spinRef.current + delta) % 360;
+            setSpin(spinRef.current);
+            velocityRef.current = delta / 16;
+            onScrub(delta);
+            setScrubDir(delta > 0 ? 1 : -1);
+            clearScrubDir();
+        }
+    };
+    const endDrag = (e) => {
+        if (!dragging)
+            return;
+        setDragging(false);
+        setPressGlow(0);
+        clearScrubDir();
+        e.target.releasePointerCapture?.(e.pointerId);
+    };
+    useEffect(() => {
+        return () => {
+            if (scrubTimeoutRef.current != null)
+                window.clearTimeout(scrubTimeoutRef.current);
+        };
+    }, []);
+    // Decorative grip dots around the platter rim
+    const gripDots = useMemo(() => {
+        const arr = [];
+        const n = 48;
+        const r = 40;
+        for (let i = 0; i < n; i++) {
+            const a = (i / n) * Math.PI * 2;
+            arr.push({ x: 50 + Math.cos(a) * r, y: 50 + Math.sin(a) * r, a: (i / n) * 360 });
+        }
+        return arr;
+    }, []);
+    // Fine tick marks near the outer edge
+    const outerTicks = useMemo(() => {
+        const arr = [];
+        const n = 72;
+        for (let i = 0; i < n; i++) {
+            const a = (i / n) * Math.PI * 2;
+            const major = i % 6 === 0;
+            const rOuter = 47.5;
+            const rInner = major ? 44.5 : 46;
+            arr.push({
+                x1: 50 + Math.cos(a) * rInner,
+                y1: 50 + Math.sin(a) * rInner,
+                x2: 50 + Math.cos(a) * rOuter,
+                y2: 50 + Math.sin(a) * rOuter,
+                major,
+            });
+        }
+        return arr;
+    }, []);
+    const active = playing || dragging;
+    const glowOpacity = dragging ? 0.85 : playing ? 0.55 : 0;
+    return (React.createElement("div", { className: "relative h-full w-full min-w-0 min-h-0 select-none touch-none", onPointerEnter: () => setHovered(true), onPointerLeave: () => setHovered(false) },
+        React.createElement("svg", { ref: svgRef, viewBox: "0 0 100 100", preserveAspectRatio: "xMidYMid meet", className: "h-full w-full cursor-grab active:cursor-grabbing touch-none", onPointerDown: handlePointerDown, onPointerMove: handlePointerMove, onPointerUp: endDrag, onPointerCancel: endDrag },
+            React.createElement("defs", null,
+                React.createElement("radialGradient", { id: "jog-chassis", cx: "50%", cy: "38%", r: "72%" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#3a352d" }),
+                    React.createElement("stop", { offset: "45%", stopColor: "#26221c" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#0c0b0a" })),
+                React.createElement("radialGradient", { id: "jog-platter", cx: "50%", cy: "35%", r: "70%" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#57504405", stopOpacity: "0" }),
+                    React.createElement("stop", { offset: "0%", stopColor: "#4a453b" }),
+                    React.createElement("stop", { offset: "55%", stopColor: "#2b2721" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#141210" })),
+                React.createElement("radialGradient", { id: "jog-cap", cx: "50%", cy: "34%", r: "72%" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#6a6154" }),
+                    React.createElement("stop", { offset: "55%", stopColor: "#3a352d" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#181511" })),
+                React.createElement("linearGradient", { id: "jog-spokeAmber", x1: "0", y1: "0", x2: "1", y2: "0" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#f59e0b", stopOpacity: "0" }),
+                    React.createElement("stop", { offset: "55%", stopColor: "#fbbf24", stopOpacity: "0.9" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#fde68a", stopOpacity: "1" })),
+                React.createElement("radialGradient", { id: "jog-innerGlow", cx: "50%", cy: "50%", r: "50%" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#fbbf24", stopOpacity: "0.5" }),
+                    React.createElement("stop", { offset: "60%", stopColor: "#f59e0b", stopOpacity: "0.12" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#f59e0b", stopOpacity: "0" })),
+                React.createElement("filter", { id: "jog-blur", x: "-40%", y: "-40%", width: "180%", height: "180%" },
+                    React.createElement("feGaussianBlur", { stdDeviation: "1.6" })),
+                React.createElement("clipPath", { id: "jog-clip" },
+                    React.createElement("circle", { cx: "50", cy: "50", r: "41.5" }))),
+            React.createElement("circle", { cx: "50", cy: "50", r: "48", fill: "none", stroke: "#f59e0b", strokeWidth: active ? 1.4 : 0.8, style: {
+                    opacity: glowOpacity,
+                    filter: "drop-shadow(0 0 3px rgba(245,158,11,0.9))",
+                    transition: "opacity 200ms ease-out, stroke-width 200ms ease-out",
+                }, className: playing && !dragging ? "motion-reduce:animate-none animate-pulse" : "" }),
+            React.createElement("circle", { cx: "50", cy: "50", r: "49", fill: "url(#jog-chassis)" }),
+            React.createElement("circle", { cx: "50", cy: "50", r: "49", fill: "none", stroke: "#000000", strokeOpacity: "0.6", strokeWidth: "0.6" }),
+            React.createElement("g", null, outerTicks.map((t, i) => (React.createElement("line", { key: "tick-" + i, x1: t.x1, y1: t.y1, x2: t.x2, y2: t.y2, stroke: t.major ? "#f59e0b" : "#6b6152", strokeOpacity: t.major ? (active ? 0.85 : 0.5) : 0.35, strokeWidth: t.major ? 0.7 : 0.4, strokeLinecap: "round", style: { transition: "stroke-opacity 200ms ease-out" } })))),
+            React.createElement("circle", { cx: "50", cy: "50", r: "43", fill: "#0c0b0a", stroke: "#000000", strokeOpacity: "0.7", strokeWidth: "1.2" }),
+            React.createElement("g", { style: {
+                    transformOrigin: "50px 50px",
+                    transform: "rotate(" + spin + "deg)",
+                    transition: dragging ? "none" : "transform 90ms linear",
+                } },
+                React.createElement("circle", { cx: "50", cy: "50", r: "41.5", fill: "url(#jog-platter)" }),
+                React.createElement("circle", { cx: "50", cy: "50", r: "41.5", fill: "url(#jog-innerGlow)", style: { opacity: active ? 1 : 0.15, transition: "opacity 250ms ease-out" }, clipPath: "url(#jog-clip)" }),
+                React.createElement("g", { clipPath: "url(#jog-clip)" },
+                    React.createElement("rect", { x: "49.1", y: "9", width: "1.8", height: "32", rx: "0.9", fill: "url(#jog-spokeAmber)", style: {
+                            opacity: active ? 1 : 0.55,
+                            filter: active ? "drop-shadow(0 0 1.4px rgba(251,191,36,0.9))" : "none",
+                            transition: "opacity 200ms ease-out",
+                        } }),
+                    React.createElement("rect", { x: "49.4", y: "12", width: "1.2", height: "8", rx: "0.6", fill: "#fbbf24", opacity: active ? 0.35 : 0.15, transform: "rotate(120 50 50)" }),
+                    React.createElement("rect", { x: "49.4", y: "12", width: "1.2", height: "8", rx: "0.6", fill: "#fbbf24", opacity: active ? 0.35 : 0.15, transform: "rotate(240 50 50)" })),
+                React.createElement("g", { clipPath: "url(#jog-clip)" },
+                    gripDots.map((d, i) => (React.createElement("circle", { key: "grip-" + i, cx: d.x, cy: d.y, r: i % 4 === 0 ? 0.7 : 0.45, fill: "#000000", opacity: "0.45" }))),
+                    gripDots.map((d, i) => (React.createElement("circle", { key: "grip-h-" + i, cx: d.x - 0.25, cy: d.y - 0.25, r: i % 4 === 0 ? 0.35 : 0.22, fill: "#7a7060", opacity: "0.35" })))),
+                React.createElement("circle", { cx: "50", cy: "50", r: "34", fill: "none", stroke: "#000000", strokeOpacity: "0.35", strokeWidth: "0.3" }),
+                React.createElement("circle", { cx: "50", cy: "50", r: "28", fill: "none", stroke: "#000000", strokeOpacity: "0.3", strokeWidth: "0.3" })),
+            React.createElement("circle", { cx: "50", cy: "50", r: "41.5", fill: "none", stroke: "#8a7f6d", strokeOpacity: "0.28", strokeWidth: "0.5" }),
+            React.createElement("g", { style: { opacity: scrubDir !== 0 ? 1 : 0, transition: "opacity 120ms ease-out" }, filter: "url(#jog-blur)" },
+                React.createElement("path", { d: "M 82 32 A 36 36 0 0 1 84 50", fill: "none", stroke: scrubDir > 0 ? "#fbbf24" : "#57534e", strokeWidth: "2", strokeLinecap: "round", opacity: scrubDir > 0 ? 0.9 : 0.15 }),
+                React.createElement("path", { d: "M 18 68 A 36 36 0 0 1 16 50", fill: "none", stroke: scrubDir < 0 ? "#fbbf24" : "#57534e", strokeWidth: "2", strokeLinecap: "round", opacity: scrubDir < 0 ? 0.9 : 0.15 })),
+            React.createElement("g", null,
+                React.createElement("circle", { cx: "50", cy: "50", r: "20", fill: "url(#jog-cap)", stroke: "#000000", strokeOpacity: "0.6", strokeWidth: "0.8" }),
+                React.createElement("circle", { cx: "50", cy: "50", r: "20", fill: "none", stroke: "#8a7f6d", strokeOpacity: "0.2", strokeWidth: "0.4" }),
+                React.createElement("circle", { cx: "50", cy: "50", r: "15", fill: "none", stroke: "#f59e0b", strokeWidth: dragging ? 1.1 : 0.7, strokeOpacity: active ? 0.7 : 0.28, style: { transition: "stroke-opacity 200ms ease-out, stroke-width 150ms ease-out" } }),
+                React.createElement("circle", { cx: "50", cy: "50", r: "8.5", fill: "url(#jog-cap)", stroke: "#000000", strokeOpacity: "0.5", strokeWidth: "0.5" }),
+                React.createElement("circle", { cx: "50", cy: "50", r: "3.2", fill: active ? "#fbbf24" : "#3a352d", style: {
+                        filter: active ? "drop-shadow(0 0 2px rgba(251,191,36,0.95))" : "none",
+                        transition: "fill 200ms ease-out",
+                    }, className: playing && !dragging ? "motion-reduce:animate-none animate-pulse" : "" }),
+                React.createElement("circle", { cx: "48.6", cy: "48.6", r: "1.1", fill: "#fff7ed", opacity: active ? 0.7 : 0.25 })),
+            React.createElement("circle", { cx: "50", cy: "50", r: "20", fill: "#fbbf24", style: {
+                    opacity: dragging ? 0.1 : hovered ? 0.05 : 0,
+                    transition: "opacity 200ms ease-out",
+                } }),
+            pressGlow > 0 && (React.createElement("circle", { cx: "50", cy: "50", r: "22", fill: "none", stroke: "#fbbf24", strokeWidth: "0.8", opacity: "0.5", style: { transition: "opacity 200ms ease-out" } })))));
+}
+
+function Knob(props) {
+    const { min, max, value, onChange, steps } = props;
+    const KnobSTART_ANGLE = -135;
+    const KnobEND_ANGLE = 135;
+    const KnobSWEEP = KnobEND_ANGLE - KnobSTART_ANGLE;
+    const wrapRef = useRef(null);
+    const dragRef = useRef(null);
+    const [dragging, setDragging] = useState(false);
+    const [hovering, setHovering] = useState(false);
+    const [pulseKey, setPulseKey] = useState(0);
+    const safeMin = Number.isFinite(min) ? min : 0;
+    const safeMax = Number.isFinite(max) ? max : 1;
+    const range = safeMax - safeMin || 1;
+    const clamp = (v) => Math.max(safeMin, Math.min(safeMax, v));
+    const sortedSteps = steps && steps.length > 0
+        ? [...steps].filter((s) => Number.isFinite(s)).sort((a, b) => a - b)
+        : null;
+    const snap = (v) => {
+        if (!sortedSteps || sortedSteps.length === 0)
+            return clamp(v);
+        let best = sortedSteps[0];
+        let bestDist = Math.abs(v - best);
+        for (let i = 1; i < sortedSteps.length; i++) {
+            const d = Math.abs(v - sortedSteps[i]);
+            if (d < bestDist) {
+                bestDist = d;
+                best = sortedSteps[i];
+            }
+        }
+        return best;
+    };
+    const curVal = clamp(value);
+    const frac = (curVal - safeMin) / range;
+    const angle = KnobSTART_ANGLE + frac * KnobSWEEP;
+    const prevValRef = useRef(curVal);
+    useEffect(() => {
+        if (prevValRef.current !== curVal) {
+            prevValRef.current = curVal;
+            setPulseKey((k) => k + 1);
+        }
+    }, [curVal]);
+    const commitFromDelta = (clientX, clientY) => {
+        const d = dragRef.current;
+        if (!d)
+            return;
+        const dy = d.startY - clientY;
+        const dx = clientX - d.startX;
+        const combined = dy + dx * 0.35;
+        const sensitivity = 220;
+        let next = d.startVal + (combined / sensitivity) * range;
+        next = clamp(next);
+        if (sortedSteps)
+            next = snap(next);
+        if (next !== value)
+            onChange(next);
+    };
+    const onPointerDown = (e) => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        dragRef.current = { startY: e.clientY, startX: e.clientX, startVal: curVal };
+        setDragging(true);
+    };
+    const onPointerMove = (e) => {
+        if (!dragRef.current)
+            return;
+        commitFromDelta(e.clientX, e.clientY);
+    };
+    const endDrag = (e) => {
+        if (dragRef.current) {
+            try {
+                e.currentTarget.releasePointerCapture(e.pointerId);
+            }
+            catch { }
+        }
+        dragRef.current = null;
+        setDragging(false);
+    };
+    const polar = (cx, cy, r, deg) => {
+        const rad = ((deg - 90) * Math.PI) / 180;
+        return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+    };
+    const arcPath = (cx, cy, r, a0, a1) => {
+        const s = polar(cx, cy, r, a0);
+        const e = polar(cx, cy, r, a1);
+        const large = Math.abs(a1 - a0) > 180 ? 1 : 0;
+        const sweepFlag = a1 > a0 ? 1 : 0;
+        return "M " + s.x + " " + s.y + " A " + r + " " + r + " 0 " + large + " " + sweepFlag + " " + e.x + " " + e.y;
+    };
+    const CX = 50;
+    const CY = 50;
+    const trackR = 40;
+    const capR = 27;
+    const tickAngles = [];
+    if (sortedSteps) {
+        for (const s of sortedSteps) {
+            const f = (clamp(s) - safeMin) / range;
+            tickAngles.push(KnobSTART_ANGLE + f * KnobSWEEP);
+        }
+    }
+    else {
+        const N = 9;
+        for (let i = 0; i < N; i++)
+            tickAngles.push(KnobSTART_ANGLE + (i / (N - 1)) * KnobSWEEP);
+    }
+    const active = dragging || hovering;
+    const pointerTip = polar(CX, CY, capR - 3, angle);
+    const pointerBase = polar(CX, CY, 7, angle);
+    return (React.createElement("div", { ref: wrapRef, onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: endDrag, onPointerCancel: endDrag, onPointerEnter: () => setHovering(true), onPointerLeave: () => setHovering(false), className: "h-full w-full min-w-0 min-h-0 touch-none select-none [container-type:size] flex items-center justify-center " +
+            (dragging ? "cursor-grabbing" : "cursor-grab") },
+        React.createElement("svg", { viewBox: "0 0 100 100", preserveAspectRatio: "xMidYMid meet", className: "h-full w-full overflow-visible" },
+            React.createElement("defs", null,
+                React.createElement("radialGradient", { id: "knobCapFill", cx: "50%", cy: "34%", r: "72%" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#565452" }),
+                    React.createElement("stop", { offset: "46%", stopColor: "#3a3836" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#161514" })),
+                React.createElement("radialGradient", { id: "knobCapSheen", cx: "50%", cy: "26%", r: "60%" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#ffffff", stopOpacity: "0.18" }),
+                    React.createElement("stop", { offset: "55%", stopColor: "#ffffff", stopOpacity: "0.04" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#ffffff", stopOpacity: "0" })),
+                React.createElement("linearGradient", { id: "knobPointer", x1: "0", y1: "0", x2: "0", y2: "1" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#fbbf24" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#f59e0b" })),
+                React.createElement("filter", { id: "knobGlow", x: "-60%", y: "-60%", width: "220%", height: "220%" },
+                    React.createElement("feGaussianBlur", { stdDeviation: "2.4", result: "b" }),
+                    React.createElement("feMerge", null,
+                        React.createElement("feMergeNode", { in: "b" }),
+                        React.createElement("feMergeNode", { in: "SourceGraphic" })))),
+            React.createElement("circle", { cx: CX, cy: CY, r: trackR + 6, fill: "#0a0908" }),
+            React.createElement("circle", { cx: CX, cy: CY, r: trackR + 6, fill: "none", stroke: "#000000", strokeOpacity: "0.7", strokeWidth: "1.4" }),
+            tickAngles.map((ta, i) => {
+                const isPast = ta <= angle + 0.001;
+                const outer = polar(CX, CY, trackR + 3.5, ta);
+                const inner = polar(CX, CY, trackR - 0.5, ta);
+                return (React.createElement("line", { key: "tick-" + i, x1: inner.x, y1: inner.y, x2: outer.x, y2: outer.y, stroke: isPast ? "#f59e0b" : "#4b4845", strokeOpacity: isPast ? 0.9 : 0.55, strokeWidth: sortedSteps ? 2 : 1.4, strokeLinecap: "round", className: "transition-all duration-150 ease-out" }));
+            }),
+            React.createElement("path", { d: arcPath(CX, CY, trackR, KnobSTART_ANGLE, KnobEND_ANGLE), fill: "none", stroke: "#2a2826", strokeWidth: "3.2", strokeLinecap: "round" }),
+            frac > 0.001 && (React.createElement("path", { d: arcPath(CX, CY, trackR, KnobSTART_ANGLE, angle), fill: "none", stroke: "url(#knobPointer)", strokeWidth: active ? 4 : 3.4, strokeLinecap: "round", filter: active ? "url(#knobGlow)" : undefined, className: "transition-all duration-150 ease-out" })),
+            React.createElement("circle", { key: "pulse-" + pulseKey, cx: CX, cy: CY, r: trackR, fill: "none", stroke: "#fbbf24", strokeWidth: "2", className: "motion-reduce:hidden", style: {
+                    transformOrigin: "50px 50px",
+                    animation: "knobPulseRing 520ms ease-out forwards",
+                    opacity: 0,
+                } }),
+            React.createElement("g", { style: {
+                    transformBox: "fill-box",
+                    transformOrigin: "center",
+                    transform: dragging ? "scale(0.965)" : hovering ? "scale(1.015)" : "scale(1)",
+                }, className: "transition-transform duration-100 ease-out motion-reduce:transition-none" },
+                React.createElement("circle", { cx: CX, cy: CY + 1.4, r: capR, fill: "#000000", fillOpacity: "0.55" }),
+                React.createElement("circle", { cx: CX, cy: CY, r: capR, fill: "url(#knobCapFill)", stroke: "#100f0e", strokeWidth: "1" }),
+                React.createElement("circle", { cx: CX, cy: CY, r: capR, fill: "none", stroke: active ? "#f59e0b" : "#57534e", strokeOpacity: active ? 0.55 : 0.7, strokeWidth: "1", className: "transition-all duration-200 ease-out" }),
+                React.createElement("circle", { cx: CX, cy: CY, r: capR - 2, fill: "url(#knobCapSheen)" }),
+                React.createElement("circle", { cx: CX, cy: CY, r: capR - 8, fill: "none", stroke: "#000000", strokeOpacity: "0.35", strokeWidth: "0.8" }),
+                React.createElement("line", { x1: pointerBase.x, y1: pointerBase.y, x2: pointerTip.x, y2: pointerTip.y, stroke: "url(#knobPointer)", strokeWidth: active ? 4 : 3.4, strokeLinecap: "round", filter: active ? "url(#knobGlow)" : undefined, className: "transition-all duration-100 ease-out" }),
+                React.createElement("circle", { cx: CX, cy: CY, r: active ? 4.4 : 3.8, fill: "#fbbf24", className: "transition-all duration-150 ease-out", filter: active ? "url(#knobGlow)" : undefined }),
+                React.createElement("circle", { cx: CX, cy: CY, r: 1.6, fill: "#3a2c0a" }))),
+        React.createElement("style", null, "@keyframes knobPulseRing{0%{opacity:0.55;transform:scale(0.92);}100%{opacity:0;transform:scale(1.14);}}")));
+}
+
+function LevelMeter(props) {
+    const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);
+    const level = clamp01(typeof props.level === "number" && !isNaN(props.level) ? props.level : 0);
+    const SEGMENTS = 24;
+    const litExact = level * SEGMENTS;
+    // Peak-hold behavior: track a falling peak marker.
+    const peakRef = useRef(level);
+    const [peak, setPeak] = useState(level);
+    const rafRef = useRef(null);
+    const lastTsRef = useRef(null);
+    useEffect(() => {
+        if (level >= peakRef.current) {
+            peakRef.current = level;
+            setPeak(level);
+        }
+    }, [level]);
+    useEffect(() => {
+        const decayPerMs = 0.00045; // gentle fall
+        const tick = (ts) => {
+            if (lastTsRef.current == null)
+                lastTsRef.current = ts;
+            const dt = ts - lastTsRef.current;
+            lastTsRef.current = ts;
+            const target = level;
+            if (peakRef.current > target) {
+                peakRef.current = Math.max(target, peakRef.current - decayPerMs * dt);
+                setPeak(peakRef.current);
+            }
+            rafRef.current = requestAnimationFrame(tick);
+        };
+        rafRef.current = requestAnimationFrame(tick);
+        return () => {
+            if (rafRef.current != null)
+                cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+            lastTsRef.current = null;
+        };
+    }, [level]);
+    const peakSeg = Math.round(peak * (SEGMENTS - 1));
+    // Zone thresholds (fraction of segment index).
+    const warnStart = 0.72; // amber region begins
+    const dangerStart = 0.9; // rose region begins
+    const zoneFor = (frac) => {
+        if (frac >= dangerStart)
+            return "danger";
+        if (frac >= warnStart)
+            return "warn";
+        return "ok";
+    };
+    const litColors = {
+        ok: "#34d399", // emerald-400
+        warn: "#fbbf24", // amber-400
+        danger: "#fb7185", // rose-400
+    };
+    const glowColors = {
+        ok: "rgba(52,211,153,0.55)",
+        warn: "rgba(251,191,36,0.6)",
+        danger: "rgba(251,113,133,0.65)",
+    };
+    return (React.createElement("div", { className: "h-full w-full min-w-0 min-h-0 [container-type:size] flex items-stretch justify-center" },
+        React.createElement("div", { className: "h-full w-full min-w-0 min-h-0 flex flex-col items-center" },
+            React.createElement("div", { className: "relative flex-1 min-h-0 w-full flex items-stretch justify-center gap-[6cqw]" }, [0, 1].map((col) => (React.createElement("div", { key: "col-" + col, className: "relative h-full flex flex-col-reverse items-stretch justify-start gap-[2.2cqh] rounded-[3px] bg-neutral-950/80 shadow-[inset_0_2px_6px_rgba(0,0,0,0.85)] px-[3cqw] py-[1.5cqh]", style: { width: "42cqw" } }, Array.from({ length: SEGMENTS }).map((_, i) => {
+                const frac = i / (SEGMENTS - 1);
+                const zone = zoneFor(frac);
+                // Partial fill for the topmost lit segment.
+                let intensity = 0;
+                if (i + 1 <= Math.floor(litExact))
+                    intensity = 1;
+                else if (i === Math.floor(litExact))
+                    intensity = litExact - Math.floor(litExact);
+                const isLit = intensity > 0.02;
+                const isPeak = i === peakSeg && peakSeg > 0;
+                const base = litColors[zone];
+                const glow = glowColors[zone];
+                return (React.createElement("div", { key: "seg-" + col + "-" + i, className: "relative flex-1 min-h-0 w-full rounded-[1.5px] overflow-hidden transition-all duration-75 ease-out motion-reduce:transition-none", style: {
+                        backgroundColor: isLit ? base : "rgba(255,255,255,0.045)",
+                        opacity: isLit ? 0.35 + 0.65 * intensity : 1,
+                        boxShadow: isLit
+                            ? "0 0 " + (5 + 7 * intensity).toFixed(1) + "px " + glow + ", inset 0 0 2px rgba(255,255,255,0.25)"
+                            : "inset 0 1px 1px rgba(0,0,0,0.6)",
+                    } },
+                    React.createElement("div", { className: "absolute inset-x-0 top-0 h-1/2 rounded-t-[1.5px]", style: {
+                            background: isLit
+                                ? "linear-gradient(to bottom, rgba(255,255,255,0.28), rgba(255,255,255,0))"
+                                : "linear-gradient(to bottom, rgba(255,255,255,0.04), rgba(255,255,255,0))",
+                        } }),
+                    isPeak && (React.createElement("div", { className: "absolute inset-x-0 top-0 h-[30%] rounded-[1.5px]", style: {
+                            backgroundColor: base,
+                            boxShadow: "0 0 8px " + glow,
+                            opacity: 0.95,
+                        } }))));
+            }))))))));
+}
+
+function OptionSelector(props) {
+    const { options, value, onChange } = props;
+    const containerRef = useRef(null);
+    const trackRef = useRef(null);
+    const itemRefs = useRef({});
+    const [hoverId, setHoverId] = useState(null);
+    const [pressId, setPressId] = useState(null);
+    const [thumb, setThumb] = useState({
+        x: 0,
+        y: 0,
+        w: 0,
+        h: 0,
+        ready: false,
+    });
+    const selectedIndex = useMemo(() => {
+        const i = options.findIndex((o) => o.id === value);
+        return i;
+    }, [options, value]);
+    const measure = useCallback(() => {
+        const track = trackRef.current;
+        if (!track)
+            return;
+        const el = itemRefs.current[value];
+        if (!el) {
+            setThumb((t) => ({ ...t, ready: false }));
+            return;
+        }
+        const trackRect = track.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        setThumb({
+            x: elRect.left - trackRect.left + track.scrollLeft,
+            y: elRect.top - trackRect.top + track.scrollTop,
+            w: elRect.width,
+            h: elRect.height,
+            ready: true,
+        });
+    }, [value]);
+    useEffect(() => {
+        measure();
+    }, [measure, options, value]);
+    useEffect(() => {
+        const ro = new ResizeObserver(() => measure());
+        if (containerRef.current)
+            ro.observe(containerRef.current);
+        if (trackRef.current)
+            ro.observe(trackRef.current);
+        Object.values(itemRefs.current).forEach((el) => {
+            if (el)
+                ro.observe(el);
+        });
+        return () => ro.disconnect();
+    }, [measure, options]);
+    const OptionSelectorEmpty = () => (React.createElement("div", { className: "flex h-full w-full items-center justify-center px-3" },
+        React.createElement("div", { className: "flex items-center gap-2 text-neutral-600" },
+            React.createElement("span", { className: "inline-block h-1.5 w-1.5 rounded-full bg-neutral-700 animate-pulse" }),
+            React.createElement("span", { className: "text-[11px] font-semibold uppercase tracking-widest" }, "No FX"))));
+    if (!options || options.length === 0) {
+        return (React.createElement("div", { ref: containerRef, className: "h-full w-full min-w-0 min-h-0 [container-type:size]" },
+            React.createElement(OptionSelectorEmpty, null)));
+    }
+    return (React.createElement("div", { ref: containerRef, className: "h-full w-full min-w-0 min-h-0 [container-type:size] flex items-stretch" },
+        React.createElement("div", { ref: trackRef, className: "relative flex w-full min-w-0 items-stretch gap-1 overflow-x-auto overflow-y-hidden rounded-lg border border-neutral-700/60 bg-neutral-950/80 p-1 shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-none" },
+            thumb.ready && (React.createElement("div", { className: "pointer-events-none absolute z-0 rounded-md bg-rose-500/20 border border-rose-400/40 shadow-[0_0_16px_-2px] shadow-rose-500/60 transition-all duration-300 ease-out motion-reduce:transition-none", style: {
+                    transform: "translate3d(" + thumb.x + "px," + thumb.y + "px,0)",
+                    width: thumb.w + "px",
+                    height: thumb.h + "px",
+                } },
+                React.createElement("div", { className: "absolute inset-0 rounded-md bg-gradient-to-b from-rose-300/15 to-transparent" }),
+                React.createElement("div", { className: "absolute inset-x-1.5 top-0 h-[2px] rounded-full bg-rose-300/70 animate-pulse motion-reduce:animate-none" }))),
+            options.map((opt, i) => {
+                const isSelected = opt.id === value;
+                const isHover = hoverId === opt.id;
+                const isPress = pressId === opt.id;
+                const isNeighbor = selectedIndex >= 0 && (i === selectedIndex - 1 || i === selectedIndex + 1);
+                return (React.createElement("button", { key: "opt-" + opt.id, ref: (el) => {
+                        itemRefs.current[opt.id] = el;
+                    }, type: "button", onClick: () => onChange(opt.id), onPointerEnter: () => setHoverId(opt.id), onPointerLeave: () => {
+                        setHoverId((h) => (h === opt.id ? null : h));
+                        setPressId((p) => (p === opt.id ? null : p));
+                    }, onPointerDown: () => setPressId(opt.id), onPointerUp: () => setPressId((p) => (p === opt.id ? null : p)), onPointerCancel: () => setPressId((p) => (p === opt.id ? null : p)), className: "group relative z-10 flex min-w-0 flex-1 select-none items-center justify-center rounded-md px-2.5 py-1.5 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 focus-visible:ring-offset-0 motion-reduce:transition-none " +
+                        (isPress ? "scale-[0.96] " : isHover && !isSelected ? "scale-[1.03] " : "scale-100 ") +
+                        (isSelected
+                            ? ""
+                            : isHover
+                                ? "bg-rose-500/10 "
+                                : "") },
+                    React.createElement("span", { className: "mr-1.5 hidden h-3.5 w-[3px] shrink-0 rounded-full transition-all duration-200 ease-out [@container(min-width:220px)]:block motion-reduce:transition-none " +
+                            (isSelected
+                                ? "bg-rose-300 shadow-[0_0_8px_0] shadow-rose-400/70"
+                                : isHover
+                                    ? "bg-rose-400/50"
+                                    : isNeighbor
+                                        ? "bg-neutral-600"
+                                        : "bg-neutral-700/70") }),
+                    React.createElement("span", { className: "min-w-0 truncate text-[11px] font-semibold uppercase tracking-widest transition-colors duration-200 ease-out motion-reduce:transition-none " +
+                            (isSelected
+                                ? "text-rose-200"
+                                : isHover
+                                    ? "text-rose-300/90"
+                                    : "text-neutral-400 group-hover:text-neutral-300") }, opt.label),
+                    React.createElement("span", { className: "ml-1.5 hidden h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-300 ease-out [@container(min-width:160px)]:block motion-reduce:transition-none " +
+                            (isSelected
+                                ? "scale-100 bg-rose-400 shadow-[0_0_10px_-1px] shadow-rose-500/80 opacity-100"
+                                : "scale-0 opacity-0") })));
+            }))));
+}
+
+function Pad(props) {
+    const { onPress, active } = props;
+    const [pressed, setPressed] = useState(false);
+    const [ripples, setRipples] = useState([]);
+    const rippleId = useRef(0);
+    const padRef = useRef(null);
+    const spawnRipple = useCallback((clientX, clientY) => {
+        const el = padRef.current;
+        if (!el)
+            return;
+        const rect = el.getBoundingClientRect();
+        const x = ((clientX - rect.left) / rect.width) * 100;
+        const y = ((clientY - rect.top) / rect.height) * 100;
+        const id = rippleId.current++;
+        setRipples((r) => [...r, { id, x, y }]);
+        window.setTimeout(() => {
+            setRipples((r) => r.filter((rp) => rp.id !== id));
+        }, 620);
+    }, []);
+    const handlePointerDown = useCallback((e) => {
+        e.preventDefault();
+        try {
+            e.currentTarget.setPointerCapture(e.pointerId);
+        }
+        catch { }
+        setPressed(true);
+        spawnRipple(e.clientX, e.clientY);
+        onPress();
+    }, [onPress, spawnRipple]);
+    const handlePointerUp = useCallback((e) => {
+        try {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+        catch { }
+        setPressed(false);
+    }, []);
+    const handlePointerCancel = useCallback(() => {
+        setPressed(false);
+    }, []);
+    // Accent-driven surface classes
+    const surfaceBase = "relative flex h-full w-full min-w-0 min-h-0 select-none items-center justify-center overflow-hidden rounded-md border touch-none transition-all duration-200 ease-out outline-none";
+    const stateClasses = active
+        ? "border-amber-400/60 bg-gradient-to-b from-amber-500 to-amber-600 text-neutral-950 shadow-[0_0_16px_-2px_rgba(245,158,11,0.6),inset_0_1px_0_rgba(255,255,255,0.25)]"
+        : "border-amber-400/20 bg-gradient-to-b from-neutral-700 to-neutral-900 text-neutral-500 shadow-md shadow-black/40 hover:border-amber-400/50 hover:from-neutral-600 hover:to-neutral-800 hover:text-amber-300/70";
+    const pressClasses = pressed
+        ? "scale-[0.94] shadow-[inset_0_2px_8px_rgba(0,0,0,0.6)]"
+        : "";
+    return (React.createElement("button", { ref: padRef, type: "button", onPointerDown: handlePointerDown, onPointerUp: handlePointerUp, onPointerCancel: handlePointerCancel, onContextMenu: (e) => e.preventDefault(), className: surfaceBase +
+            " [container-type:size] " +
+            stateClasses +
+            " " +
+            pressClasses },
+        React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute left-[6%] top-[6%] h-[14%] w-[14%] rounded-tl-[3px] border-l border-t transition-colors duration-200 " +
+                (active ? "border-neutral-950/40" : "border-amber-400/15") }),
+        React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute right-[6%] top-[6%] h-[14%] w-[14%] rounded-tr-[3px] border-r border-t transition-colors duration-200 " +
+                (active ? "border-neutral-950/40" : "border-amber-400/15") }),
+        React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute bottom-[6%] left-[6%] h-[14%] w-[14%] rounded-bl-[3px] border-b border-l transition-colors duration-200 " +
+                (active ? "border-neutral-950/40" : "border-amber-400/15") }),
+        React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute bottom-[6%] right-[6%] h-[14%] w-[14%] rounded-br-[3px] border-b border-r transition-colors duration-200 " +
+                (active ? "border-neutral-950/40" : "border-amber-400/15") }),
+        active && (React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-0 opacity-60 motion-reduce:hidden", style: {
+                background: "linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 48%, transparent 66%)",
+                backgroundSize: "260% 100%",
+                animation: "padSheen 2.6s linear infinite",
+            } })),
+        active && (React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-[3%] rounded-[4px] border border-neutral-950/50 motion-reduce:animate-none animate-pulse" })),
+        React.createElement("span", { "aria-hidden": true, className: "pointer-events-none relative flex items-center justify-center" },
+            React.createElement("span", { className: "block rotate-45 rounded-[3px] transition-all duration-200 ease-out " +
+                    (active
+                        ? "h-[clamp(6px,20cqmin,44px)] w-[clamp(6px,20cqmin,44px)] bg-neutral-950/85 shadow-[0_0_10px_rgba(0,0,0,0.5)]"
+                        : "h-[clamp(5px,17cqmin,38px)] w-[clamp(5px,17cqmin,38px)] bg-amber-400/25 shadow-[inset_0_0_6px_rgba(0,0,0,0.5)]") +
+                    (pressed ? " scale-90" : "") }),
+            React.createElement("span", { className: "absolute rotate-45 rounded-[2px] transition-all duration-200 ease-out " +
+                    (active
+                        ? "h-[clamp(2px,7cqmin,16px)] w-[clamp(2px,7cqmin,16px)] bg-amber-400 shadow-[0_0_12px_2px_rgba(245,158,11,0.8)]"
+                        : "h-[clamp(2px,6cqmin,14px)] w-[clamp(2px,6cqmin,14px)] bg-amber-400/40") })),
+        ripples.map((r) => (React.createElement("span", { key: "ripple-" + r.id, "aria-hidden": true, className: "pointer-events-none absolute rounded-full motion-reduce:hidden", style: {
+                left: r.x + "%",
+                top: r.y + "%",
+                width: "12%",
+                height: "12%",
+                transform: "translate(-50%, -50%)",
+                background: active
+                    ? "radial-gradient(circle, rgba(10,10,10,0.55) 0%, transparent 70%)"
+                    : "radial-gradient(circle, rgba(245,158,11,0.5) 0%, transparent 70%)",
+                animation: "padRipple 0.6s ease-out forwards",
+            } }))),
+        React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-x-[8%] top-0 h-[2px] rounded-full transition-opacity duration-200 " +
+                (active ? "bg-white/40 opacity-80" : "bg-white/10 opacity-60") }),
+        React.createElement("style", null, `
+        @keyframes padRipple {
+          0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0.85; }
+          100% { transform: translate(-50%, -50%) scale(9); opacity: 0; }
+        }
+        @keyframes padSheen {
+          0% { background-position: 140% 0; }
+          100% { background-position: -60% 0; }
+        }
+      `)));
+}
+
+function Readout(props) {
+    const { value } = props;
+    const prevRef = useRef(value);
+    const [flashKey, setFlashKey] = useState(0);
+    const [prevValue, setPrevValue] = useState(value);
+    const [dir, setDir] = useState("same");
+    useEffect(() => {
+        if (prevRef.current !== value) {
+            const a = parseFloat(prevRef.current.replace(/[^0-9.\-]/g, ""));
+            const b = parseFloat(value.replace(/[^0-9.\-]/g, ""));
+            if (!isNaN(a) && !isNaN(b)) {
+                setDir(b > a ? "up" : b < a ? "down" : "same");
+            }
+            else {
+                setDir("same");
+            }
+            setPrevValue(prevRef.current);
+            prevRef.current = value;
+            setFlashKey((k) => k + 1);
+        }
+    }, [value]);
+    // Detect whether the value is "primarily numeric" (BPM, time, %, counters)
+    const ReadoutIsNumeric = (s) => {
+        const digits = (s.match(/[0-9]/g) || []).length;
+        return digits > 0 && digits >= Math.floor(s.replace(/\s/g, "").length / 2);
+    };
+    const numeric = ReadoutIsNumeric(value);
+    // Split into segments so each glyph can animate independently on change.
+    const chars = Array.from(value);
+    return (React.createElement("div", { className: "relative h-full w-full min-w-0 min-h-0 [container-type:size] flex items-center justify-center overflow-hidden select-none" },
+        React.createElement("div", { className: "absolute inset-0 rounded-[8%/14%] bg-neutral-950/70 shadow-[inset_0_2px_6px_rgba(0,0,0,0.85)] ring-1 ring-inset ring-white/[0.04]" }),
+        React.createElement("div", { key: "glow-" + flashKey, className: "pointer-events-none absolute inset-0 rounded-[8%/14%] opacity-0 motion-reduce:hidden", style: {
+                background: "radial-gradient(120% 120% at 50% 120%, rgba(245,158,11,0.22), rgba(245,158,11,0) 60%)",
+                animation: "readoutGlow 620ms ease-out",
+            } }),
+        React.createElement("div", { className: "pointer-events-none absolute inset-0 rounded-[8%/14%] opacity-[0.05]", style: {
+                backgroundImage: "repeating-linear-gradient(180deg, rgba(255,255,255,0.9) 0px, rgba(255,255,255,0) 2px, rgba(255,255,255,0) 4px)",
+            } }),
+        dir !== "same" && (React.createElement("div", { key: "tick-" + flashKey, className: "pointer-events-none absolute right-[3%] top-1/2 -translate-y-1/2 opacity-0 motion-reduce:hidden " +
+                (dir === "up" ? "text-emerald-400" : "text-rose-400"), style: {
+                fontSize: "clamp(6px,10cqmin,22px)",
+                lineHeight: 1,
+                animation: "readoutTick 640ms ease-out",
+            } }, dir === "up" ? "▲" : "▼")),
+        React.createElement("div", { className: "relative z-10 flex min-w-0 items-baseline justify-center px-[6%]" }, value.length === 0 ? (React.createElement("span", { className: "font-mono tabular-nums text-neutral-700 tracking-widest", style: { fontSize: "clamp(9px,26cqmin,44px)", lineHeight: 1 } }, "\u2013\u2013\u2013\u2013")) : (React.createElement("span", { className: "min-w-0 truncate " +
+                (numeric
+                    ? "font-mono font-bold tabular-nums tracking-tight text-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.35)]"
+                    : "font-semibold tracking-tight text-neutral-100"), style: {
+                fontSize: numeric
+                    ? "clamp(11px,34cqmin,120px)"
+                    : "clamp(9px,20cqmin,60px)",
+                lineHeight: 1.05,
+                maxWidth: "100%",
+                whiteSpace: "nowrap",
+            } }, numeric
+            ? chars.map((c, i) => (React.createElement("span", { key: "c-" + flashKey + "-" + i, className: "inline-block motion-reduce:!animate-none", style: {
+                    animation: "readoutRoll 460ms cubic-bezier(0.16,1,0.3,1) both",
+                    animationDelay: (i * 26) + "ms",
+                } }, c === " " ? "\u00A0" : c)))
+            : value))),
+        React.createElement("div", { className: "pointer-events-none absolute inset-x-[6%] top-[8%] h-px rounded-full bg-gradient-to-r from-transparent via-amber-200/15 to-transparent" }),
+        React.createElement("style", null, "@keyframes readoutGlow{0%{opacity:0}18%{opacity:1}100%{opacity:0}}" +
+            "@keyframes readoutTick{0%{opacity:0;transform:translateY(-50%) scale(0.6)}25%{opacity:1;transform:translateY(-50%) scale(1.1)}100%{opacity:0;transform:translateY(-50%) scale(0.9)}}" +
+            "@keyframes readoutRoll{0%{opacity:0;transform:translateY(0.5em) rotateX(-55deg);filter:blur(1px)}60%{opacity:1;filter:blur(0)}100%{opacity:1;transform:translateY(0) rotateX(0deg)}}")));
+}
+
+function SearchInput(props) {
+    const SearchInputInputRef = useRef(null);
+    const [SearchInputFocused, SearchInputSetFocused] = useState(false);
+    const [SearchInputHover, SearchInputSetHover] = useState(false);
+    const SearchInputHasValue = props.value.length > 0;
+    const SearchInputActive = SearchInputFocused || SearchInputHover;
+    const SearchInputBars = useMemo(() => [0, 1, 2, 3, 4, 5, 6], []);
+    return (React.createElement("div", { className: "h-full w-full min-w-0 min-h-0 [container-type:size] relative flex items-stretch" },
+        React.createElement("div", { onPointerEnter: () => SearchInputSetHover(true), onPointerLeave: () => SearchInputSetHover(false), onPointerDown: () => {
+                const el = SearchInputInputRef.current;
+                if (el) {
+                    try {
+                        const p = el.selectionStart;
+                    }
+                    catch (e) { }
+                }
+            }, className: "group relative flex h-full w-full min-w-0 items-center gap-[3cqmin] rounded-lg border bg-neutral-950/80 px-[3.5cqmin] transition-all duration-200 ease-out shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)] " +
+                (SearchInputFocused
+                    ? "border-amber-400/50 shadow-[inset_0_2px_6px_rgba(0,0,0,0.8),0_0_16px_-2px_rgba(245,158,11,0.55)]"
+                    : SearchInputHover
+                        ? "border-amber-400/25"
+                        : "border-neutral-700/60") },
+            React.createElement("div", { className: "pointer-events-none absolute inset-0 overflow-hidden rounded-lg" },
+                React.createElement("div", { className: "absolute inset-y-0 -left-1/3 w-1/3 bg-gradient-to-r from-transparent via-amber-500/10 to-transparent transition-opacity duration-300 " +
+                        (SearchInputFocused ? "opacity-100 motion-reduce:opacity-0" : "opacity-0"), style: {
+                        animation: SearchInputFocused ? "searchinput-sweep 2.4s linear infinite" : "none",
+                    } })),
+            React.createElement("div", { className: "relative flex shrink-0 items-center justify-center", style: { width: "min(22cqmin, 60%)", height: "min(50cqmin, 100%)" } },
+                React.createElement("svg", { viewBox: "0 0 24 24", fill: "none", preserveAspectRatio: "xMidYMid meet", className: "absolute h-[70%] w-[70%] transition-all duration-300 ease-out " +
+                        (SearchInputFocused
+                            ? "scale-75 opacity-0 rotate-45"
+                            : "scale-100 opacity-100 rotate-0") },
+                    React.createElement("circle", { cx: "10.5", cy: "10.5", r: "6.5", stroke: SearchInputActive ? "#fbbf24" : "#a3a3a3", strokeWidth: "2", className: "transition-[stroke] duration-200" }),
+                    React.createElement("line", { x1: "15.2", y1: "15.2", x2: "21", y2: "21", stroke: SearchInputActive ? "#fbbf24" : "#a3a3a3", strokeWidth: "2", strokeLinecap: "round", className: "transition-[stroke] duration-200" })),
+                React.createElement("div", { className: "absolute flex h-full w-full items-center justify-center gap-[6%] transition-all duration-300 ease-out " +
+                        (SearchInputFocused ? "scale-100 opacity-100" : "scale-50 opacity-0") }, SearchInputBars.map((b) => (React.createElement("span", { key: "searchinput-bar-" + b, className: "block w-[10%] rounded-full bg-amber-400 motion-reduce:!h-1/3 motion-reduce:!animate-none", style: {
+                        height: SearchInputHasValue ? "70%" : "30%",
+                        animation: SearchInputFocused
+                            ? "searchinput-eq 0.9s ease-in-out " + b * 0.09 + "s infinite alternate"
+                            : "none",
+                        opacity: 0.55 + (b % 3) * 0.15,
+                    } }))))),
+            React.createElement("input", { ref: SearchInputInputRef, type: "text", value: props.value, placeholder: props.placeholder, onChange: (e) => props.onChange(e.target.value), onFocus: () => SearchInputSetFocused(true), onBlur: () => SearchInputSetFocused(false), className: "peer relative z-10 h-full w-full min-w-0 bg-transparent font-medium tracking-tight text-neutral-100 outline-none placeholder:text-neutral-600 placeholder:font-normal caret-amber-400 text-[clamp(11px,26cqmin,40px)]", spellCheck: false, autoComplete: "off" }),
+            SearchInputHasValue && (React.createElement("button", { type: "button", onPointerDown: (e) => {
+                    e.preventDefault();
+                    props.onChange("");
+                }, className: "relative z-10 flex aspect-square shrink-0 items-center justify-center rounded-full border border-neutral-600/50 bg-neutral-800 text-neutral-400 transition-all duration-200 ease-out hover:border-rose-400/50 hover:bg-rose-500/20 hover:text-rose-300 hover:scale-110 active:scale-90", style: { height: "min(46cqmin, 78%)" }, "aria-label": "Clear search" },
+                React.createElement("svg", { viewBox: "0 0 24 24", fill: "none", className: "h-[55%] w-[55%]" },
+                    React.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round" }),
+                    React.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round" })))),
+            !SearchInputHasValue && !SearchInputFocused && (React.createElement("div", { className: "relative z-10 hidden shrink-0 items-center rounded-md border border-amber-400/20 bg-neutral-900/70 px-[2cqmin] font-semibold uppercase tracking-widest text-neutral-500 transition-opacity duration-200 @[10rem]:flex text-[clamp(8px,14cqmin,16px)]", style: { height: "min(52cqmin, 70%)" } },
+                React.createElement("span", { className: "leading-none" }, "\u2315"))),
+            React.createElement("div", { className: "pointer-events-none absolute inset-x-2 bottom-0 h-px overflow-hidden" },
+                React.createElement("div", { className: "h-full bg-gradient-to-r from-transparent via-amber-400 to-transparent transition-all duration-300 ease-out " +
+                        (SearchInputFocused ? "w-full opacity-100" : "w-0 opacity-0 mx-auto"), style: { marginInline: "auto" } }))),
+        React.createElement("style", null, "@keyframes searchinput-eq{0%{transform:scaleY(0.35)}100%{transform:scaleY(1)}}" +
+            "@keyframes searchinput-sweep{0%{transform:translateX(0)}100%{transform:translateX(400%)}}")));
+}
+
+function SortControl(props) {
+    const { field, active, direction, onSort } = props;
+    const [pressed, setPressed] = useState(false);
+    const [hovered, setHovered] = useState(false);
+    const [flash, setFlash] = useState(false);
+    const prevRef = useRef({ active, direction });
+    useEffect(() => {
+        const prev = prevRef.current;
+        if (active && (!prev.active || prev.direction !== direction)) {
+            setFlash(true);
+            const id = setTimeout(() => setFlash(false), 420);
+            prevRef.current = { active, direction };
+            return () => clearTimeout(id);
+        }
+        prevRef.current = { active, direction };
+    }, [active, direction]);
+    const isAsc = direction === 'asc';
+    // Bar heights that read as an ascending / descending staircase.
+    const barsAsc = [0.34, 0.58, 0.82, 1.0];
+    const barsDesc = [1.0, 0.82, 0.58, 0.34];
+    const bars = isAsc ? barsAsc : barsDesc;
+    return (React.createElement("button", { type: "button", onClick: () => onSort(field), onPointerDown: () => setPressed(true), onPointerUp: () => setPressed(false), onPointerLeave: () => {
+            setPressed(false);
+            setHovered(false);
+        }, onPointerEnter: () => setHovered(true), onPointerCancel: () => setPressed(false), className: "group relative flex h-full w-full min-w-0 min-h-0 select-none items-center justify-between overflow-hidden rounded-md px-2.5 py-1.5 text-left [container-type:size] transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 focus-visible:ring-offset-0 motion-reduce:transition-none " +
+            (active
+                ? "bg-amber-500/[0.12] text-amber-300 "
+                : "bg-transparent text-neutral-400 hover:bg-amber-500/[0.07] hover:text-amber-200 ") },
+        React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-0 rounded-md bg-gradient-to-r from-transparent via-amber-400/25 to-transparent transition-opacity duration-200 motion-reduce:hidden " +
+                (flash ? "opacity-100 animate-[sortSheen_0.42s_ease-out]" : "opacity-0"), style: { transform: "translateX(-120%)" } }),
+        React.createElement("span", { "aria-hidden": true, className: "pointer-events-none absolute bottom-0 left-0 h-[2px] rounded-full bg-amber-400 transition-all duration-300 ease-out " +
+                (active
+                    ? "w-full opacity-90 shadow-[0_0_10px_-1px] shadow-amber-500/70 "
+                    : hovered
+                        ? "w-full opacity-30 "
+                        : "w-0 opacity-0 ") }),
+        React.createElement("span", { className: "min-w-0 truncate pr-2 text-[clamp(9px,26cqh,15px)] font-semibold uppercase leading-none tracking-widest transition-all duration-200 " +
+                (active ? "tracking-[0.18em]" : "") }, field),
+        React.createElement("span", { className: "relative flex shrink-0 items-center gap-[clamp(2px,4cqmin,5px)] transition-transform duration-200 ease-out " +
+                (pressed ? "scale-90" : hovered && !active ? "scale-105" : "scale-100"), style: { height: "70%" } },
+            React.createElement("span", { className: "flex h-full items-end gap-[clamp(1px,2cqmin,3px)]" }, bars.map((h, i) => {
+                const lit = active || hovered;
+                return (React.createElement("span", { key: "bar-" + i, className: "w-[clamp(2px,3cqmin,4px)] rounded-[1px] transition-all duration-200 ease-out " +
+                        (active
+                            ? "bg-amber-400 shadow-[0_0_6px_-1px] shadow-amber-500/70 "
+                            : lit
+                                ? "bg-amber-300/70 "
+                                : "bg-neutral-600 "), style: {
+                        height: (lit ? h * 100 : Math.max(18, h * 42)) + "%",
+                        transitionDelay: (active ? i * 40 : 0) + "ms",
+                    } }));
+            })),
+            React.createElement("svg", { viewBox: "0 0 24 24", preserveAspectRatio: "xMidYMid meet", className: "h-[clamp(9px,55cqh,20px)] w-[clamp(9px,55cqh,20px)] transition-all duration-300 ease-out " +
+                    (active
+                        ? "text-amber-400 opacity-100 "
+                        : hovered
+                            ? "text-amber-300/70 opacity-80 "
+                            : "text-neutral-600 opacity-60 ") +
+                    (isAsc ? "rotate-0 " : "rotate-180 "), style: {
+                    filter: active ? "drop-shadow(0 0 5px rgba(245,158,11,0.55))" : "none",
+                } },
+                React.createElement("path", { d: "M12 6 L19 15 L14 15 L14 20 L10 20 L10 15 L5 15 Z", fill: "currentColor" }))),
+        React.createElement("style", null, "@keyframes sortSheen{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}")));
+}
+
+function Toggle(props) {
+    const { on, onChange } = props;
+    const [pressed, setPressed] = useState(false);
+    const [ripple, setRipple] = useState(0);
+    const rippleRef = useRef(0);
+    const fire = () => {
+        rippleRef.current += 1;
+        setRipple(rippleRef.current);
+        onChange(!on);
+    };
+    return (React.createElement("div", { className: "h-full w-full min-w-0 min-h-0 [container-type:size] flex items-center justify-center select-none" },
+        React.createElement("button", { type: "button", onClick: fire, onPointerDown: (e) => {
+                e.currentTarget.setPointerCapture(e.pointerId);
+                setPressed(true);
+            }, onPointerUp: () => setPressed(false), onPointerCancel: () => setPressed(false), onPointerLeave: () => setPressed(false), "aria-pressed": on, className: "group relative h-full w-full min-w-0 min-h-0 rounded-full border touch-none overflow-hidden outline-none transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-amber-400/60 " +
+                (on
+                    ? "border-amber-400/40 bg-neutral-950/80 shadow-[inset_0_2px_6px_rgba(0,0,0,0.8),0_0_16px_-2px_rgba(245,158,11,0.6)] "
+                    : "border-neutral-700/70 bg-neutral-950/80 shadow-[inset_0_2px_6px_rgba(0,0,0,0.85)] ") +
+                (pressed ? "scale-[0.97] " : "") },
+            React.createElement("span", { className: "pointer-events-none absolute inset-0 rounded-full transition-opacity duration-300 ease-out " +
+                    (on ? "opacity-100" : "opacity-0"), style: {
+                    background: "linear-gradient(90deg, rgba(245,158,11,0.28) 0%, rgba(245,158,11,0.10) 45%, rgba(245,158,11,0) 70%)",
+                } }),
+            React.createElement("span", { className: "pointer-events-none absolute inset-0 flex items-center justify-between px-[6%]" },
+                React.createElement("span", { className: "flex flex-col items-center gap-[8%]" },
+                    React.createElement("span", { className: "block h-[26%] w-[2px] rounded-full transition-all duration-200 " +
+                            (on ? "bg-amber-400/80 shadow-[0_0_6px_rgba(245,158,11,0.8)]" : "bg-neutral-700") })),
+                React.createElement("span", { className: "block rounded-full transition-all duration-200 " +
+                        (on ? "h-[22%] w-[22%] bg-amber-400/30" : "h-[18%] w-[18%] border border-neutral-700 bg-transparent") })),
+            React.createElement("span", { className: "pointer-events-none absolute top-1/2 aspect-square h-[76%] -translate-y-1/2 rounded-full transition-all duration-200 ease-out " +
+                    (on
+                        ? "left-[calc(100%-4%)] -translate-x-full bg-gradient-to-b from-amber-300 to-amber-500 shadow-[0_2px_8px_rgba(0,0,0,0.6),0_0_14px_-1px_rgba(245,158,11,0.7)]"
+                        : "left-[4%] bg-gradient-to-b from-neutral-600 to-neutral-800 shadow-[0_2px_6px_rgba(0,0,0,0.7)]") },
+                React.createElement("span", { className: "absolute inset-[22%] rounded-full transition-all duration-200 " +
+                        (on
+                            ? "bg-neutral-950/20 shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]"
+                            : "border border-neutral-500/40 bg-neutral-900/40") }),
+                React.createElement("span", { className: "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-200 " +
+                        (on ? "h-[26%] w-[26%] bg-neutral-950 shadow-[0_0_4px_rgba(0,0,0,0.6)]" : "h-[20%] w-[20%] bg-neutral-500") })),
+            ripple > 0 && (React.createElement("span", { key: "ripple-" + ripple, className: "pointer-events-none absolute top-1/2 aspect-square h-[76%] -translate-y-1/2 rounded-full", style: {
+                    left: on ? "calc(96% )" : "4%",
+                    transform: on ? "translate(-100%,-50%)" : "translate(0,-50%)",
+                    animation: "toggle-ripple 500ms ease-out forwards",
+                    background: on
+                        ? "radial-gradient(circle, rgba(245,158,11,0.5) 0%, rgba(245,158,11,0) 70%)"
+                        : "radial-gradient(circle, rgba(120,113,108,0.5) 0%, rgba(120,113,108,0) 70%)",
+                } })),
+            React.createElement("style", null, "@keyframes toggle-ripple{0%{opacity:0.9;scale:0.6}100%{opacity:0;scale:2.2}}"))));
+}
+
+function TrackList(props) {
+    const { rows, columns, value, onChange, onActivate } = props;
+    const [sortKey, setSortKey] = useState(null);
+    const [sortDir, setSortDir] = useState(1);
+    const [hoverId, setHoverId] = useState(null);
+    const [pressId, setPressId] = useState(null);
+    const [flashId, setFlashId] = useState(null);
+    const TrackListParseNum = (s) => {
+        if (s == null)
+            return null;
+        const m = s.match(/-?\d+(\.\d+)?/);
+        if (!m)
+            return null;
+        const n = parseFloat(m[0]);
+        return isNaN(n) ? null : n;
+    };
+    const TrackListCompare = (a, b) => {
+        const na = TrackListParseNum(a);
+        const nb = TrackListParseNum(b);
+        if (na !== null && nb !== null) {
+            if (na === nb)
+                return (a || "").localeCompare(b || "");
+            return na - nb;
+        }
+        return (a || "").localeCompare(b || "", undefined, { numeric: true, sensitivity: "base" });
+    };
+    const sortedRows = useMemo(() => {
+        if (!sortKey)
+            return rows;
+        const copy = rows.slice();
+        copy.sort((r1, r2) => {
+            const c1 = (r1.cells && r1.cells[sortKey]) || "";
+            const c2 = (r2.cells && r2.cells[sortKey]) || "";
+            return TrackListCompare(c1, c2) * sortDir;
+        });
+        return copy;
+    }, [rows, sortKey, sortDir]);
+    const TrackListToggleSort = (key) => {
+        if (sortKey === key) {
+            setSortDir((d) => (d === 1 ? -1 : 1));
+        }
+        else {
+            setSortKey(key);
+            setSortDir(1);
+        }
+    };
+    const TrackListSelect = (id) => {
+        if (id !== value)
+            onChange(id);
+    };
+    const TrackListActivate = (id) => {
+        if (!onActivate)
+            return;
+        onActivate(id);
+        setFlashId(id);
+        window.setTimeout(() => {
+            setFlashId((cur) => (cur === id ? null : cur));
+        }, 420);
+    };
+    const gridTemplate = useMemo(() => {
+        if (columns.length === 0)
+            return "1fr";
+        // First column gets more room; subsequent columns share.
+        const parts = columns.map((_, i) => (i === 0 ? "minmax(0,2.4fr)" : "minmax(0,1fr)"));
+        return parts.join(" ");
+    }, [columns]);
+    const TrackListSortGlyph = (active, dir) => {
+        return (React.createElement("span", { className: "ml-1 inline-flex h-[1em] w-[1em] items-center justify-center transition-all duration-200 ease-out " +
+                (active ? "text-amber-400 opacity-100" : "text-neutral-600 opacity-0 group-hover/head:opacity-70"), "aria-hidden": "true" },
+            React.createElement("svg", { viewBox: "0 0 24 24", className: "h-full w-full", fill: "none" },
+                React.createElement("path", { d: "M12 5 L12 19", stroke: "currentColor", strokeWidth: "2.4", strokeLinecap: "round", className: "opacity-40" }),
+                React.createElement("path", { d: dir === 1 ? "M7 10 L12 5 L17 10" : "M7 14 L12 19 L17 14", stroke: "currentColor", strokeWidth: "2.6", strokeLinecap: "round", strokeLinejoin: "round", className: "transition-all duration-200 ease-out" }))));
+    };
+    const hasRows = rows.length > 0;
+    const hasCols = columns.length > 0;
+    return (React.createElement("div", { className: "flex h-full w-full min-w-0 min-h-0 flex-col [container-type:size] text-neutral-200" },
+        hasCols && (React.createElement("div", { className: "grid shrink-0 select-none items-stretch border-b border-white/[0.06] bg-neutral-900/70 pr-[6px]", style: { gridTemplateColumns: gridTemplate } }, columns.map((col, ci) => {
+            const active = sortKey === col;
+            return (React.createElement("button", { key: "th-" + ci, type: "button", onClick: () => TrackListToggleSort(col), className: "group/head flex min-w-0 items-center overflow-hidden px-[max(6px,1.4cqmin)] py-[max(5px,1.4cqmin)] text-left transition-colors duration-150 ease-out " +
+                    "text-[clamp(8px,2.5cqmin,12px)] font-semibold uppercase tracking-widest " +
+                    (active ? "text-amber-400" : "text-neutral-400 hover:text-amber-300/90") +
+                    (ci === 0 ? "" : " justify-start") +
+                    " focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60" },
+                React.createElement("span", { className: "pointer-events-none absolute inset-x-0 -bottom-px h-px transition-all duration-200 ease-out " +
+                        (active ? "bg-amber-400/60" : "bg-transparent") }),
+                React.createElement("span", { className: "truncate" }, col),
+                TrackListSortGlyph(active, sortDir)));
+        }))),
+        React.createElement("div", { className: "relative min-h-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" },
+            !hasRows && (React.createElement("div", { className: "flex h-full w-full flex-col items-center justify-center gap-[1.5cqmin] px-4 text-center" },
+                React.createElement("div", { className: "flex h-[16cqmin] max-h-14 min-h-8 w-[16cqmin] max-w-14 min-w-8 items-center justify-center rounded-full border border-neutral-700/70 bg-neutral-950/80 shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)]" },
+                    React.createElement("svg", { viewBox: "0 0 24 24", className: "h-[55%] w-[55%] text-neutral-600", fill: "none" },
+                        React.createElement("circle", { cx: "9", cy: "17", r: "3", stroke: "currentColor", strokeWidth: "1.6" }),
+                        React.createElement("path", { d: "M12 17 V6 L20 4 V15", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round" }),
+                        React.createElement("circle", { cx: "17", cy: "15", r: "3", stroke: "currentColor", strokeWidth: "1.6" }))),
+                React.createElement("span", { className: "text-[clamp(9px,3cqmin,13px)] font-semibold uppercase tracking-widest text-neutral-600" }, "No Tracks"))),
+            hasRows &&
+                sortedRows.map((row, ri) => {
+                    const selected = row.id === value;
+                    const hovered = row.id === hoverId;
+                    const pressed = row.id === pressId;
+                    const flashing = row.id === flashId;
+                    return (React.createElement("div", { key: row.id, role: "button", tabIndex: 0, onPointerDown: () => setPressId(row.id), onPointerUp: () => setPressId((p) => (p === row.id ? null : p)), onPointerCancel: () => setPressId((p) => (p === row.id ? null : p)), onPointerEnter: () => setHoverId(row.id), onPointerLeave: () => {
+                            setHoverId((h) => (h === row.id ? null : h));
+                            setPressId((p) => (p === row.id ? null : p));
+                        }, onClick: () => TrackListSelect(row.id), onDoubleClick: () => TrackListActivate(row.id), onKeyDown: (e) => {
+                            if (e.key === "Enter") {
+                                if (onActivate)
+                                    TrackListActivate(row.id);
+                                else
+                                    TrackListSelect(row.id);
+                            }
+                            else if (e.key === " ") {
+                                e.preventDefault();
+                                TrackListSelect(row.id);
+                            }
+                        }, style: { gridTemplateColumns: gridTemplate }, className: "group/row relative grid cursor-pointer items-center border-b border-white/[0.04] pr-[6px] transition-colors duration-150 ease-out " +
+                            "motion-reduce:transition-none " +
+                            (selected
+                                ? "bg-amber-500/15 "
+                                : hovered
+                                    ? "bg-amber-500/[0.08] "
+                                    : ri % 2 === 0
+                                        ? "bg-transparent "
+                                        : "bg-white/[0.015] ") +
+                            (pressed ? "brightness-95 " : "") +
+                            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-amber-400/60" },
+                        React.createElement("span", { className: "pointer-events-none absolute inset-y-0 left-0 w-[3px] origin-left transition-all duration-200 ease-out motion-reduce:transition-none " +
+                                (selected
+                                    ? "scale-y-100 bg-amber-400 shadow-[0_0_10px_0] shadow-amber-500/70"
+                                    : hovered
+                                        ? "scale-y-100 bg-amber-400/40"
+                                        : "scale-y-0 bg-amber-400/0") }),
+                        flashing && (React.createElement("span", { className: "pointer-events-none absolute inset-0 overflow-hidden" },
+                            React.createElement("span", { className: "absolute inset-0 animate-[tracklist-flash_420ms_ease-out] bg-gradient-to-r from-amber-400/0 via-amber-400/30 to-amber-400/0" }))),
+                        columns.map((col, ci) => {
+                            const raw = (row.cells && row.cells[col]) != null ? row.cells[col] : "";
+                            const isFirst = ci === 0;
+                            const num = TrackListParseNum(raw);
+                            const isNumericCol = num !== null && raw.trim() !== "" && /^[^A-Za-z]*-?\d/.test(raw.trim());
+                            return (React.createElement("div", { key: row.id + "-c-" + ci, className: "flex min-w-0 items-center overflow-hidden px-[max(6px,1.4cqmin)] py-[max(6px,1.6cqmin)] " +
+                                    (isFirst ? "gap-[1.6cqmin]" : "") },
+                                isFirst && (React.createElement("span", { className: "relative flex h-[max(14px,4cqmin)] w-[max(14px,4cqmin)] shrink-0 items-center justify-center" }, selected ? (
+                                // Playing / equalizer bars
+                                React.createElement("span", { className: "flex h-[62%] w-[62%] items-end justify-between" }, [0, 1, 2].map((b) => (React.createElement("span", { key: "eq-" + b, className: "w-[26%] rounded-sm bg-amber-400 shadow-[0_0_6px_0] shadow-amber-500/70 motion-reduce:h-[70%] motion-reduce:animate-none", style: {
+                                        animation: "tracklist-eq 900ms ease-in-out infinite",
+                                        animationDelay: b * 160 + "ms",
+                                        height: "70%",
+                                    } }))))) : (
+                                // Index / play glyph
+                                React.createElement(React.Fragment, null,
+                                    React.createElement("span", { className: "font-mono text-[clamp(8px,2.6cqmin,12px)] tabular-nums transition-opacity duration-150 " +
+                                            (hovered ? "opacity-0" : "text-neutral-600 opacity-100") }, String(ri + 1).padStart(2, "0")),
+                                    React.createElement("span", { className: "absolute inset-0 flex items-center justify-center text-amber-400 transition-opacity duration-150 " +
+                                            (hovered ? "opacity-100" : "opacity-0") },
+                                        React.createElement("svg", { viewBox: "0 0 24 24", className: "h-[80%] w-[80%]", fill: "currentColor" },
+                                            React.createElement("path", { d: "M8 5.5 L18 12 L8 18.5 Z" }))))))),
+                                React.createElement("span", { className: "min-w-0 truncate " +
+                                        (isNumericCol ? "font-mono tabular-nums " : "") +
+                                        (isFirst
+                                            ? "text-[clamp(9px,3cqmin,14px)] font-medium leading-snug " +
+                                                (selected ? "text-amber-200" : "text-neutral-100")
+                                            : "text-[clamp(8px,2.7cqmin,12px)] leading-tight " +
+                                                (selected ? "text-amber-300/90" : "text-neutral-400 group-hover/row:text-neutral-300")) }, raw !== "" ? raw : React.createElement("span", { className: "text-neutral-700" }, "\u2014"))));
+                        })));
+                })),
+        React.createElement("style", null, "@keyframes tracklist-eq{0%,100%{height:28%}50%{height:92%}}" +
+            "@keyframes tracklist-flash{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}" +
+            "@media (prefers-reduced-motion: reduce){.animate-\\[tracklist-flash_420ms_ease-out\\]{animation:none!important}}")));
+}
+
+function TreeSelector(props) {
+    const TreeSelectorChevron = (p) => {
+        if (!p.hasChildren) {
+            return (React.createElement("span", { className: "inline-flex items-center justify-center shrink-0 w-[1.15em] h-[1.15em]" },
+                React.createElement("span", { className: "w-[0.3em] h-[0.3em] rounded-full bg-neutral-600" })));
+        }
+        return (React.createElement("span", { className: "inline-flex items-center justify-center shrink-0 w-[1.15em] h-[1.15em]" },
+            React.createElement("svg", { viewBox: "0 0 24 24", className: "w-[0.9em] h-[0.9em] transition-transform duration-200 ease-out motion-reduce:transition-none " +
+                    (p.open ? "rotate-90 text-amber-400" : "rotate-0 text-neutral-500"), fill: "none", stroke: "currentColor", strokeWidth: 2.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
+                React.createElement("path", { d: "M9 6l6 6-6 6" }))));
+    };
+    const TreeSelectorCrateIcon = (p) => {
+        const tone = p.selected ? "text-neutral-950" : p.open && p.hasChildren ? "text-amber-400" : "text-neutral-500";
+        if (p.hasChildren) {
+            return (React.createElement("svg", { viewBox: "0 0 24 24", className: "w-[1.05em] h-[1.05em] shrink-0 transition-colors duration-150 motion-reduce:transition-none " + tone, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, p.open ? (React.createElement("path", { d: "M3 8h18l-2 10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1L3 8zM3 8l2-3h4l2 2h8" })) : (React.createElement("path", { d: "M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z" }))));
+        }
+        return (React.createElement("svg", { viewBox: "0 0 24 24", className: "w-[1.05em] h-[1.05em] shrink-0 transition-colors duration-150 motion-reduce:transition-none " + tone, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
+            React.createElement("path", { d: "M9 18V5l10-2v13" }),
+            React.createElement("circle", { cx: "6", cy: "18", r: "2.6" }),
+            React.createElement("circle", { cx: "16", cy: "16", r: "2.6" })));
+    };
+    const collectIds = (list, acc) => {
+        for (const n of list) {
+            acc.push(n.id);
+            if (n.children && n.children.length)
+                collectIds(n.children, acc);
+        }
+        return acc;
+    };
+    const findPath = (list, target, trail) => {
+        for (const n of list) {
+            const nextTrail = trail.concat(n.id);
+            if (n.id === target)
+                return nextTrail;
+            if (n.children && n.children.length) {
+                const found = findPath(n.children, target, nextTrail);
+                if (found)
+                    return found;
+            }
+        }
+        return null;
+    };
+    const allIds = useMemo(() => collectIds(props.nodes || [], []), [props.nodes]);
+    const initialOpen = useMemo(() => {
+        const set = {};
+        const path = findPath(props.nodes || [], props.value, []);
+        if (path)
+            for (const id of path)
+                set[id] = true;
+        return set;
+    }, []);
+    const [open, setOpen] = useState(initialOpen);
+    const [hovered, setHovered] = useState(null);
+    useEffect(() => {
+        setOpen((prev) => {
+            const path = findPath(props.nodes || [], props.value, []);
+            if (!path)
+                return prev;
+            let changed = false;
+            const next = { ...prev };
+            for (const id of path) {
+                if (!next[id]) {
+                    next[id] = true;
+                    changed = true;
+                }
+            }
+            return changed ? next : prev;
+        });
+    }, [props.value, props.nodes]);
+    const toggle = (id) => {
+        setOpen((prev) => ({ ...prev, [id]: !prev[id] }));
+    };
+    const hasNodes = (props.nodes || []).length > 0;
+    const renderNodes = (list, depth) => {
+        return list.map((node, idx) => {
+            const kids = (node.children || []);
+            const hasChildren = kids.length > 0;
+            const isOpen = !!open[node.id];
+            const selected = node.id === props.value;
+            const isHovered = hovered === node.id;
+            return (React.createElement("li", { key: node.id, className: "relative" },
+                depth > 0 && (React.createElement("span", { className: "absolute top-0 bottom-0 w-px bg-white/[0.05]", style: { left: (depth * 0.85 - 0.55) + "em" }, "aria-hidden": "true" })),
+                React.createElement("div", { role: "treeitem", "aria-selected": selected, "aria-expanded": hasChildren ? isOpen : undefined, onMouseEnter: () => setHovered(node.id), onMouseLeave: () => setHovered((h) => (h === node.id ? null : h)), onClick: () => {
+                        props.onChange(node.id);
+                        if (hasChildren)
+                            toggle(node.id);
+                    }, className: "group relative flex items-center gap-[0.5em] rounded-md cursor-pointer select-none " +
+                        "px-[0.5em] py-[0.42em] transition-all duration-150 ease-out motion-reduce:transition-none " +
+                        (selected
+                            ? "bg-amber-500 text-neutral-950 shadow-[0_0_14px_-3px] shadow-amber-500/60"
+                            : isHovered
+                                ? "bg-amber-500/10 text-neutral-100"
+                                : "text-neutral-300"), style: { paddingLeft: (depth * 0.85 + 0.5) + "em" } },
+                    !selected && isHovered && (React.createElement("span", { className: "absolute left-0 top-[0.28em] bottom-[0.28em] w-[2px] rounded-full bg-amber-400/60", "aria-hidden": "true" })),
+                    React.createElement("span", { onClick: (e) => {
+                            if (hasChildren) {
+                                e.stopPropagation();
+                                toggle(node.id);
+                            }
+                        }, className: hasChildren ? "cursor-pointer" : "" },
+                        React.createElement(TreeSelectorChevron, { open: isOpen, hasChildren: hasChildren })),
+                    React.createElement(TreeSelectorCrateIcon, { open: isOpen, hasChildren: hasChildren, selected: selected }),
+                    React.createElement("span", { className: "flex-1 min-w-0 truncate text-[length:1em] leading-snug tracking-tight " +
+                            (selected ? "font-semibold" : "font-medium") }, node.label),
+                    hasChildren && (React.createElement("span", { className: "shrink-0 tabular-nums font-mono text-[0.78em] leading-none px-[0.5em] py-[0.28em] rounded-md " +
+                            "transition-colors duration-150 motion-reduce:transition-none " +
+                            (selected
+                                ? "bg-neutral-950/25 text-neutral-950"
+                                : isHovered
+                                    ? "bg-amber-500/15 text-amber-300"
+                                    : "bg-neutral-800/70 text-neutral-500") }, kids.length))),
+                hasChildren && (React.createElement("div", { className: "grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none " +
+                        (isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]") },
+                    React.createElement("div", { className: "overflow-hidden min-h-0" },
+                        React.createElement("ul", { className: "flex flex-col gap-[0.15em] pt-[0.15em]" }, renderNodes(kids, depth + 1)))))));
+        });
+    };
+    return (React.createElement("div", { className: "h-full w-full min-w-0 min-h-0 [container-type:size] text-[clamp(11px,4.2cqmin,17px)] flex flex-col" }, hasNodes ? (React.createElement("div", { role: "tree", className: "flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" },
+        React.createElement("ul", { className: "flex flex-col gap-[0.15em] pr-[0.2em]" }, renderNodes(props.nodes, 0)))) : (React.createElement("div", { className: "flex-1 min-h-0 flex flex-col items-center justify-center gap-[0.6em] text-center px-[1em]" },
+        React.createElement("svg", { viewBox: "0 0 24 24", className: "w-[2.4em] h-[2.4em] text-neutral-700", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" },
+            React.createElement("path", { d: "M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z" })),
+        React.createElement("span", { className: "text-[0.85em] font-semibold uppercase tracking-widest text-neutral-600" }, "No Crates")))));
+}
+
+function WaveformDisplay(props) {
+    const { data, playhead, beatGrid, onScrub } = props;
+    const WaveformDisplayClamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
+    const containerRef = useRef(null);
+    const [size, setSize] = useState({ w: 0, h: 0 });
+    const [hoverPos, setHoverPos] = useState(null);
+    const [dragging, setDragging] = useState(false);
+    const [ripple, setRipple] = useState(null);
+    const interactive = typeof onScrub === "function";
+    const ph = WaveformDisplayClamp(playhead, 0, 1);
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el)
+            return;
+        const update = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+        update();
+        let ro = null;
+        if (typeof ResizeObserver !== "undefined") {
+            ro = new ResizeObserver(update);
+            ro.observe(el);
+        }
+        return () => {
+            if (ro)
+                ro.disconnect();
+        };
+    }, []);
+    // ---- Waveform geometry (SVG viewBox coordinate space) ----
+    const VBW = 1000;
+    const VBH = 200;
+    const MID = VBH / 2;
+    const hasData = Array.isArray(data) && data.length > 0;
+    // Peak envelope reduction -> fixed number of bars for crisp scaling.
+    const bars = useMemo(() => {
+        if (!hasData)
+            return [];
+        const target = 260;
+        const n = data.length;
+        if (n <= target) {
+            // upscale by simple mapping
+            const out = [];
+            for (let i = 0; i < target; i++) {
+                const src = (i / target) * n;
+                const idx = Math.min(n - 1, Math.floor(src));
+                out.push(Math.abs(data[idx]) || 0);
+            }
+            return out;
+        }
+        const out = [];
+        const bucket = n / target;
+        for (let i = 0; i < target; i++) {
+            const start = Math.floor(i * bucket);
+            const end = Math.min(n, Math.floor((i + 1) * bucket));
+            let peak = 0;
+            for (let j = start; j < end; j++) {
+                const a = Math.abs(data[j]);
+                if (a > peak)
+                    peak = a;
+            }
+            out.push(peak);
+        }
+        return out;
+    }, [data, hasData]);
+    const maxAmp = useMemo(() => {
+        let m = 0;
+        for (let i = 0; i < bars.length; i++)
+            if (bars[i] > m)
+                m = bars[i];
+        return m > 0 ? m : 1;
+    }, [bars]);
+    const barCount = bars.length;
+    const gap = 0.18;
+    const slot = barCount > 0 ? VBW / barCount : VBW;
+    const barW = slot * (1 - gap);
+    const playX = ph * VBW;
+    // ---- Pointer / scrub handling ----
+    const posFromClientX = (clientX) => {
+        const el = containerRef.current;
+        if (!el)
+            return 0;
+        const rect = el.getBoundingClientRect();
+        const x = clientX - rect.left;
+        return WaveformDisplayClamp(rect.width > 0 ? x / rect.width : 0, 0, 1);
+    };
+    const handlePointerDown = (e) => {
+        if (!interactive)
+            return;
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        const pos = posFromClientX(e.clientX);
+        setDragging(true);
+        setHoverPos(pos);
+        setRipple({ pos, id: Date.now() });
+        onScrub(pos);
+    };
+    const handlePointerMove = (e) => {
+        if (!interactive)
+            return;
+        const pos = posFromClientX(e.clientX);
+        setHoverPos(pos);
+        if (dragging)
+            onScrub(pos);
+    };
+    const handlePointerUp = (e) => {
+        if (!interactive)
+            return;
+        e.currentTarget.releasePointerCapture?.(e.pointerId);
+        setDragging(false);
+    };
+    const handlePointerLeave = () => {
+        if (!dragging)
+            setHoverPos(null);
+    };
+    // ---- Sub renderers ----
+    const uid = useRef("wf" + Math.random().toString(36).slice(2, 8));
+    const idPlayed = uid.current + "-played";
+    const idUnplayed = uid.current + "-unplayed";
+    const idGlow = uid.current + "-glow";
+    const idClipPlayed = uid.current + "-clipPlayed";
+    const idBed = uid.current + "-bed";
+    const WaveformDisplayEmpty = () => (React.createElement("div", { className: "flex h-full w-full items-center justify-center" },
+        React.createElement("div", { className: "flex w-full items-center gap-[3px] px-4 opacity-40" }, Array.from({ length: 48 }).map((_, i) => {
+            const h = 6 + (Math.sin(i * 1.7) * 0.5 + 0.5) * 22;
+            return (React.createElement("div", { key: "eb-" + i, className: "flex-1 rounded-full bg-neutral-700", style: { height: h + "%" } }));
+        }))));
+    return (React.createElement("div", { ref: containerRef, className: "relative h-full w-full min-w-0 min-h-0 overflow-hidden rounded-lg bg-neutral-950/80 shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)] [container-type:size] select-none" +
+            (interactive ? (dragging ? " cursor-grabbing" : " cursor-grab") : ""), onPointerDown: handlePointerDown, onPointerMove: handlePointerMove, onPointerUp: handlePointerUp, onPointerCancel: handlePointerUp, onPointerLeave: handlePointerLeave, style: { touchAction: "none" } },
+        React.createElement("div", { className: "pointer-events-none absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-white/[0.04]" }),
+        !hasData ? (React.createElement(WaveformDisplayEmpty, null)) : (React.createElement("svg", { viewBox: "0 0 " + VBW + " " + VBH, preserveAspectRatio: "none", className: "absolute inset-0 h-full w-full" },
+            React.createElement("defs", null,
+                React.createElement("linearGradient", { id: idBed, x1: "0", y1: "0", x2: "0", y2: "1" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#0c0b0a" }),
+                    React.createElement("stop", { offset: "50%", stopColor: "#050505" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#0c0b0a" })),
+                React.createElement("linearGradient", { id: idUnplayed, x1: "0", y1: "0", x2: "0", y2: "1" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#5b5b5b" }),
+                    React.createElement("stop", { offset: "50%", stopColor: "#3a3a3a" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#2a2a2a" })),
+                React.createElement("linearGradient", { id: idPlayed, x1: "0", y1: "0", x2: "0", y2: "1" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#fcd34d" }),
+                    React.createElement("stop", { offset: "45%", stopColor: "#f59e0b" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#b45309" })),
+                React.createElement("clipPath", { id: idClipPlayed },
+                    React.createElement("rect", { x: "0", y: "0", width: playX, height: VBH })),
+                React.createElement("filter", { id: idGlow, x: "-20%", y: "-40%", width: "140%", height: "180%" },
+                    React.createElement("feGaussianBlur", { stdDeviation: "3.2", result: "b" }),
+                    React.createElement("feMerge", null,
+                        React.createElement("feMergeNode", { in: "b" }),
+                        React.createElement("feMergeNode", { in: "SourceGraphic" })))),
+            React.createElement("rect", { x: "0", y: "0", width: VBW, height: VBH, fill: "url(#" + idBed + ")" }),
+            React.createElement("g", { fill: "url(#" + idUnplayed + ")" }, bars.map((amp, i) => {
+                const norm = amp / maxAmp;
+                const hUp = Math.max(2, norm * (MID - 6));
+                const hDown = hUp * 0.72;
+                const x = i * slot + (slot - barW) / 2;
+                return (React.createElement("g", { key: "u-" + i },
+                    React.createElement("rect", { x: x, y: MID - hUp, width: barW, height: hUp, rx: barW * 0.32 }),
+                    React.createElement("rect", { x: x, y: MID, width: barW, height: hDown, rx: barW * 0.32, opacity: 0.6 })));
+            })),
+            React.createElement("g", { clipPath: "url(#" + idClipPlayed + ")", filter: "url(#" + idGlow + ")" },
+                React.createElement("g", { fill: "url(#" + idPlayed + ")" }, bars.map((amp, i) => {
+                    const norm = amp / maxAmp;
+                    const hUp = Math.max(2, norm * (MID - 6));
+                    const hDown = hUp * 0.72;
+                    const x = i * slot + (slot - barW) / 2;
+                    return (React.createElement("g", { key: "p-" + i },
+                        React.createElement("rect", { x: x, y: MID - hUp, width: barW, height: hUp, rx: barW * 0.32 }),
+                        React.createElement("rect", { x: x, y: MID, width: barW, height: hDown, rx: barW * 0.32, opacity: 0.75 })));
+                }))),
+            Array.isArray(beatGrid) &&
+                beatGrid.map((b, i) => {
+                    const bx = WaveformDisplayClamp(b, 0, 1) * VBW;
+                    const isBar = i % 4 === 0;
+                    return (React.createElement("line", { key: "bg-" + i, x1: bx, y1: isBar ? 6 : 22, x2: bx, y2: isBar ? VBH - 6 : VBH - 22, stroke: isBar ? "#fbbf24" : "#a3a3a3", strokeWidth: isBar ? 2 : 1, strokeOpacity: isBar ? 0.55 : 0.22, strokeDasharray: isBar ? "0" : "4 6", vectorEffect: "non-scaling-stroke" }));
+                }))),
+        interactive && hasData && hoverPos !== null && !dragging && (React.createElement("div", { className: "pointer-events-none absolute top-0 bottom-0 w-px bg-amber-300/40 transition-opacity duration-150", style: { left: hoverPos * 100 + "%" } },
+            React.createElement("div", { className: "absolute -top-0 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-amber-300/70" }),
+            React.createElement("div", { className: "absolute -bottom-0 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-amber-300/70" }))),
+        interactive && hasData && ripple && (React.createElement("div", { key: ripple.id, className: "pointer-events-none absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-400/70 motion-reduce:hidden", style: {
+                left: ripple.pos * 100 + "%",
+                animation: "wfRipple 550ms ease-out forwards",
+            }, onAnimationEnd: () => setRipple(null) })),
+        hasData && (React.createElement("div", { className: "pointer-events-none absolute top-0 bottom-0 z-10 w-[2px] bg-amber-300 shadow-[0_0_16px_-1px] shadow-amber-400/80 transition-[left] duration-100 ease-linear motion-reduce:transition-none", style: { left: "calc(" + ph * 100 + "% - 1px)" } },
+            React.createElement("div", { className: "absolute -top-px left-1/2 -translate-x-1/2" },
+                React.createElement("div", { className: "h-0 w-0 border-l-[5px] border-r-[5px] border-t-[7px] border-l-transparent border-r-transparent border-t-amber-300 drop-shadow-[0_0_4px_rgba(251,191,36,0.9)]" })),
+            React.createElement("div", { className: "absolute -bottom-px left-1/2 -translate-x-1/2" },
+                React.createElement("div", { className: "h-0 w-0 border-l-[5px] border-r-[5px] border-b-[7px] border-l-transparent border-r-transparent border-b-amber-300 drop-shadow-[0_0_4px_rgba(251,191,36,0.9)]" })),
+            React.createElement("div", { className: "absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-200 shadow-[0_0_10px_2px] shadow-amber-400/80 animate-pulse motion-reduce:animate-none" }))),
+        React.createElement("div", { className: "pointer-events-none absolute inset-0 rounded-lg shadow-[inset_0_0_28px_rgba(0,0,0,0.55)]" }),
+        React.createElement("style", null, "@keyframes wfRipple{0%{transform:translate(-50%,-50%) scale(0.4);opacity:0.9}100%{transform:translate(-50%,-50%) scale(3.4);opacity:0}}")));
+}
+
+
+const h = React.createElement;
+const LIB = [{"type":"SearchInput","description":"Single-line text entry that emits its query string as the user types.","props":{"value":"string","onChange":"(v: string) => void","placeholder?":"string"}},{"type":"TreeSelector","description":"Hierarchical folder/crate tree presenting nested nodes and emitting the chosen node id.","props":{"nodes":"{ id: string; label: string; children?: any[] }[]","value":"string","onChange":"(id: string) => void"}},{"type":"TrackList","description":"Selectable, sortable list of track rows with multiple data columns; emits the selected row id and can activate a row.","props":{"rows":"{ id: string; cells: Record<string, string> }[]","columns":"string[]","value":"string","onChange":"(id: string) => void","onActivate?":"(id: string) => void"}},{"type":"SortControl","description":"Clickable column-header control that sets which field to sort by and its direction.","props":{"field":"string","active":"boolean","direction":"'asc' | 'desc'","onSort":"(field: string) => void"}},{"type":"Button","description":"Momentary push control that fires an action on press.","props":{"onPress":"() => void","tone?":"'neutral' | 'accent' | 'danger'","active?":"boolean"}},{"type":"Toggle","description":"Latching two-state switch reflecting and emitting its on/off state.","props":{"on":"boolean","onChange":"(on: boolean) => void"}},{"type":"Knob","description":"Rotary control mapping drag to a value between min and max; can snap to fixed steps when provided.","props":{"min":"number","max":"number","value":"number","onChange":"(v: number) => void","steps?":"number[]"}},{"type":"Fader","description":"Linear slider mapping travel to a value between min and max, in either orientation.","props":{"min":"number","max":"number","value":"number","onChange":"(v: number) => void","orientation?":"'vertical' | 'horizontal'"}},{"type":"JogWheel","description":"Large rotary platter emitting rotational delta for scratching and pitch-bending.","props":{"onScrub":"(delta: number) => void","playing":"boolean"}},{"type":"Pad","description":"Trigger pad that fires on press and reflects an assigned/armed state.","props":{"onPress":"() => void","active":"boolean"}},{"type":"WaveformDisplay","description":"Renders waveform sample data with an optional beat grid overlay and a moving playhead marker; can emit scrub position.","props":{"data":"number[]","playhead":"number","beatGrid?":"number[]","onScrub?":"(pos: number) => void"}},{"type":"LevelMeter","description":"Displays a signal level as a metered bar/segments.","props":{"level":"number"}},{"type":"Readout","description":"Passive text display of a formatted value or label.","props":{"value":"string"}},{"type":"OptionSelector","description":"Presents a set of options and emits the chosen option id.","props":{"options":"{ id: string; label: string }[]","value":"string","onChange":"(id: string) => void"}}];
+let logSet = null;
+const log = (msg) => logSet && logSet(msg + "  @" + new Date().toLocaleTimeString());
+
+const wave = Array.from({ length: 600 }, (_, i) => {
+  const beat = Math.pow(Math.max(0, Math.sin(i / 600 * Math.PI * 64)), 6);
+  const env = 0.35 + 0.35 * Math.sin(i / 600 * Math.PI * 3) ** 2;
+  return Math.min(1, env * (0.5 + 0.5 * Math.random()) + beat * 0.5) * (i % 2 ? 1 : -1);
+});
+const grid = Array.from({ length: 33 }, (_, i) => i / 32);
+const tree = [
+  { id: "lib", label: "Library", children: [
+    { id: "house", label: "House", children: [{ id: "deep", label: "Deep House" }, { id: "tech", label: "Tech House" }] },
+    { id: "techno", label: "Techno" }, { id: "dnb", label: "Drum & Bass" } ] },
+  { id: "crates", label: "Crates", children: [{ id: "warmup", label: "Warm-up Set" }, { id: "peak", label: "Peak Time" }] },
+  { id: "hist", label: "History" } ];
+const tracks = [
+  ["One More Time", "Daft Punk", "123", "8B", "5:20"], ["Strobe", "deadmau5", "128", "4A", "10:37"],
+  ["Innerbloom", "RÜFÜS DU SOL", "122", "11A", "9:38"], ["Opus", "Eric Prydz", "126", "6A", "9:03"],
+  ["Cola", "CamelPhat & Elderbrook", "122", "5A", "3:46"], ["Losing It", "FISHER", "125", "10A", "4:08"],
+  ["Pjanoo", "Eric Prydz", "126", "7A", "7:02"], ["Gecko", "Oliver Heldens", "124", "9B", "3:31"],
+].map((c, i) => ({ id: "t" + i, cells: { title: c[0], artist: c[1], bpm: c[2], key: c[3], time: c[4] } }));
+const fx = ["Echo", "Reverb", "Filter", "Flanger", "Phaser", "Bitcrush"].map((l) => ({ id: l.toLowerCase(), label: l }));
+
+// base props + variations (each variation is overlaid on base); callbacks are wired by the harness
+const SAMPLES = {
+  SearchInput: { base: { value: "" }, vars: [{}, { value: "prydz" }, { placeholder: "Search tracks…" }] },
+  TreeSelector: { base: { nodes: tree, value: "deep" }, vars: [{}, { nodes: [] }] },
+  TrackList: { base: { rows: tracks, columns: ["title", "artist", "bpm", "key", "time"], value: "t1" }, vars: [{}, { onActivate: true }, { rows: [] }] },
+  SortControl: { base: { field: "bpm", active: true, direction: "asc" }, vars: [{}, { direction: "desc" }, { active: false }] },
+  Button: { base: {}, vars: [{}, { tone: "neutral" }, { tone: "accent" }, { tone: "danger" }, { active: true }, { tone: "accent", active: true }] },
+  Toggle: { base: { on: false }, vars: [{}, { on: true }] },
+  Knob: { base: { min: 0, max: 100, value: 35 }, vars: [{}, { min: -12, max: 12, value: 3 }, { min: 0.5, max: 4, value: 1, steps: [0.5, 1, 2, 4] }, { value: 50, steps: [0, 25, 50, 75, 100] }] },
+  Fader: { base: { min: 0, max: 100, value: 70 }, vars: [{}, { orientation: "vertical" }, { orientation: "horizontal", value: 50 }, { orientation: "horizontal", value: 20 }] },
+  JogWheel: { base: { playing: false }, vars: [{}, { playing: true }] },
+  Pad: { base: { active: false }, vars: [{}, { active: true }] },
+  WaveformDisplay: { base: { data: wave, playhead: 0.3, animate: true }, vars: [{}, { beatGrid: grid }, { beatGrid: grid, onScrub: true }, { data: [] }] },
+  LevelMeter: { base: { level: 0.6, animate: true }, vars: [{}, { level: 0.95, animate: false }, { level: 0, animate: false }] },
+  Readout: { base: { value: "128.00" }, vars: [{}, { value: "-03:42" }, { value: "One More Time — Daft Punk (Extended Mix)" }] },
+  OptionSelector: { base: { options: fx, value: "echo" }, vars: [{}, { options: fx.slice(0, 2) }] },
+};
+const SLOTS = [["small", 72, 72], ["large", 240, 240], ["wide", 320, 64], ["tall", 64, 240]];
+
+class Boundary extends React.Component {
+  constructor(p) { super(p); this.state = { e: null }; }
+  static getDerivedStateFromError(e) { return { e }; }
+  render() { return this.state.e ? h("div", { className: "err" }, String(this.state.e.message || this.state.e)) : this.props.children; }
+}
+
+// Controlled harness: owns value/on/playhead/etc. and wires every callback in the contract.
+function Harness({ type, init }) {
+  const [s, set] = useState(init);
+  const upd = (patch) => set((p) => ({ ...p, ...patch }));
+  useEffect(() => {
+    if (!init.animate) return;
+    const id = setInterval(() => set((p) => type === "LevelMeter"
+      ? { ...p, level: Math.max(0, Math.min(1, 0.55 + 0.35 * Math.sin(Date.now() / 180) + 0.1 * Math.random())) }
+      : { ...p, playhead: (p.playhead + 0.002) % 1 }), 60);
+    return () => clearInterval(id);
+  }, []);
+  const props = { ...s };
+  delete props.animate;
+  const contract = LIB.find((t) => t.type === type)?.props || {};
+  const has = (k) => k in contract || (k + "?") in contract;
+  if (has("onChange")) props.onChange = (v) => { upd("on" in s ? { on: v } : { value: v }); log(type + ".onChange(" + JSON.stringify(v) + ")"); };
+  if (has("onPress")) props.onPress = () => { log(type + ".onPress()"); if ("active" in s) upd({ active: !s.active }); };
+  if (has("onSort")) props.onSort = (f) => { upd({ active: true, direction: s.direction === "asc" ? "desc" : "asc" }); log(type + ".onSort(" + f + ")"); };
+  if (type === "JogWheel") props.onScrub = (d) => log("JogWheel.onScrub(" + d.toFixed(3) + ")");
+  if (type === "WaveformDisplay") { if (s.onScrub) props.onScrub = (p) => { upd({ playhead: p }); log("Waveform.onScrub(" + p.toFixed(3) + ")"); }; else delete props.onScrub; }
+  if (type === "TrackList") { if (s.onActivate) props.onActivate = (id) => log("TrackList.onActivate(" + id + ")"); else delete props.onActivate; }
+  return h(window[type] || (() => h("div", { className: "err" }, "missing " + type)), props);
+}
+
+function App() {
+  const [msg, setMsg] = useState("interact with any primitive — callbacks log here");
+  const [scale, setScale] = useState(1);
+  logSet = setMsg;
+  return h("div", { className: "wrap" },
+    h("h1", null, "Primitive Gallery — DJ Table"),
+    h("div", { className: "sub" }, "14 primitives generated from the run-3 hoist against the NIGHT AMBER style sheet. Each variation rendered in 4 slot shapes. Dashed outline = the slot the leaf would give it."),
+    h("div", { className: "ctrls" }, h("label", null, "slot scale ",
+      h("input", { type: "range", min: 0.5, max: 2, step: 0.1, value: scale, onChange: (e) => setScale(+e.target.value) }), " " + scale.toFixed(1) + "×")),
+    LIB.filter((t) => { const o = location.hash.slice(1).split(",").filter(Boolean); return !o.length || o.includes(t.type); }).map((t) => h("section", { key: t.type },
+      h("h2", null, t.type),
+      h("p", { className: "desc" }, t.description),
+      h("div", { className: "contract" }, JSON.stringify(t.props)),
+      (SAMPLES[t.type]?.vars || [{}]).map((v, vi) => h("div", { className: "row", key: vi },
+        h("div", { className: "vlabel" }, Object.keys(v).length ? JSON.stringify(v, (k, x) => Array.isArray(x) ? "[" + x.length + " items]" : x) : "base"),
+        SLOTS.map(([name, w, hgt]) => h("div", { className: "cell", key: name },
+          h("div", { className: "slot", style: { width: w * scale, height: hgt * scale } },
+            h(Boundary, null, h(Harness, { type: t.type, init: { ...SAMPLES[t.type].base, ...v } }))),
+          h("div", { className: "cap" }, name + " " + Math.round(w * scale) + "×" + Math.round(hgt * scale)))))))),
+    h("div", { className: "log" }, msg));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>

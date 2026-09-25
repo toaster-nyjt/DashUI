@@ -1,0 +1,228 @@
+{
+  "meta": {
+    "task": "I want to listen to music",
+    "model": "claude-opus-5",
+    "effort": "low",
+    "secs": 36.081,
+    "outTok": 2941,
+    "inTok": 2880,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 5,
+    "features": 44,
+    "edges": 6,
+    "meanEdgeDescChars": 229,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Music Player: Now Playing Deck",
+      "genInstructions": "Build the central playback deck with large album artwork, track/artist/album titles, a scrubbable seek bar with elapsed/total time, transport controls (play/pause, next, previous, shuffle, repeat), volume slider with mute, and a like/favorite toggle. It is the authoritative playback state owner that other panels read from and write to.",
+      "role": "The system's playback engine surface and single source of truth for the current track, playback position, and volume, driving the queue, visualizer, and lyrics panels.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Library Browser Grid",
+            "description": "When the user double-clicks a track or presses play on an album/playlist card, the browser emits the selected track object (id, title, artist, album, artwork URL, duration, audio source) and the deck loads it, resets the seek bar to 0:00, and begins playback immediately."
+          },
+          {
+            "name": "Music Player: Play Queue Side Panel",
+            "description": "When the user clicks a queued item or the queue advances after a track ends, the panel emits the newly active queue index and its track metadata; the deck loads and plays that track and highlights it as current. The panel also supplies the next/previous targets consumed when the deck's skip buttons are pressed."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Music Player: Play Queue Side Panel",
+            "description": "The deck broadcasts current track id, playing/paused state, and end-of-track events; the queue highlights the matching row, shows an animated equalizer icon while playing, and auto-advances its pointer to the next item (respecting shuffle/repeat mode also broadcast by the deck)."
+          },
+          {
+            "name": "Music Player: Audio Visualizer Panel",
+            "description": "The deck streams live playback state — frequency/amplitude data, play/pause, and current time — so the visualizer animates only while audio plays, freezes on pause, and re-themes its colors from the current track's artwork palette."
+          },
+          {
+            "name": "Music Player: Lyrics And Track Info Panel",
+            "description": "On track change the deck sends full track metadata (title, artist, album, year, artwork) and on every timeupdate it sends the current playback position so the panel loads matching lyrics/credits and auto-scrolls to highlight the active lyric line."
+          }
+        ]
+      },
+      "features": [
+        "Album Artwork",
+        "Track Title Block",
+        "Seek Progress Bar",
+        "Elapsed Total Time",
+        "Play Pause Button",
+        "Next Previous Buttons",
+        "Shuffle Toggle",
+        "Repeat Toggle",
+        "Volume Slider",
+        "Mute Button",
+        "Favorite Toggle",
+        "Add To Queue Button"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "name": "Music Player: Library Browser Grid",
+      "genInstructions": "Build a scrollable library browser with a search field, filter chips (artists, albums, playlists, genres), sort control, and a responsive grid of album/playlist cards plus an expandable track list with hover play and 'add to queue' actions. It is how the user discovers and starts music.",
+      "role": "The discovery surface of the UI, letting the user search and browse the catalog and feed chosen tracks into the playback deck and queue.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Music Player: Now Playing Deck",
+            "description": "Double-clicking a track or pressing a card's play button emits the full track object (id, title, artist, album, artwork, duration, source) and the deck immediately loads and plays it."
+          },
+          {
+            "name": "Music Player: Play Queue Side Panel",
+            "description": "Clicking 'add to queue' on a track, album, or playlist emits an ordered array of track objects that the queue appends to its list; playing an album outright replaces the queue contents with that album's tracklist in order."
+          }
+        ]
+      },
+      "features": [
+        "Search Input",
+        "Filter Chips",
+        "Sort Dropdown",
+        "Album Card Grid",
+        "Track List View",
+        "Hover Play Button",
+        "Add To Queue Action",
+        "Artwork Thumbnails",
+        "Grid List Toggle",
+        "Empty Results State"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "name": "Music Player: Play Queue Side Panel",
+      "genInstructions": "Build a vertical side panel listing upcoming tracks with drag-to-reorder handles, remove buttons, a 'now playing' highlighted row, queue duration summary, and clear-queue / save-as-playlist actions. It manages playback order for the deck.",
+      "role": "The ordered playlist state manager that determines what plays next and reflects the deck's current position.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Now Playing Deck",
+            "description": "Receives current track id, play/pause state, shuffle/repeat mode, and track-ended events; highlights the active row with an equalizer animation and advances its internal pointer accordingly."
+          },
+          {
+            "name": "Music Player: Library Browser Grid",
+            "description": "Receives arrays of track objects from 'add to queue' actions (appended to the end) or from album/playlist play actions (replacing the whole queue)."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Music Player: Now Playing Deck",
+            "description": "Clicking a queue row, or reordering/removing items that change the next-up track, emits the target track object and queue index; the deck loads and plays it and uses the queue order to resolve next/previous skips."
+          }
+        ]
+      },
+      "features": [
+        "Queue Row List",
+        "Now Playing Highlight",
+        "Drag Reorder Handles",
+        "Remove Track Button",
+        "Queue Duration Summary",
+        "Clear Queue Button",
+        "Save As Playlist",
+        "Up Next Header",
+        "Track Artwork Thumbs"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "name": "Music Player: Audio Visualizer Panel",
+      "genInstructions": "Build an animated canvas visualizer (frequency bars or waveform) that reacts to live playback amplitude, with a style selector and a color palette derived from the current artwork. Purely aesthetic feedback for the listening experience.",
+      "role": "The ambient visual feedback surface that makes the deck's live playback state visible and atmospheric.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Now Playing Deck",
+            "description": "Receives frequency/amplitude data, play/pause state, and the current track's artwork color palette; animates bars in real time while playing, idles or fades when paused, and recolors on track change."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Frequency Bar Canvas",
+        "Waveform Mode",
+        "Visualizer Style Selector",
+        "Artwork Color Theming",
+        "Idle Paused State",
+        "Ambient Glow Backdrop"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "Music Player: Lyrics And Track Info Panel",
+      "genInstructions": "Build a panel with time-synced scrolling lyrics that highlight the active line, plus a tabbed section showing track credits, album, year, genre and artist blurb. Gives context on whatever is currently playing.",
+      "role": "The contextual detail surface that expands on the deck's current track with synced lyrics and metadata.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Now Playing Deck",
+            "description": "Receives full track metadata on track change and continuous playback position updates; loads the matching lyrics, auto-scrolls and highlights the line matching the current timestamp, and repopulates the info tab."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Synced Lyrics Scroll",
+        "Active Line Highlight",
+        "Lyrics Info Tabs",
+        "Track Credits List",
+        "Album Metadata Block",
+        "Artist Blurb",
+        "No Lyrics Fallback"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    }
+  ]
+}

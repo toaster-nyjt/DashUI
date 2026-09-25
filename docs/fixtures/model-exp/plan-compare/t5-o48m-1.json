@@ -1,0 +1,207 @@
+{
+  "meta": {
+    "task": "Flight avionics dashboard",
+    "model": "claude-opus-4-8",
+    "effort": "medium",
+    "secs": 41.772,
+    "outTok": 3535,
+    "inTok": 2883,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 5,
+    "features": 42,
+    "edges": 4,
+    "meanEdgeDescChars": 254,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Avionics: Primary Flight Display",
+      "genInstructions": "Build a central glass-cockpit PFD with a live artificial horizon (attitude indicator showing pitch and roll), a vertical airspeed tape on the left, a vertical altitude tape and vertical-speed indicator on the right, and a heading/compass strip along the bottom, all with overlaid target 'bugs'. It gives the pilot the core flight state at a glance.",
+      "role": "The primary flight-state instrument at the center of the dashboard, displaying attitude, speed, altitude and heading while showing autopilot targets and feeding envelope alerts to the annunciator.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Autopilot & Flight Mode Panel",
+            "description": "When the pilot sets or changes the target airspeed, target altitude, or target heading on the autopilot panel, those numeric setpoints are emitted and the PFD renders them as magenta 'bugs' on the airspeed tape, altitude tape, and heading strip respectively; changing the values moves the bugs in real time."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Warning Annunciator Panel",
+            "description": "When the PFD's live airspeed crosses below stall speed or above never-exceed speed, or bank/pitch exceeds safe limits, it emits a flight-envelope alert event (type + severity) that the annunciator panel displays as an active caution/warning message."
+          }
+        ]
+      },
+      "features": [
+        "Attitude Indicator",
+        "Pitch Ladder",
+        "Roll Scale",
+        "Airspeed Tape",
+        "Altitude Tape",
+        "Vertical Speed Indicator",
+        "Heading Strip",
+        "Airspeed Bug",
+        "Altitude Bug",
+        "Heading Bug",
+        "Envelope Alert Emitter"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "Avionics: Navigation Moving Map",
+      "genInstructions": "Build a horizontal situation / moving-map display showing the aircraft symbol, a rotating compass rose, the active flight-plan route with waypoints, the selected course line, and range rings with a range control. It provides lateral navigation and situational awareness.",
+      "role": "The lateral navigation display that shows the aircraft's position, route and selected course, driven by the autopilot panel's nav settings.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Autopilot & Flight Mode Panel",
+            "description": "When the pilot sets the target heading or selects a course/nav mode (HDG vs NAV) on the autopilot panel, the map receives the selected heading/course value and active mode and redraws the course line and heading bug on the compass rose, and highlights the active waypoint leg accordingly."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Aircraft Symbol",
+        "Compass Rose",
+        "Flight Plan Route",
+        "Waypoint Markers",
+        "Course Line",
+        "Heading Bug",
+        "Range Rings",
+        "Range Selector"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Avionics: Engine & Fuel Systems Panel",
+      "genInstructions": "Build an engine and fuel monitoring panel with gauges/bars for RPM, N1/N2, EGT, oil pressure and temperature per engine, plus a fuel quantity table with per-tank levels and total remaining. It lets the pilot monitor powerplant and fuel status.",
+      "role": "The systems-monitoring panel reporting engine and fuel health, raising exceedance alerts to the annunciator when parameters go out of range.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Avionics: Warning Annunciator Panel",
+            "description": "When any monitored engine parameter (EGT, oil pressure/temp, RPM) exceeds its red-line limit or a fuel tank drops below the low-fuel threshold, this panel emits a system fault event with the offending parameter name and severity, which the annunciator displays as an active caution/warning entry."
+          }
+        ]
+      },
+      "features": [
+        "RPM Gauges",
+        "N1 N2 Indicators",
+        "EGT Gauges",
+        "Oil Pressure Bars",
+        "Oil Temperature Bars",
+        "Fuel Quantity Table",
+        "Total Fuel Readout",
+        "Exceedance Detector"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Avionics: Autopilot & Flight Mode Panel",
+      "genInstructions": "Build an autopilot mode control panel with editable setpoint selectors for target heading, altitude, and airspeed, plus mode buttons (HDG, NAV, ALT, VS, autopilot master ON/OFF). It is the primary input surface that commands the flight displays.",
+      "role": "The pilot's command input panel that sets flight targets and modes, driving the bugs on the primary flight display and the course/heading on the navigation map.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Avionics: Primary Flight Display",
+            "description": "When the pilot adjusts the target airspeed, altitude, or heading selectors (or arms the corresponding modes), the panel emits each numeric setpoint and the PFD positions its airspeed, altitude, and heading bugs to those values in real time."
+          },
+          {
+            "name": "Avionics: Navigation Moving Map",
+            "description": "When the pilot sets target heading or toggles between HDG and NAV mode, the panel emits the selected heading/course and active lateral mode, and the moving map redraws its course line, heading bug, and active-leg highlight to match."
+          }
+        ]
+      },
+      "features": [
+        "Master AP Toggle",
+        "Heading Selector",
+        "Altitude Selector",
+        "Airspeed Selector",
+        "Vertical Speed Selector",
+        "HDG Mode Button",
+        "NAV Mode Button",
+        "ALT Mode Button",
+        "Mode Status Display"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "name": "Avionics: Warning Annunciator Panel",
+      "genInstructions": "Build a caution/warning annunciator panel that lists active alerts as color-coded tiles (red warning, amber caution) with a master caution/warning acknowledge control and a scrollable message list. It centralizes all abnormal-condition alerting.",
+      "role": "The centralized alerting surface that aggregates and displays flight-envelope and systems faults raised by the PFD and the engine/fuel panel.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Primary Flight Display",
+            "description": "Receives flight-envelope alert events (stall, overspeed, excessive bank/pitch) with severity from the PFD and adds/removes the corresponding color-coded tile and message in the active-alert list as the condition asserts or clears."
+          },
+          {
+            "name": "Avionics: Engine & Fuel Systems Panel",
+            "description": "Receives engine/fuel exceedance events (parameter name + severity) from the systems panel and displays them as red/amber annunciator tiles, clearing them automatically when the parameter returns within limits."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Warning Tiles",
+        "Caution Tiles",
+        "Active Message List",
+        "Master Warning Light",
+        "Master Caution Light",
+        "Acknowledge Button"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  ]
+}

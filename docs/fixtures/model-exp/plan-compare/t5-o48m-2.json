@@ -1,0 +1,204 @@
+{
+  "meta": {
+    "task": "Flight avionics dashboard",
+    "model": "claude-opus-4-8",
+    "effort": "medium",
+    "secs": 36.316,
+    "outTok": 3047,
+    "inTok": 2883,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 5,
+    "features": 45,
+    "edges": 3,
+    "meanEdgeDescChars": 245,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Avionics: Primary Flight Display",
+      "genInstructions": "Build the central primary flight display showing the artificial-horizon attitude indicator (pitch ladder + roll scale) flanked by a vertical airspeed tape on the left and a vertical altitude tape plus vertical-speed indicator on the right, with a heading strip along the bottom; render live selected-value bugs on each tape.",
+      "role": "The pilot's core instrument that visualizes aircraft attitude, speed, altitude, vertical speed and heading, and displays the autopilot's selected target bugs.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "When the pilot dials a new target altitude, airspeed, heading, or vertical speed on the MCP, the MCP emits each selected value and the PFD renders the corresponding magenta selection bug on the matching tape (altitude bug on the altitude tape, speed bug on the airspeed tape, heading bug on the heading strip) and updates the numeric preselect readouts above each tape."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Attitude Indicator",
+        "Pitch Ladder",
+        "Roll Scale",
+        "Airspeed Tape",
+        "Altitude Tape",
+        "Vertical Speed Indicator",
+        "Heading Strip",
+        "Selected Altitude Bug",
+        "Selected Speed Bug",
+        "Selected Heading Bug",
+        "Preselect Readouts"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "Avionics: Navigation Moving Map Display",
+      "genInstructions": "Build a moving-map navigation display centered on the aircraft symbol showing the active flight-plan route with waypoints, range rings, compass rose, and a weather/terrain overlay; support range zoom and map orientation modes.",
+      "role": "The lateral situational-awareness display that shows the aircraft's position, planned route and surrounding environment, driven by the autopilot's navigation targets.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "When the pilot selects a heading or engages a lateral nav mode (HDG vs NAV/LNAV) on the MCP, the MCP emits the active lateral mode and selected heading, and the map draws the corresponding heading vector/track line and highlights the active route leg being followed."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Aircraft Symbol",
+        "Flight Plan Route",
+        "Waypoint Markers",
+        "Compass Rose",
+        "Range Rings",
+        "Range Zoom Control",
+        "Orientation Mode Toggle",
+        "Weather Overlay",
+        "Terrain Overlay",
+        "Heading Vector"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "name": "Avionics: Engine & Fuel Systems Panel",
+      "genInstructions": "Build an EICAS-style systems panel with round/arc gauges for N1, N2, EGT and oil pressure per engine, plus a fuel-quantity table showing per-tank levels, total fuel and flow rate; drive color-coded caution/warning states when parameters exceed limits.",
+      "role": "The systems-monitoring component that reports engine performance and fuel state and raises exceedance events to the annunciator panel.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Avionics: Warning & Annunciator Panel",
+            "description": "When any monitored engine parameter (N1, N2, EGT, oil pressure) crosses its caution or warning threshold, or fuel quantity drops below the low-fuel limit, this panel emits a system-fault event with severity and message text, and the annunciator panel posts and prioritizes the corresponding caution (amber) or warning (red) message."
+          }
+        ]
+      },
+      "features": [
+        "N1 Gauges",
+        "N2 Gauges",
+        "EGT Gauges",
+        "Oil Pressure Gauges",
+        "Fuel Quantity Table",
+        "Fuel Flow Readout",
+        "Total Fuel Display",
+        "Exceedance Color Coding"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Avionics: Autopilot Mode Control Panel",
+      "genInstructions": "Build the autopilot mode control panel with rotary/spinner selectors and readouts for target airspeed, heading, altitude and vertical speed, plus arm/engage toggles for AP, autothrottle, LNAV/HDG and VNAV/ALT modes; emit selected values and active modes as the pilot changes them.",
+      "role": "The pilot's command input for autopilot targets and modes that drives the selection bugs on the PFD and the lateral guidance on the navigation map.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Avionics: Primary Flight Display",
+            "description": "Emits the selected altitude, airspeed, heading and vertical-speed values whenever their selectors change; the PFD renders each as a selection bug on the matching tape and updates the preselect numeric readouts."
+          },
+          {
+            "name": "Avionics: Navigation Moving Map Display",
+            "description": "Emits the active lateral mode (HDG vs NAV/LNAV) and selected heading whenever changed; the nav map draws the selected heading vector/track line and highlights the active route leg accordingly."
+          }
+        ]
+      },
+      "features": [
+        "Airspeed Selector",
+        "Heading Selector",
+        "Altitude Selector",
+        "Vertical Speed Selector",
+        "AP Engage Toggle",
+        "Autothrottle Toggle",
+        "Lateral Mode Toggle",
+        "Vertical Mode Toggle",
+        "Selected Value Readouts"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "name": "Avionics: Warning & Annunciator Panel",
+      "genInstructions": "Build a crew-alerting annunciator panel that lists active caution and warning messages in priority order with color-coded severity (red warnings above amber cautions), timestamps, and a master caution/warning acknowledge control that silences and marks messages as seen.",
+      "role": "The centralized crew-alerting surface that aggregates, prioritizes and lets the pilot acknowledge fault messages raised by other system components.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Engine & Fuel Systems Panel",
+            "description": "Receives system-fault events (parameter exceedances, low-fuel) with severity and message text; posts each as a new annunciator line, sorts it by severity/recency, and flashes the master caution/warning until acknowledged."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Warning Message List",
+        "Caution Message List",
+        "Severity Color Coding",
+        "Message Timestamps",
+        "Master Caution Light",
+        "Master Warning Light",
+        "Acknowledge Control"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    }
+  ]
+}

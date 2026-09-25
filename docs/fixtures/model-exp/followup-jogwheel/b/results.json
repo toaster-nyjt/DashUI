@@ -1,0 +1,53 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000
+    },
+    "wall": 57.237,
+    "passedFirstTry": 0,
+    "passed": 1,
+    "types": 1,
+    "totalAttempts": 2,
+    "outTokens": 5844,
+    "cost": 0.224
+  },
+  "results": [
+    {
+      "type": "JogWheel",
+      "attempts": [
+        {
+          "secs": 31.417,
+          "out": 3068,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": [
+            "syntax: Identifier expected. at line 128: `<circle cx=\"50\" cy=\"50\" r=\"48.5\" fill=\"url(#{}\".replace(\"{}\", \"\") + \"\"} />`",
+            "syntax: Unexpected token. Did you mean `{'}'}` or `&rbrace;`? at line 128: `<circle cx=\"50\" cy=\"50\" r=\"48.5\" fill=\"url(#{}\".replace(\"{}\", \"\") + \"\"} />`",
+            "syntax: Unexpected token. Did you mean `{'>'}` or `&gt;`? at line 128: `<circle cx=\"50\" cy=\"50\" r=\"48.5\" fill=\"url(#{}\".replace(\"{}\", \"\") + \"\"} />`"
+          ]
+        },
+        {
+          "secs": 25.819,
+          "out": 2776,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 57.237,
+      "inTok": 15624,
+      "outTok": 5844,
+      "floor": {
+        "base": [
+          4,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": false
+    }
+  ]
+}

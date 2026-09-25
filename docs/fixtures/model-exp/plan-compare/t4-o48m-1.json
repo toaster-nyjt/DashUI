@@ -1,0 +1,272 @@
+{
+  "meta": {
+    "task": "Smart home control panel",
+    "model": "claude-opus-4-8",
+    "effort": "medium",
+    "secs": 48.283,
+    "outTok": 4128,
+    "inTok": 2880,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 7,
+    "features": 40,
+    "edges": 9,
+    "meanEdgeDescChars": 168,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Smart Home: Room Navigation Sidebar",
+      "genInstructions": "Build a vertical sidebar listing all home rooms/zones (Living Room, Kitchen, Bedroom, etc.) with icons, each showing a quick count of active devices; selecting a room sets the active-room context for the rest of the panel. Include an 'All / Whole Home' option and an add-room control.",
+      "role": "The primary spatial navigator that scopes the entire panel to a chosen room and drives which devices, climate zone, and cameras the other components display.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "On room selection, emit the selected room ID; the Device Control Grid re-queries and re-renders only the devices assigned to that room (or all devices when 'Whole Home' is chosen)."
+          },
+          {
+            "name": "Smart Home: Climate Thermostat Panel",
+            "description": "On room selection, emit the selected room ID; the Climate Thermostat Panel switches to display and control that room's thermostat/zone setpoint and current temperature."
+          },
+          {
+            "name": "Smart Home: Security Monitoring Panel",
+            "description": "On room selection, emit the selected room ID; the Security Monitoring Panel filters its camera feeds, door/window sensors, and locks to those belonging to the selected room (or shows all when 'Whole Home')."
+          }
+        ]
+      },
+      "features": [
+        "Room List Items",
+        "Room Icons",
+        "Active Device Badge",
+        "Whole Home Option",
+        "Selected Highlight",
+        "Add Room Control"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "Smart Home: Device Control Grid",
+      "genInstructions": "Build a grid of device control cards (lights with dimmers/color, plugs, fans, blinds, TVs) for the active room, each card with a power toggle and inline adjustment (slider/color swatch); this is the main device-manipulation surface.",
+      "role": "The central device manipulation surface that toggles and adjusts individual devices for the scoped room, feeding its state to the status header and energy dashboard.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigation Sidebar",
+            "description": "Receives the selected room ID and renders only that room's device cards (or all devices for 'Whole Home')."
+          },
+          {
+            "name": "Smart Home: Scenes & Automation Panel",
+            "description": "When a scene is activated, receives the scene's per-device state map (on/off, brightness, color) and updates the corresponding device cards' toggles and sliders to match."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Energy Usage Dashboard",
+            "description": "On any device power toggle or dimmer change, emit the device ID, on/off state, and load level; the Energy Usage Dashboard recalculates and re-renders current live wattage and per-device consumption breakdown."
+          },
+          {
+            "name": "Smart Home: Status Header Bar",
+            "description": "On device state changes, emit the updated count of currently active devices; the Status Header Bar updates its 'devices on' summary indicator."
+          }
+        ]
+      },
+      "features": [
+        "Device Cards",
+        "Power Toggles",
+        "Brightness Sliders",
+        "Color Swatches",
+        "Device Type Icons",
+        "Card Status Labels",
+        "Grid Layout"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "name": "Smart Home: Climate Thermostat Panel",
+      "genInstructions": "Build a thermostat control for the active room: circular/dial setpoint control with current temperature and humidity readout, mode selector (heat/cool/auto/off), and fan speed. Serves climate adjustment per room.",
+      "role": "The dedicated climate controller for the scoped room, driven by room selection and scene activation to set target temperature and mode.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigation Sidebar",
+            "description": "Receives the selected room ID and loads that room/zone's current temperature, humidity, setpoint, and mode into the dial and readouts."
+          },
+          {
+            "name": "Smart Home: Scenes & Automation Panel",
+            "description": "When a scene is activated, receives the scene's target temperature and HVAC mode and updates the dial setpoint, mode selector, and fan speed accordingly."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Setpoint Dial",
+        "Current Temp Readout",
+        "Humidity Readout",
+        "Mode Selector",
+        "Fan Speed Control",
+        "Schedule Preview"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "Smart Home: Security Monitoring Panel",
+      "genInstructions": "Build a security panel showing live camera thumbnails, door/window sensor statuses, smart lock lock/unlock toggles, and an arm/disarm alarm control for the active room or whole home. Serves home security monitoring and control.",
+      "role": "The security surveillance and access-control surface, scoped by room selection and affected by scenes, that reports overall security state to the status header.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigation Sidebar",
+            "description": "Receives the selected room ID and filters displayed camera feeds, sensors, and locks to that room (or shows all when 'Whole Home')."
+          },
+          {
+            "name": "Smart Home: Scenes & Automation Panel",
+            "description": "When a scene is activated (e.g. 'Away' or 'Night'), receives the scene's security directives and locks/unlocks doors and arms/disarms the alarm accordingly."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Status Header Bar",
+            "description": "On alarm arm/disarm or lock state change, emit the overall security status (armed/disarmed, all-locked/unlocked); the Status Header Bar updates its security shield indicator."
+          }
+        ]
+      },
+      "features": [
+        "Camera Thumbnails",
+        "Sensor Status List",
+        "Lock Toggles",
+        "Arm Disarm Control",
+        "Alert Banner",
+        "Live Indicator"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "Smart Home: Scenes & Automation Panel",
+      "genInstructions": "Build a panel of one-tap scene tiles (Good Morning, Away, Movie Night, Bedtime) plus a list of automation rules with enable toggles; activating a scene pushes a coordinated state across devices, climate, and security.",
+      "role": "The orchestration surface that fires coordinated preset states across the device grid, thermostat, and security panel in a single tap.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "On scene tile activation, emit the scene's per-device state map (on/off, brightness, color); the Device Control Grid applies these states to its device cards."
+          },
+          {
+            "name": "Smart Home: Climate Thermostat Panel",
+            "description": "On scene tile activation, emit the scene's target temperature and HVAC mode; the Climate Thermostat Panel updates its setpoint and mode."
+          },
+          {
+            "name": "Smart Home: Security Monitoring Panel",
+            "description": "On scene tile activation, emit the scene's security directive; the Security Monitoring Panel locks/unlocks doors and arms/disarms the alarm."
+          }
+        ]
+      },
+      "features": [
+        "Scene Tiles",
+        "Scene Icons",
+        "Automation Rules List",
+        "Rule Enable Toggles",
+        "Create Scene Button"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "name": "Smart Home: Energy Usage Dashboard",
+      "genInstructions": "Build an energy dashboard showing live whole-home power draw, a time-series consumption chart, and a per-device/per-room breakdown with cost estimate. Serves energy monitoring and awareness.",
+      "role": "The consumption analytics surface that visualizes live and historical energy use, updated in real time by device state changes from the grid.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "Receives device on/off and load-level changes and recalculates live wattage, updates the consumption chart, and refreshes the per-device breakdown and cost estimate."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Live Power Gauge",
+        "Consumption Chart",
+        "Device Breakdown List",
+        "Cost Estimate",
+        "Time Range Tabs"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "name": "Smart Home: Status Header Bar",
+      "genInstructions": "Build a top header bar showing home name, current time/date, local weather, an active-devices summary, and a security status indicator. Serves at-a-glance whole-home status.",
+      "role": "The always-visible summary banner that surfaces time, weather, active-device count, and security state aggregated from the other components.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "Receives the running count of active devices and updates the 'devices on' summary indicator."
+          },
+          {
+            "name": "Smart Home: Security Monitoring Panel",
+            "description": "Receives the overall security status (armed/disarmed, locked state) and updates the security shield indicator's color and label."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Home Name",
+        "Clock Date",
+        "Weather Widget",
+        "Active Devices Summary",
+        "Security Status Indicator"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  ]
+}

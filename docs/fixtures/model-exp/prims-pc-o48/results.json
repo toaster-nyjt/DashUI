@@ -1,0 +1,381 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-4-8",
+      "THINKING": "disabled",
+      "EFFORT": "max",
+      "MAX_TOKENS": 16000
+    },
+    "wall": 88.017,
+    "passedFirstTry": 10,
+    "passed": 14,
+    "types": 14,
+    "totalAttempts": 18,
+    "outTokens": 59325,
+    "cost": 2.183
+  },
+  "results": [
+    {
+      "type": "Knob",
+      "attempts": [
+        {
+          "secs": 37.52,
+          "out": 3878,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 37.521,
+      "inTok": 7839,
+      "outTok": 3878,
+      "floor": {
+        "base": [
+          1.75,
+          1.75
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Fader",
+      "attempts": [
+        {
+          "secs": 50.09,
+          "out": 5127,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 50.09,
+      "inTok": 7810,
+      "outTok": 5127,
+      "floor": {
+        "base": [
+          1.6,
+          6
+        ],
+        "orientation:horizontal": [
+          6,
+          1.6
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Button",
+      "attempts": [
+        {
+          "secs": 29.671,
+          "out": 2893,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 29.672,
+      "inTok": 7800,
+      "outTok": 2893,
+      "floor": {
+        "base": [
+          2,
+          1.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "ToggleButton",
+      "attempts": [
+        {
+          "secs": 36.306,
+          "out": 3545,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": [
+            "unprefixed top-level names (prefix them with \"ToggleButton\"): PowerGlyph"
+          ]
+        },
+        {
+          "secs": 25.623,
+          "out": 2307,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 61.931,
+      "inTok": 15854,
+      "outTok": 5852,
+      "floor": {
+        "base": [
+          2.5,
+          1.75
+        ]
+      },
+      "passed": true,
+      "firstTry": false
+    },
+    {
+      "type": "Pad",
+      "attempts": [
+        {
+          "secs": 26.312,
+          "out": 2354,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 26.313,
+      "inTok": 7694,
+      "outTok": 2354,
+      "floor": {
+        "base": [
+          2.5,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "JogWheel",
+      "attempts": [
+        {
+          "secs": 51.713,
+          "out": 5149,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 51.713,
+      "inTok": 7690,
+      "outTok": 5149,
+      "floor": {
+        "base": [
+          4,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Waveform",
+      "attempts": [
+        {
+          "secs": 45.463,
+          "out": 4520,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": [
+            "uses percentage padding/margin \"px-[6%]\": it is measured from the WIDTH, so in a short, wide slot it can take the whole height — use \"inset-[x%]\" on an absolute region, flex/grid gaps, or SVG viewBox coordinates instead"
+          ]
+        },
+        {
+          "secs": 42.522,
+          "out": 4301,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 87.998,
+      "inTok": 15818,
+      "outTok": 8821,
+      "floor": {
+        "base": [
+          6,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": false
+    },
+    {
+      "type": "LevelMeter",
+      "attempts": [
+        {
+          "secs": 30.699,
+          "out": 2798,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 30.711,
+      "inTok": 7617,
+      "outTok": 2798,
+      "floor": {
+        "base": [
+          0.75,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Readout",
+      "attempts": [
+        {
+          "secs": 23.538,
+          "out": 1800,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 23.549,
+      "inTok": 7810,
+      "outTok": 1800,
+      "floor": {
+        "base": [
+          2.5,
+          1.2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "SearchInput",
+      "attempts": [
+        {
+          "secs": 27.26,
+          "out": 2484,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 27.261,
+      "inTok": 7633,
+      "outTok": 2484,
+      "floor": {
+        "base": [
+          7,
+          1.75
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "TreeSelect",
+      "attempts": [
+        {
+          "secs": 43.979,
+          "out": 4119,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": [
+            "uses percentage padding/margin \"px-[6%]\": it is measured from the WIDTH, so in a short, wide slot it can take the whole height — use \"inset-[x%]\" on an absolute region, flex/grid gaps, or SVG viewBox coordinates instead"
+          ]
+        },
+        {
+          "secs": 38.928,
+          "out": 3560,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 82.908,
+      "inTok": 15468,
+      "outTok": 7679,
+      "floor": {
+        "base": [
+          8,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": false
+    },
+    {
+      "type": "TrackList",
+      "attempts": [
+        {
+          "secs": 37.478,
+          "out": 3860,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 37.49,
+      "inTok": 7714,
+      "outTok": 3860,
+      "floor": {
+        "base": [
+          13,
+          6
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "SortHeaders",
+      "attempts": [
+        {
+          "secs": 22.186,
+          "out": 2094,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 22.187,
+      "inTok": 7709,
+      "outTok": 2094,
+      "floor": {
+        "base": [
+          6,
+          1.75
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Selector",
+      "attempts": [
+        {
+          "secs": 24.783,
+          "out": 2240,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": [
+            "uses percentage padding/margin \"pl-[3%]\": it is measured from the WIDTH, so in a short, wide slot it can take the whole height — use \"inset-[x%]\" on an absolute region, flex/grid gaps, or SVG viewBox coordinates instead"
+          ]
+        },
+        {
+          "secs": 24.349,
+          "out": 2296,
+          "stop": "end_turn",
+          "thinking": 0,
+          "errors": []
+        }
+      ],
+      "secs": 49.135,
+      "inTok": 15439,
+      "outTok": 4536,
+      "floor": {
+        "base": [
+          6,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": false
+    }
+  ]
+}

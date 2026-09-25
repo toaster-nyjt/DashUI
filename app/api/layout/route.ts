@@ -8,13 +8,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { stripCodeFences } from "@/app/utils/helpers";
 import { LAYOUT_SYSTEM_PROMPT, COMPONENT_PROTOCOL } from "../SKILLS";
+import { runLog, usageOf } from "@/app/utils/runLog";
 
 const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
 });
 
 export async function POST(req: Request) {
-  const { task, components, cols, rows, previousError } = await req.json();
+  const { task, components, cols, rows, previousError, taskID } = await req.json();
+  const t0 = Date.now();
 
   // On a retry, tell the model exactly why its last attempt was rejected.
   const retryNote = previousError
@@ -36,7 +38,10 @@ export async function POST(req: Request) {
 
   // Pull the text, strip any stray code fences, and parse the JSON array
   const raw = msg.content[0].type === "text" ? msg.content[0].text : "[]";
-  const parsed = JSON.parse(stripCodeFences(raw));
+  let parsed;
+  try { parsed = JSON.parse(stripCodeFences(raw)); }
+  catch (e) { runLog(taskID, "layout", "output was not valid JSON", { cols, rows, previousError, raw, ...usageOf(msg), secs: (Date.now() - t0) / 1000 }); throw e; }
+  runLog(taskID, "layout", `${Array.isArray(parsed) ? parsed.length : "?"} placement(s) on ${cols}x${rows}${previousError ? " (retry)" : ""}`, { cols, rows, previousError, placements: parsed, ...usageOf(msg), secs: (Date.now() - t0) / 1000 });
 
   return Response.json(parsed);
 }

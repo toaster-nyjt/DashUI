@@ -1,0 +1,323 @@
+{
+  "meta": {
+    "task": "Flight avionics dashboard",
+    "model": "claude-opus-5",
+    "effort": "low",
+    "secs": 54.548,
+    "outTok": 4411,
+    "inTok": 2883,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 6,
+    "features": 74,
+    "edges": 8,
+    "meanEdgeDescChars": 250,
+    "issues": [
+      "Avionics: Moving Map Navigation Display: feature over 4 words: \"Track Up North Up Toggle\""
+    ]
+  },
+  "defs": [
+    {
+      "name": "Avionics: Primary Flight Display",
+      "genInstructions": "Build a central glass-cockpit PFD with an artificial horizon attitude indicator, sliding airspeed and altitude tapes, vertical speed indicator, heading strip, and flight director/bug overlays driven by the autopilot panel. It gives the pilot instantaneous aircraft state awareness.",
+      "role": "The primary attitude and air-data instrument that visualizes live flight state and the autopilot's commanded targets, feeding envelope exceedances to the annunciator.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "When the pilot dials selected airspeed, altitude, vertical speed or heading, or arms/engages a mode, the MCP emits {selectedIAS, selectedALT, selectedVS, selectedHDG, armedModes[], engagedModes[]}; the PFD redraws the magenta speed bug on the airspeed tape, the altitude bug and preselect readout on the altitude tape, the VS bug, the heading bug on the heading strip, and updates the flight mode annunciation row at the top of the attitude ball."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Master Caution Annunciator",
+            "description": "When air-data crosses envelope limits (IAS above Vmo, below stall speed, altitude deviation >200ft from selected, excessive bank/pitch), the PFD emits a typed alert event {id, severity, message, value} and the annunciator raises/latches the matching caution or warning tile; when the condition clears the PFD emits a clear event and the tile un-latches."
+          }
+        ]
+      },
+      "features": [
+        "Attitude Horizon Ball",
+        "Pitch Ladder",
+        "Bank Angle Scale",
+        "Airspeed Tape",
+        "Speed Bug",
+        "Altitude Tape",
+        "Altitude Bug",
+        "Vertical Speed Indicator",
+        "Heading Strip",
+        "Heading Bug",
+        "Flight Director Bars",
+        "Flight Mode Annunciation",
+        "Barometric Setting",
+        "Slip Skid Indicator",
+        "Envelope Limit Alerts"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      "name": "Avionics: Horizontal Situation Indicator",
+      "genInstructions": "Build a round compass-rose HSI showing current magnetic heading, heading bug, selected course/CDI deviation bar, glideslope scale, bearing pointers and a to/from flag. It provides lateral navigation guidance relative to the active flight plan leg.",
+      "role": "The lateral navigation instrument that ties the autopilot's selected heading/course and the flight plan's active leg into a single deviation display.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "Selected heading and selected course knob values stream as {selectedHDG, selectedCRS}; the HSI rotates the heading bug and the course pointer/CDI accordingly and highlights whether HDG or NAV mode is currently driving lateral steering."
+          },
+          {
+            "name": "Avionics: Moving Map Navigation Display",
+            "description": "When the active flight plan leg changes (waypoint sequenced or a new leg activated on the map), the map emits {activeLegFrom, activeLegTo, desiredTrack, crossTrackErrorNm, distanceToWaypointNm}; the HSI sets the course pointer to the desired track, scales the CDI bar from cross-track error, and displays the active waypoint identifier and distance."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Compass Rose",
+        "Heading Bug",
+        "Course Pointer",
+        "CDI Deviation Bar",
+        "Glideslope Scale",
+        "To From Flag",
+        "Bearing Pointers",
+        "Active Waypoint Readout",
+        "Distance And ETE",
+        "Track Line Marker"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "name": "Avionics: Moving Map Navigation Display",
+      "genInstructions": "Build a north-up/track-up moving map with terrain and airspace shading, the aircraft symbol, the magenta flight plan route with waypoints, range rings with a range selector, weather radar overlay toggle and a waypoint list allowing direct-to activation. It is the strategic navigation picture.",
+      "role": "The strategic route picture that owns the flight plan and publishes the active leg to the HSI and the route target to the autopilot.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "When NAV or LNAV mode is engaged the MCP emits {lateralMode:'NAV'} and the map highlights the armed/engaged route leg in green and draws the predicted turn path; when HDG mode is engaged the map instead draws a dashed heading vector from the selected heading value."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Horizontal Situation Indicator",
+            "description": "On waypoint sequencing or a user 'Direct-To' activation in the waypoint list, the map emits {activeLegFrom, activeLegTo, desiredTrack, crossTrackErrorNm, distanceToWaypointNm} which the HSI uses to set its course pointer, CDI deflection and waypoint/distance readouts."
+          },
+          {
+            "name": "Avionics: Engine And Fuel Systems Panel",
+            "description": "The map emits remaining route distance and estimated time enroute {distanceRemainingNm, eteMinutes} whenever the flight plan or active leg changes; the fuel panel recomputes fuel-at-destination and fuel-reserve margin from current flow and displays the endurance-vs-ETE comparison."
+          }
+        ]
+      },
+      "features": [
+        "Moving Map Canvas",
+        "Aircraft Symbol",
+        "Flight Plan Route Line",
+        "Waypoint Markers",
+        "Waypoint List Panel",
+        "Direct To Activation",
+        "Range Selector",
+        "Range Rings",
+        "Terrain Shading",
+        "Airspace Overlay",
+        "Weather Radar Overlay",
+        "Track Up North Up Toggle",
+        "Heading Vector Line",
+        "Distance And ETE Readout"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
+    },
+    {
+      "name": "Avionics: Autopilot Mode Control Panel",
+      "genInstructions": "Build a horizontal MCP strip with rotary/selector fields for airspeed, heading, altitude and vertical speed, plus mode buttons (HDG, NAV, ALT, VS, APPR, AP master, autothrottle) with armed/engaged lamp states. It is the pilot's single point of commanding the automation.",
+      "role": "The command surface of the dashboard that sets every automation target and broadcasts them to the PFD, HSI and map.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Master Caution Annunciator",
+            "description": "When a warning-severity alert that invalidates automation is latched (e.g. autopilot disconnect, stall warning), the annunciator emits {disengage:true, reason} and the MCP drops AP master and lateral/vertical modes to OFF, flashes the AP disconnect lamp, and locks re-engagement until the alert is acknowledged."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Primary Flight Display",
+            "description": "Every knob change or mode press publishes {selectedIAS, selectedALT, selectedVS, selectedHDG, armedModes[], engagedModes[]}; the PFD moves its speed/altitude/VS/heading bugs and rewrites the flight mode annunciation row."
+          },
+          {
+            "name": "Avionics: Horizontal Situation Indicator",
+            "description": "Selected heading and selected course values are pushed to the HSI, which rotates its heading bug and course pointer and indicates which lateral mode is steering."
+          },
+          {
+            "name": "Avionics: Moving Map Navigation Display",
+            "description": "Engaging NAV/LNAV tells the map to highlight the active route leg and predicted path; engaging HDG tells the map to draw a dashed selected-heading vector instead."
+          }
+        ]
+      },
+      "features": [
+        "AP Master Switch",
+        "Autothrottle Switch",
+        "Airspeed Selector",
+        "Heading Selector",
+        "Course Selector",
+        "Altitude Preselect",
+        "Vertical Speed Selector",
+        "Lateral Mode Buttons",
+        "Vertical Mode Buttons",
+        "Approach Mode Button",
+        "Armed Engaged Lamps",
+        "AP Disconnect Lamp"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "name": "Avionics: Engine And Fuel Systems Panel",
+      "genInstructions": "Build a systems panel with per-engine N1/N2, EGT, oil pressure and temperature gauges plus a fuel table showing tank quantities, total fuel, flow rate, endurance and fuel-at-destination. It monitors powerplant health and fuel planning.",
+      "role": "The systems health and fuel monitor that combines engine parameters with route-derived fuel predictions and raises system alerts to the annunciator.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Moving Map Navigation Display",
+            "description": "Receives {distanceRemainingNm, eteMinutes} from the active flight plan and recomputes fuel-at-destination and reserve margin, flagging the row red when predicted arrival fuel falls below reserve."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Master Caution Annunciator",
+            "description": "When any engine parameter exceeds its limit (EGT over-temp, low oil pressure, N1 exceedance) or fuel drops below reserve/imbalance threshold, emits {id, severity, system, message, value}; the annunciator raises the corresponding latched caution/warning tile and clears it when the parameter returns in range."
+          }
+        ]
+      },
+      "features": [
+        "Engine Gauge Cluster",
+        "N1 N2 Dials",
+        "EGT Indicators",
+        "Oil Pressure Temp Bars",
+        "Fuel Tank Quantities",
+        "Total Fuel Readout",
+        "Fuel Flow Rate",
+        "Endurance Estimate",
+        "Fuel At Destination",
+        "Reserve Margin Flag",
+        "Parameter Limit Markers",
+        "System Alert Emitter"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "name": "Avionics: Master Caution Annunciator",
+      "genInstructions": "Build a master warning/caution stack with color-coded latched alert tiles, a scrolling alert log with timestamps, master acknowledge and mute buttons, and a contextual checklist drawer for the top alert. It centralizes all abnormal-condition signaling.",
+      "role": "The central alerting hub that aggregates envelope and systems exceedances from the PFD and engine panel and can force the autopilot to disengage.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Primary Flight Display",
+            "description": "Receives flight-envelope exceedance events {id, severity, message, value} (overspeed, stall, altitude deviation, excessive bank) and latches the matching tile with aural-icon and log entry; receives clear events to un-latch."
+          },
+          {
+            "name": "Avionics: Engine And Fuel Systems Panel",
+            "description": "Receives engine and fuel alerts {id, severity, system, message, value} such as EGT over-temp, low oil pressure or low fuel, latching a caution/warning tile and appending a timestamped log row until acknowledged and resolved."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "On any warning-severity alert classified as automation-invalidating, emits {disengage:true, reason}; the MCP drops AP master and all engaged modes and flashes the disconnect lamp, remaining locked out until the pilot presses master acknowledge here."
+          }
+        ]
+      },
+      "features": [
+        "Master Warning Lamp",
+        "Master Caution Lamp",
+        "Alert Tile Stack",
+        "Severity Color Coding",
+        "Latched State Indicator",
+        "Alert Log List",
+        "Timestamps",
+        "Acknowledge Button",
+        "Mute Button",
+        "Checklist Drawer",
+        "Autopilot Disengage Signal"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    }
+  ]
+}

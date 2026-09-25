@@ -1,0 +1,351 @@
+{
+  "meta": {
+    "task": "Flight avionics dashboard",
+    "model": "claude-opus-5",
+    "effort": "medium",
+    "secs": 72.272,
+    "outTok": 6185,
+    "inTok": 2883,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 6,
+    "features": 85,
+    "edges": 9,
+    "meanEdgeDescChars": 260,
+    "issues": [
+      "Avionics: Navigation Moving Map: feature over 4 words: \"North Up Track Up Toggle\""
+    ]
+  },
+  "defs": [
+    {
+      "name": "Avionics: Primary Flight Display",
+      "genInstructions": "Build a full glass-cockpit PFD with a central attitude indicator (pitch ladder, roll scale, sky/ground horizon, flight director bars), a left airspeed tape, a right altitude tape with barometric setting, a vertical speed indicator, and a bottom heading/compass arc with selected-bug markers. It is the pilot's primary state readout for attitude, speed, altitude and heading.",
+      "role": "This is the central instrument that renders live aircraft attitude, speed, altitude and heading, displaying the bugs and targets commanded by the autopilot panel and the course deviation from the active flight plan leg.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "When the pilot dials a new target airspeed, heading, altitude or vertical speed on the FCU, the panel emits {selectedSpeed, selectedHeading, selectedAltitude, selectedVS, armedModes[]} and the PFD immediately repositions the magenta speed bug on the airspeed tape, the heading bug on the compass arc, the altitude bug on the altitude tape, the VSI target notch, and updates the flight-mode annunciator row at the top of the attitude indicator with the active/armed mode names."
+          },
+          {
+            "name": "Avionics: Flight Plan & Waypoint Manager",
+            "description": "The flight plan emits the active leg {fromWaypoint, toWaypoint, desiredTrack, crossTrackErrorNm, distanceToGoNm, vnavTargetAltitude}; the PFD renders the course deviation indicator scale and diamond from the cross-track error, prints the active waypoint identifier and distance in the navigation data field, and draws the VNAV target altitude marker on the altitude tape."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Attitude Indicator",
+        "Pitch Ladder",
+        "Roll Scale Pointer",
+        "Flight Director Bars",
+        "Airspeed Tape",
+        "Speed Bug",
+        "Altitude Tape",
+        "Altitude Bug",
+        "Barometric Setting",
+        "Vertical Speed Indicator",
+        "Heading Compass Arc",
+        "Heading Bug",
+        "Course Deviation Indicator",
+        "Flight Mode Annunciator",
+        "Navigation Data Field",
+        "Slip Skid Indicator"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "name": "Avionics: Navigation Moving Map",
+      "genInstructions": "Build a north-up/track-up moving map showing the aircraft symbol, magenta route line with waypoint icons, range rings, terrain/weather underlay, nearby airports and traffic targets, plus range zoom and layer toggles. It gives spatial awareness of the route and surrounding airspace.",
+      "role": "This is the lateral situational-awareness display that plots the active route, aircraft position and fuel range against the surrounding airspace, and lets the pilot pick waypoints graphically to edit the flight plan.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Flight Plan & Waypoint Manager",
+            "description": "Whenever the route is created, reordered, or a waypoint is added/deleted/activated, the manager emits the ordered waypoint list with lat/lon plus the active leg index; the map redraws the magenta course line, labels each waypoint, highlights the active leg in a brighter shade, and auto-centers on the active leg if follow mode is on."
+          },
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "When the pilot selects a heading in HDG mode the panel emits the selected heading value and the map draws a dashed selected-heading vector from the aircraft symbol; when LNAV is engaged the panel emits mode=LNAV and the map removes the vector and highlights the route line as the active lateral source."
+          },
+          {
+            "name": "Avionics: Engine & Fuel Systems Panel",
+            "description": "The fuel computer emits {fuelRemainingLbs, currentFlowPph, groundSpeedKt} which the map converts into an endurance range ring and a fuel-exhaustion point drawn along the route line, refreshed on every fuel quantity update."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Flight Plan & Waypoint Manager",
+            "description": "When the pilot clicks a waypoint, airport or arbitrary map point, the map emits {identifier, lat, lon, action: select|insertAfterActive} and the flight plan manager scrolls to and highlights that waypoint row, or inserts it into the route at the chosen position and recomputes leg distances and ETAs."
+          }
+        ]
+      },
+      "features": [
+        "Aircraft Symbol",
+        "Route Course Line",
+        "Waypoint Icons",
+        "Active Leg Highlight",
+        "Range Rings",
+        "Zoom Range Control",
+        "Terrain Underlay",
+        "Weather Radar Layer",
+        "Traffic Targets",
+        "Nearby Airports Layer",
+        "Selected Heading Vector",
+        "Fuel Range Ring",
+        "North Up Track Up Toggle",
+        "Map Click Waypoint Select",
+        "Layer Toggle Bar",
+        "Scale Legend"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "name": "Avionics: Autopilot Mode Control Panel",
+      "genInstructions": "Build an FCU-style strip of digital selectors for airspeed, heading, altitude and vertical speed with rotary/increment controls, plus mode buttons (AP, FD, HDG, LNAV, VNAV, ALT, VS, APPR, A/THR) and an autopilot disconnect. It is the pilot's command interface for automated flight.",
+      "role": "This is the command panel that sets the flight targets and modes consumed by the primary flight display and moving map, and announces mode engagements and disconnects to the alert panel.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Flight Plan & Waypoint Manager",
+            "description": "When a leg is activated or the route is edited, the manager emits {activeLegDesiredTrack, nextAltitudeConstraint}; the panel pre-loads these into the LNAV/VNAV target readouts and enables the LNAV and VNAV mode buttons only while a valid active leg exists (greyed out when the route is empty)."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Primary Flight Display",
+            "description": "On every selector change or mode button press, emit {selectedSpeed, selectedHeading, selectedAltitude, selectedVS, activeModes[], armedModes[]} so the PFD moves its speed/heading/altitude bugs and VSI notch and rewrites its flight-mode annunciator."
+          },
+          {
+            "name": "Avionics: Navigation Moving Map",
+            "description": "Emit the selected heading and the active lateral mode; in HDG mode the map draws the dashed selected-heading vector from the aircraft symbol, and in LNAV mode it drops the vector and marks the route line as the active lateral tracking source."
+          },
+          {
+            "name": "Avionics: Caution & Warning Alert Panel",
+            "description": "On mode engagement, mode reversion, or autopilot/autothrottle disconnect, emit a message event {severity, text, timestamp} (e.g. 'AP DISCONNECT' as a warning, 'LNAV ENGAGED' as an advisory) which the alert panel pushes to the top of its scrolling message list with the matching color and, for warnings, an audible/flashing acknowledgment state."
+          }
+        ]
+      },
+      "features": [
+        "Airspeed Selector",
+        "Heading Selector",
+        "Altitude Selector",
+        "Vertical Speed Selector",
+        "AP Engage Button",
+        "Flight Director Button",
+        "HDG Mode Button",
+        "LNAV Mode Button",
+        "VNAV Mode Button",
+        "ALT Hold Button",
+        "VS Mode Button",
+        "Approach Mode Button",
+        "Autothrottle Button",
+        "AP Disconnect Bar",
+        "Active Mode Indicator Lights"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      "name": "Avionics: Flight Plan & Waypoint Manager",
+      "genInstructions": "Build an FMS-style route table listing waypoints with identifier, desired track, leg distance, ETA, and altitude/speed constraints, with controls to add, delete, reorder by drag, activate a leg, and enter a direct-to. It manages the lateral and vertical route flown by the aircraft.",
+      "role": "This is the route authority of the dashboard, defining the waypoint sequence and active leg that the moving map draws, the primary flight display tracks, and the autopilot follows in LNAV/VNAV.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Navigation Moving Map",
+            "description": "When the pilot clicks a waypoint, airport or map point, the map sends {identifier, lat, lon, action: select|insertAfterActive}; the manager highlights and scrolls to that row for a select, or inserts the point into the sequence for an insert and recomputes all leg distances, tracks and ETAs."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Navigation Moving Map",
+            "description": "On any route creation, edit, reorder, deletion, direct-to, or leg activation, emit the ordered waypoint array with coordinates and the active leg index so the map redraws the magenta course line, waypoint labels and active-leg highlight."
+          },
+          {
+            "name": "Avionics: Primary Flight Display",
+            "description": "Emit the active leg payload {fromWaypoint, toWaypoint, desiredTrack, crossTrackErrorNm, distanceToGoNm, vnavTargetAltitude} so the PFD drives its course deviation diamond, navigation data field text and VNAV altitude marker."
+          },
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "Emit {activeLegDesiredTrack, nextAltitudeConstraint, routeValid} so the FCU pre-loads LNAV/VNAV targets and enables or disables its LNAV and VNAV mode buttons depending on whether a valid active leg exists."
+          }
+        ]
+      },
+      "features": [
+        "Waypoint Route Table",
+        "Identifier Column",
+        "Desired Track Column",
+        "Leg Distance Column",
+        "ETA Column",
+        "Altitude Constraint Field",
+        "Speed Constraint Field",
+        "Add Waypoint Control",
+        "Delete Waypoint Control",
+        "Drag Reorder Handles",
+        "Activate Leg Button",
+        "Direct To Entry",
+        "Active Leg Row Highlight",
+        "Route Totals Summary"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
+    },
+    {
+      "name": "Avionics: Engine & Fuel Systems Panel",
+      "genInstructions": "Build an EICAS-style panel with per-engine N1/EPR, EGT, oil pressure and temperature gauges plus a fuel tank quantity table with total fuel, flow per engine, and endurance/range computation. It monitors powerplant health and fuel state.",
+      "role": "This is the systems-monitoring panel that reports engine and fuel parameters, feeding fuel endurance data to the moving map and raising exceedance messages to the alert panel.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Avionics: Navigation Moving Map",
+            "description": "Emit {fuelRemainingLbs, currentFlowPph, groundSpeedKt} on every fuel quantity refresh so the map recomputes and redraws the endurance range ring and the fuel-exhaustion point along the active route."
+          },
+          {
+            "name": "Avionics: Caution & Warning Alert Panel",
+            "description": "When any monitored parameter crosses its caution or warning threshold (EGT over-temp, low oil pressure, fuel imbalance, low fuel total), emit {system, parameter, value, severity, text, timestamp}; the alert panel inserts the message in severity order, colors it amber or red, and keeps it latched until the condition clears or is acknowledged."
+          }
+        ]
+      },
+      "features": [
+        "Engine N1 Gauges",
+        "EGT Gauges",
+        "Oil Pressure Readout",
+        "Oil Temperature Readout",
+        "Fuel Flow Per Engine",
+        "Fuel Tank Quantity Table",
+        "Total Fuel Readout",
+        "Fuel Endurance Calculation",
+        "Fuel Imbalance Indicator",
+        "Exceedance Threshold Markers",
+        "Engine Vibration Readout",
+        "Thrust Reverser Status"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "name": "Avionics: Caution & Warning Alert Panel",
+      "genInstructions": "Build a CAS message stack that lists warning (red), caution (amber) and advisory (cyan) messages in severity order with timestamps, an acknowledge/clear control, master caution and master warning lamps, and a message count badge. It centralizes all aircraft alerting.",
+      "role": "This is the aggregated alerting surface that collects system exceedances and autopilot mode events from the other panels and presents them to the pilot for acknowledgment.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Engine & Fuel Systems Panel",
+            "description": "Receives {system, parameter, value, severity, text, timestamp} whenever an engine or fuel parameter breaches a caution/warning limit, inserts it into the message stack in severity order with amber/red coloring, illuminates the corresponding master lamp, and latches the message until the condition clears or is acknowledged."
+          },
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "Receives mode engagement, reversion and disconnect events {severity, text, timestamp} such as 'AP DISCONNECT' or 'LNAV ENGAGED' and pushes them onto the message list with warning or advisory styling, flashing the master warning lamp for disconnects until acknowledged."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Message Stack List",
+        "Severity Color Coding",
+        "Warning Message Rows",
+        "Caution Message Rows",
+        "Advisory Message Rows",
+        "Timestamp Column",
+        "Master Warning Lamp",
+        "Master Caution Lamp",
+        "Acknowledge Button",
+        "Clear Cleared Messages",
+        "Message Count Badge",
+        "Scrollable Overflow"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useState } from "react";
-import { Message, XY } from "./spec";
-import { extractComponentCode } from "./helpers";
+import { Message, XY, LeafPrimitives } from "./spec";
+import { extractComponentCode, LEAF_REPLACE_MARKER } from "./helpers";
 
 // API ROUTE CALLER, initializes state vars and the cached function that gets LLM
 // code. Lives in its own client module so the server-safe utils in helpers.ts can
@@ -18,7 +18,8 @@ export function useGetCode() {
   // Gets called when user sends prompt, function is cached with useCallback.
   // style = the per-UI visual style (for boxes in a generated UI); passed
   // through to /api/generate so all components of that UI share one look.
-  const handleSend = useCallback(async (prompt: string, fresh: boolean = false, boxSize?: XY, style?: string) => {
+  // primitives = that UI's usable library + floors (leafLibrary / PrimitiveSet.floors), when it has one.
+  const handleSend = useCallback(async (prompt: string, fresh: boolean = false, boxSize?: XY, style?: string, primitives?: LeafPrimitives, runMeta?: { taskID?: number; leafKey?: string }) => {
     // Create new user message from prompt
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -48,6 +49,10 @@ export function useGetCode() {
           boxSize,
           // Per-UI style for a generated UI (undefined -> route uses fallback)
           style,
+          // Per-UI primitive library (undefined -> hand-built leaf, today's prompt)
+          primitives,
+          // Run-log identity (dev): which generated UI and which box this leaf is
+          ...runMeta,
         }),
       });
 
@@ -66,7 +71,11 @@ export function useGetCode() {
           if (done) break;
           const chunk = decoder.decode(value, { stream: true });
           fullCode += chunk;
-          setGeneratedCode(extractComponentCode(fullCode)); // Connects LLM output
+          // A replace marker means the route sent a corrected version: it wins outright.
+          const replaced = fullCode.indexOf(LEAF_REPLACE_MARKER);
+          setGeneratedCode(replaced >= 0
+            ? fullCode.slice(replaced + LEAF_REPLACE_MARKER.length)
+            : extractComponentCode(fullCode)); // Connects LLM output
         }
       }
 

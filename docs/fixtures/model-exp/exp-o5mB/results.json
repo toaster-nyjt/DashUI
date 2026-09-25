@@ -1,0 +1,84 @@
+{
+  "LEAVES": [
+    {
+      "name": "DJ Table: Deck A (Left)",
+      "box": {
+        "x": 448,
+        "y": 416
+      }
+    },
+    {
+      "name": "DJ Table: Central Mixer",
+      "box": {
+        "x": 384,
+        "y": 416
+      }
+    },
+    {
+      "name": "DJ Table: Deck B (Right)",
+      "box": {
+        "x": 448,
+        "y": 416
+      }
+    }
+  ],
+  "config": {
+    "MODEL": "claude-opus-5",
+    "THINKING": "adaptive",
+    "EFFORT": "medium",
+    "MAX_TOKENS": 64000
+  },
+  "results": [
+    {
+      "mode": "prim",
+      "i": 0,
+      "name": "DJ Table: Deck A (Left)",
+      "box": {
+        "x": 448,
+        "y": 416
+      },
+      "secs": 77.271,
+      "out": 6842,
+      "stop": "end_turn",
+      "thinkingBlocks": 1,
+      "errs": [],
+      "notes": [
+        "uses Fader×1, Button×4, ToggleButton×3, Pad×1, JogWheel×1, Waveform×1, Readout×3"
+      ]
+    },
+    {
+      "mode": "prim",
+      "i": 1,
+      "name": "DJ Table: Central Mixer",
+      "box": {
+        "x": 384,
+        "y": 416
+      },
+      "secs": 107.94,
+      "out": 9519,
+      "stop": "end_turn",
+      "thinkingBlocks": 1,
+      "errs": [],
+      "notes": [
+        "uses Knob×4, Fader×2, ToggleButton×1, LevelMeter×1"
+      ]
+    },
+    {
+      "mode": "prim",
+      "i": 2,
+      "name": "DJ Table: Deck B (Right)",
+      "box": {
+        "x": 448,
+        "y": 416
+      },
+      "secs": 90.061,
+      "out": 8461,
+      "stop": "end_turn",
+      "thinkingBlocks": 1,
+      "errs": [],
+      "notes": [
+        "uses Fader×1, Button×5, ToggleButton×3, Pad×1, JogWheel×1, Waveform×1, Readout×3"
+      ]
+    }
+  ]
+}

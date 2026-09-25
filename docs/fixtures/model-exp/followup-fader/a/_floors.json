@@ -1,0 +1,12 @@
+{
+  "Fader": {
+    "base": [
+      1.75,
+      5
+    ],
+    "orientation:horizontal": [
+      5,
+      1.75
+    ]
+  }
+}

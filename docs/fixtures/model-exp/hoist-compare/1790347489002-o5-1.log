@@ -1,0 +1,16 @@
+hoist 49s  3870 out  valid=true  types=15
+  Knob             {"value":"number","onChange":"(v:number)=>void","min":"number","max":"number","mode?":"'continuous' | 'stepped'","steps?":"number[]","default?":"number"}
+  Fader            {"value":"number","onChange":"(v:number)=>void","min":"number","max":"number","orientation?":"'vertical' | 'horizontal'","detents?":"number[]"}
+  PushButton       {"onPress":"()=>void","onRelease?":"()=>void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  ToggleButton     {"on":"boolean","onChange":"(on:boolean)=>void","tone?":"'neutral' | 'accent' | 'danger'","disabled?":"boolean","children?":"React.ReactNode"}
+  ToggleSwitch     {"on":"boolean","onChange":"(on:boolean)=>void","disabled?":"boolean"}
+  SegmentedSelector {"options":"{ id: string; label: string }[]","value":"string","onChange":"(id: string) => void"}
+  JogWheel         {"angle":"number","onScrub":"(deltaRevolutions:number)=>void","onTouchChange?":"(touching:boolean)=>void","spinning?":"boolean"}
+  Readout          {"value":"number | string","unit?":"string","precision?":"number"}
+  TrackInfoDisplay {"track":"{ title: string; artist?: string; bpm?: number; key?: string; duration?: number } | null"}
+  LevelMeter       {"level":"number","levelRight?":"number","peak?":"number","orientation?":"'vertical' | 'horizontal'"}
+  WaveformLane     {"data":"{ peaks: number[]; lowPeaks?: number[]; midPeaks?: number[]; highPeaks?: number[]; duration: number } | null","playhead":"number","onScrub?":"(time:number)=>void","beatgrid?":"number[]","cues?":"{ id: string; time: number; label?: string }[]","loopRegion?":"{ start: number; end: number } | null","bpm?":"number","windowSeconds?":"number","phaseOffset?":"number"}
+  SearchInput      {"value":"string","onChange":"(q:string)=>void","placeholder?":"string","onSubmit?":"(q:string)=>void"}
+  TreeSelector     {"nodes":"{ id: string; label: string; children?: any[] }[]","value":"string","onChange":"(id: string) => void","expanded?":"string[]","onExpandedChange?":"(ids:string[])=>void"}
+  TrackList        {"items":"{ id: string; title: string; artist?: string; bpm?: number; key?: string; duration?: number }[]","columns":"{ id: string; label: string; sortable?: boolean }[]","value":"string","onChange":"(id: string) => void","onActivate?":"(id: string) => void","sort?":"{ column: string; direction: 'asc' | 'desc' }","onSortChange?":"(s:{ column: string; direction: 'asc' | 'desc' })=>void"}
+  Pad              {"onPress":"(velocity:number)=>void","onRelease?":"()=>void","active?":"boolean","armed?":"boolean","children?":"React.ReactNode"}

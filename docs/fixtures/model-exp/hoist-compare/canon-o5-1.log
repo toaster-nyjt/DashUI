@@ -1,0 +1,15 @@
+hoist 36s  3287 out  valid=true  types=14
+  SearchInput      {"value":"string","onChange":"(v: string) => void","placeholder?":"string"}
+  TreeSelector     {"nodes":"{ id: string; label: string; children?: any[] }[]","value":"string","onChange":"(id: string) => void"}
+  TrackList        {"items":"{ id: string; title: string; artist: string; bpm: number; key: string; duration: number }[]","columns":"{ id: string; label: string }[]","value":"string","onChange":"(id: string) => void","onActivate?":"(id: string) => void"}
+  SortHeaderBar    {"columns":"{ id: string; label: string }[]","sortBy":"string","direction":"'asc' | 'desc'","onChange":"(sortBy: string, direction: 'asc' | 'desc') => void"}
+  PushButton       {"onPress":"() => void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  ToggleButton     {"on":"boolean","onChange":"(on: boolean) => void","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  Knob             {"value":"number","onChange":"(v: number) => void","min":"number","max":"number","mode?":"'continuous' | 'stepped'","steps?":"number[]","detents?":"number[]","defaultValue?":"number"}
+  Fader            {"value":"number","onChange":"(v: number) => void","min":"number","max":"number","orientation?":"'vertical' | 'horizontal'","steps?":"number[]","detents?":"number[]","defaultValue?":"number"}
+  JogWheel         {"rotation":"number","onScrub":"(delta: number) => void","onTouchChange?":"(touched: boolean) => void"}
+  WaveformDisplay  {"lanes":"{ id: string; peaks: number[]; duration: number; playhead: number; beatGrid?: number[] }[]","showBeatGrid?":"boolean","showPlayhead?":"boolean","zoom?":"number","onScrub?":"(laneId: string, seconds: number) => void"}
+  Readout          {"fields":"{ id: string; value: string | number }[]"}
+  LevelMeter       {"level":"number","peak?":"number","orientation?":"'vertical' | 'horizontal'"}
+  Pad              {"active?":"boolean","onPress":"() => void","onLongPress?":"() => void","children?":"React.ReactNode"}
+  SegmentedSelector {"options":"{ id: string; label: string }[]","value":"string","onChange":"(id: string) => void"}

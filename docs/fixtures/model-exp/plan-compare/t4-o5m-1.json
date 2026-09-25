@@ -1,0 +1,329 @@
+{
+  "meta": {
+    "task": "Smart home control panel",
+    "model": "claude-opus-5",
+    "effort": "medium",
+    "secs": 56.805,
+    "outTok": 4859,
+    "inTok": 2880,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 7,
+    "features": 60,
+    "edges": 11,
+    "meanEdgeDescChars": 189,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Smart Home: Room Navigator Sidebar",
+      "genInstructions": "Build a vertical sidebar listing the home's floors and rooms (Living Room, Kitchen, Bedroom, Garage, etc.) with icons, per-room device counts and an 'All Rooms / Whole Home' option, plus a quick search field. Selecting a room sets the global room scope that every other panel filters by.",
+      "role": "It is the master scope selector of the panel, determining which room's devices, climate, energy and security data every other component displays.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "On room selection (or 'All Rooms'), emit the selected roomId; the grid re-queries and renders only device tiles assigned to that room, resetting scroll and showing an empty-state if the room has no devices."
+          },
+          {
+            "name": "Smart Home: Climate Thermostat Dial",
+            "description": "Emits the selected roomId; the dial switches to that room's thermostat/zone, loading its current temperature, target setpoint, humidity and HVAC mode (falls back to whole-home average when 'All Rooms' is chosen)."
+          },
+          {
+            "name": "Smart Home: Energy Usage Monitor",
+            "description": "Emits the selected roomId; the monitor rescopes all charts and totals to consumption attributed to that room's devices, or whole-home totals when 'All Rooms' is selected."
+          },
+          {
+            "name": "Smart Home: Security & Camera Panel",
+            "description": "Emits the selected roomId; the panel highlights and scrolls to the cameras, door/window sensors and locks located in that room, defaulting the camera feed to that room's primary camera."
+          }
+        ]
+      },
+      "features": [
+        "Floor Tabs",
+        "Room List",
+        "Room Icons",
+        "Device Count Badges",
+        "All Rooms Option",
+        "Room Search Field",
+        "Active Room Highlight",
+        "Room Status Dots"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Device Control Grid",
+      "genInstructions": "Build the central grid of device tiles (lights, plugs, fans, blinds, speakers, appliances) where each tile shows name, room, icon, live state and an inline control — toggle switch, brightness/level slider, color swatch or position control — plus a tile expand for detailed settings. This is the primary surface for directly operating individual devices.",
+      "role": "It is the main hands-on control surface where the user directly operates each device, scoped by the room navigator and bulk-updated by scenes and automations.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected roomId and filters the rendered device tiles to that room only (or shows all devices for 'All Rooms')."
+          },
+          {
+            "name": "Smart Home: Scene & Lighting Selector",
+            "description": "On scene activation, receives a payload of device state targets (per-device on/off, brightness, color temperature); matching tiles animate to the new states and their toggles/sliders update to reflect the scene's values."
+          },
+          {
+            "name": "Smart Home: Automation & Routine Scheduler",
+            "description": "When a routine fires or is manually run, receives the list of device actions it performs; affected tiles update their state live and display a small 'automated' badge indicating the controlling routine."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Energy Usage Monitor",
+            "description": "On every device state change (toggle on/off, brightness or level change), emits deviceId, new state and its estimated wattage; the monitor updates the live load figure and appends the change to the running consumption series and top-consumers list."
+          }
+        ]
+      },
+      "features": [
+        "Device Tile Grid",
+        "On Off Toggles",
+        "Brightness Sliders",
+        "Color Temp Picker",
+        "Blind Position Control",
+        "Device Type Filter",
+        "Tile Status Text",
+        "Expand Tile Details",
+        "Offline Device State",
+        "Favorites Row",
+        "Automation Badge"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "Smart Home: Climate Thermostat Dial",
+      "genInstructions": "Build a circular thermostat dial showing current temperature, drag-to-set target setpoint, humidity readout, HVAC mode buttons (heat/cool/auto/off), fan speed and a small daily temperature curve. It provides full climate control for the selected room or zone.",
+      "role": "It is the dedicated climate control station for the currently scoped room, feeding its HVAC load into the energy monitor and responding to scene presets.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected roomId and loads that zone's live temperature, humidity, setpoint and mode; shows whole-home averages for 'All Rooms'."
+          },
+          {
+            "name": "Smart Home: Scene & Lighting Selector",
+            "description": "On activation of a scene that carries climate presets (e.g. Away = eco 18°C, Night = 20°C), receives the target setpoint and HVAC mode and animates the dial to those values."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Energy Usage Monitor",
+            "description": "On setpoint or HVAC mode change, emits the new mode and estimated heating/cooling load; the monitor updates the HVAC slice of the consumption breakdown and the projected daily cost."
+          }
+        ]
+      },
+      "features": [
+        "Circular Temp Dial",
+        "Setpoint Drag Control",
+        "Current Temp Readout",
+        "Humidity Readout",
+        "HVAC Mode Buttons",
+        "Fan Speed Selector",
+        "Daily Temp Curve",
+        "Eco Mode Indicator",
+        "Zone Name Label"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "name": "Smart Home: Scene & Lighting Selector",
+      "genInstructions": "Build a row/grid of scene cards (Morning, Movie, Away, Night, Dinner) with preview colors, an activate action and an edit mode to adjust which devices and levels each scene sets. Activating a scene pushes a coordinated state change across lights and climate.",
+      "role": "It is the one-tap orchestration layer that applies coordinated multi-device presets, driving the device grid and thermostat in a single action.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Automation & Routine Scheduler",
+            "description": "When a scheduled routine whose action is 'activate scene' triggers, receives the sceneId and activates that scene, highlighting it as currently active with the triggering routine noted."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "On scene activation, emits the scene's full device state map (on/off, brightness, color temperature per deviceId); the grid applies these values to matching tiles and re-renders their controls."
+          },
+          {
+            "name": "Smart Home: Climate Thermostat Dial",
+            "description": "On activation of a scene containing climate settings, emits the target setpoint and HVAC mode so the dial moves to the scene's preset temperature."
+          }
+        ]
+      },
+      "features": [
+        "Scene Cards",
+        "Activate Scene Action",
+        "Active Scene Indicator",
+        "Scene Color Preview",
+        "Edit Scene Mode",
+        "Device Assignment List",
+        "Create New Scene",
+        "Scene Icons"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Energy Usage Monitor",
+      "genInstructions": "Build an energy panel with a live wattage gauge, a time-series consumption chart with day/week/month range toggles, a breakdown donut by category (lighting, HVAC, appliances) and a top-consumers list with cost estimate. It reports how current device and climate activity translates into energy use.",
+      "role": "It is the analytics readout of the panel, converting the live states driven by the device grid and thermostat into consumption, cost and trend insight for the scoped room.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected roomId and rescopes the gauge, chart, breakdown and top-consumers list to that room's devices, or whole-home totals for 'All Rooms'."
+          },
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "Receives device state-change events with deviceId and estimated wattage; updates the live load gauge, extends the real-time series and reorders the top-consumers list."
+          },
+          {
+            "name": "Smart Home: Climate Thermostat Dial",
+            "description": "Receives setpoint/HVAC mode changes with the resulting estimated load; updates the HVAC portion of the breakdown donut and the projected daily cost figure."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Live Wattage Gauge",
+        "Consumption Line Chart",
+        "Range Toggles",
+        "Category Breakdown Donut",
+        "Top Consumers List",
+        "Cost Estimate",
+        "Comparison To Yesterday",
+        "Scope Label"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Security & Camera Panel",
+      "genInstructions": "Build a security panel with a live camera feed viewer plus thumbnail strip, arm/disarm mode buttons (Home/Away/Disarmed), a door/window sensor status list, smart lock toggles and a recent events log. It covers monitoring and securing the home.",
+      "role": "It is the safety and surveillance station of the panel, showing and controlling locks, sensors and cameras for the scoped room and responding to scheduled security routines.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected roomId and filters sensors, locks and camera thumbnails to that room, auto-loading that room's primary camera into the main feed viewer."
+          },
+          {
+            "name": "Smart Home: Automation & Routine Scheduler",
+            "description": "When a routine with a security action fires (e.g. 'Away at 09:00 arms system', 'Night locks all doors'), receives the target arm mode and lock commands; the panel switches arm state, updates lock toggles and writes an entry into the events log."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Live Camera Viewer",
+        "Camera Thumbnail Strip",
+        "Arm Mode Buttons",
+        "Sensor Status List",
+        "Smart Lock Toggles",
+        "Recent Events Log",
+        "Motion Alert Banner",
+        "System Status Header"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Automation & Routine Scheduler",
+      "genInstructions": "Build a routines panel listing automations as rows with trigger (time, sunset, presence, sensor), action summary, enable/disable switch, a run-now button and an add/edit rule builder. It automates scenes, devices and security modes on schedule or condition.",
+      "role": "It is the time- and condition-based brain of the system, firing scenes, device actions and security modes automatically so the rest of the panel updates without manual input.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Smart Home: Scene & Lighting Selector",
+            "description": "When an enabled routine fires (schedule hit or 'Run Now' pressed) with a scene action, emits the sceneId so the selector activates that scene and marks it active."
+          },
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "When a routine with direct device actions fires, emits the list of deviceId/target-state pairs; the grid applies the states to those tiles and flags them with an automation badge naming the routine."
+          },
+          {
+            "name": "Smart Home: Security & Camera Panel",
+            "description": "When a routine with a security action fires, emits the requested arm mode and lock commands; the security panel updates its arm state, lock toggles and appends the event to its log."
+          }
+        ]
+      },
+      "features": [
+        "Routine List Rows",
+        "Trigger Condition Display",
+        "Action Summary",
+        "Enable Disable Switch",
+        "Run Now Button",
+        "Rule Builder Form",
+        "Next Run Time",
+        "Add Routine Action"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  ]
+}

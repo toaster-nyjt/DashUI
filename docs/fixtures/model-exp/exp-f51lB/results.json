@@ -1,0 +1,84 @@
+{
+  "LEAVES": [
+    {
+      "name": "DJ Table: Deck A (Left)",
+      "box": {
+        "x": 448,
+        "y": 416
+      }
+    },
+    {
+      "name": "DJ Table: Central Mixer",
+      "box": {
+        "x": 384,
+        "y": 416
+      }
+    },
+    {
+      "name": "DJ Table: Deck B (Right)",
+      "box": {
+        "x": 448,
+        "y": 416
+      }
+    }
+  ],
+  "config": {
+    "MODEL": "claude-fable-5-1",
+    "THINKING": "adaptive",
+    "EFFORT": "low",
+    "MAX_TOKENS": 64000
+  },
+  "results": [
+    {
+      "mode": "prim",
+      "i": 0,
+      "name": "DJ Table: Deck A (Left)",
+      "box": {
+        "x": 448,
+        "y": 416
+      },
+      "secs": 77.133,
+      "out": 6839,
+      "stop": "end_turn",
+      "thinkingBlocks": 1,
+      "errs": [],
+      "notes": [
+        "uses Fader×1, Button×3, ToggleButton×3, Pad×1, JogWheel×1, Waveform×1, Readout×4"
+      ]
+    },
+    {
+      "mode": "prim",
+      "i": 1,
+      "name": "DJ Table: Central Mixer",
+      "box": {
+        "x": 384,
+        "y": 416
+      },
+      "secs": 62.753,
+      "out": 5686,
+      "stop": "end_turn",
+      "thinkingBlocks": 1,
+      "errs": [],
+      "notes": [
+        "uses Knob×3, Fader×2, ToggleButton×1, LevelMeter×1"
+      ]
+    },
+    {
+      "mode": "prim",
+      "i": 2,
+      "name": "DJ Table: Deck B (Right)",
+      "box": {
+        "x": 448,
+        "y": 416
+      },
+      "secs": 82.046,
+      "out": 7383,
+      "stop": "end_turn",
+      "thinkingBlocks": 1,
+      "errs": [],
+      "notes": [
+        "uses Fader×1, Button×6, ToggleButton×3, Pad×1, JogWheel×1, Waveform×1, Readout×3"
+      ]
+    }
+  ]
+}

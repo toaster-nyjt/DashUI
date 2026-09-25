@@ -1,0 +1,119 @@
+{
+  "config": {
+    "budget": true,
+    "MODEL": "claude-opus-5",
+    "THINKING": "adaptive",
+    "EFFORT": "low"
+  },
+  "wall": 67.748,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "DJ Table: Waveform Display",
+      "box": {
+        "x": 2497,
+        "y": 277.44444444444446
+      },
+      "secs": 40.771,
+      "outTok": 4048,
+      "codeTok": 3594,
+      "thinkTok": 454,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + pad 1.0 + laneA 4.6 + gap 0.4 + laneB 4.6 + footer 1.75 = 14.6 ≤ 17.3",
+        "// BUDGET width: pad 1.0 + zoomrail 5.0 + gap 0.75 + lanes 138.0 + gap 0.75 + minimaps 10.0 = 155.5 ≤ 156.1"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 1,
+      "leaf": "DJ Table: Deck A (Left Player)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 67.359,
+      "outTok": 6368,
+      "codeTok": 4502,
+      "thinkTok": 1866,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + pad 1.5 + readouts 2.75 + gap 0.75 + main 32.6 (jog 25 + gap .75 + transport 3.5 | fader 18 + gap .75 + pads 13) + footer 1.75 = 41.6 ≤ 41.6",
+        "// BUDGET width: pad 1.5 + left 27 (jog 25) + gap 0.75 + right 22.75 (fader 3.5 + gap .75 + stack 18.5) = 52.0 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 2,
+      "leaf": "DJ Table: Central Mixer",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 58.644,
+      "outTok": 5618,
+      "codeTok": 4380,
+      "thinkTok": 1238,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + pad 1.5 + gain 3 + gap 0.5 + eq 9 + gap 0.5 + cue 1.75 + gap 0.5 + fader 12 + gap 0.75 + crossfader 3.25 + footer 1.75 = 36.75 ≤ 41.6",
+        "// BUDGET width: pad 1.5 + chA 13.5 + gap 0.75 + master 10 + gap 0.75 + chB 13.5 = 40.0 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 3,
+      "leaf": "DJ Table: Deck B (Right Player)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 53.973,
+      "outTok": 5476,
+      "codeTok": 4581,
+      "thinkTok": 895,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + pad 0.75 + meta 3 + gap 0.75 + main 15 (jog) + transport 2 + gap + pads/loop 8.5 + pad 0.75 + footer 1.75 = ~35.5 ≤ 41.6",
+        "// BUDGET width: pad 0.75 + jog col 15 + gap 0.75 + center 30 + gap 0.75 + fader col 3.25 + pad 0.75 = 52.0 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 4,
+      "leaf": "DJ Table: Track Library Browser",
+      "box": {
+        "x": 1498.2,
+        "y": 332.93333333333334
+      },
+      "secs": 46.974,
+      "outTok": 4810,
+      "codeTok": 4592,
+      "thinkTok": 218,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + padding 1.5 + body 17.05 = 20.8 ≤ 20.8",
+        "// BUDGET width: padding 1.5 + left 18 + gap 0.75 + center 54.35 + gap 0.75 + right 18.25 = 93.6 ≤ 93.6"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 5,
+      "leaf": "DJ Table: Effects Rack",
+      "box": {
+        "x": 998.8,
+        "y": 332.93333333333334
+      },
+      "secs": 45.146,
+      "outTok": 4354,
+      "codeTok": 4007,
+      "thinkTok": 347,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + padding 0.75*2 + body row (knob 3.5 + label 0.9 = 4.4 max) stacked pairs 2x4.4=8.8 + gap 0.5 = 9.3 → body 16.8 available = 12.3 ≤ 20.8",
+        "// BUDGET width: pad 0.75*2 + routing 9 + gap .75 + selector col 15 + gap .75 + mix 9 + gap .75 + params 12.5 + gap .75 + onoff 10 = 60.0 ≤ 62.4"
+      ],
+      "postProcessed": true
+    }
+  ]
+}

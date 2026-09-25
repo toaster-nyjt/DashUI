@@ -1,0 +1,336 @@
+{
+  "meta": {
+    "task": "Build me a checkout page for an online store",
+    "model": "claude-opus-5",
+    "effort": "medium",
+    "secs": 55.381,
+    "outTok": 5091,
+    "inTok": 2885,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 6,
+    "features": 61,
+    "edges": 13,
+    "meanEdgeDescChars": 189,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Checkout: Progress Stepper Header",
+      "genInstructions": "Build a horizontal multi-step progress header (Cart → Shipping → Delivery → Payment → Review) spanning the top of the checkout page, showing completed, current, and upcoming steps with checkmarks and a store logo/secure-checkout badge. It orients the shopper and lets them jump back to any completed step.",
+      "role": "Serves as the navigational spine of the checkout, reflecting completion state of every form section and letting the shopper move between them.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Shipping Address Form",
+            "description": "When all required address fields validate successfully (and on blur of the last required field), the address form emits a 'shipping step complete' event with the validated address; the stepper marks the Shipping step as complete with a checkmark and advances the current-step indicator to Delivery."
+          },
+          {
+            "name": "Checkout: Delivery Method Selector",
+            "description": "When the shopper selects a shipping speed, the selector emits 'delivery step complete' with the chosen method id; the stepper marks Delivery complete and advances the active indicator to Payment."
+          },
+          {
+            "name": "Checkout: Payment Method Panel",
+            "description": "When card/wallet details pass client-side validation, the payment panel emits 'payment step complete' with the payment method type and masked identifier; the stepper marks Payment complete and moves the active indicator to Review."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Shipping Address Form",
+            "description": "Clicking the Shipping step (only when it is complete or current) emits a 'navigate to step: shipping' event that scrolls the address form into view, expands it if collapsed, and focuses its first input field."
+          },
+          {
+            "name": "Checkout: Payment Method Panel",
+            "description": "Clicking the Payment step emits 'navigate to step: payment', which scrolls the payment panel into view, expands it, and focuses the card number field."
+          }
+        ]
+      },
+      "features": [
+        "Step Labels",
+        "Completion Checkmarks",
+        "Active Step Highlight",
+        "Connector Progress Bar",
+        "Clickable Step Navigation",
+        "Store Logo",
+        "Secure Checkout Badge"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "name": "Checkout: Cart Line Items Review",
+      "genInstructions": "Build a scrollable list of cart line items with product thumbnail, title, variant attributes, unit price, quantity stepper, remove button, and line total, plus a gift-wrap/note toggle per item. It lets the shopper verify and adjust exactly what they are buying before paying.",
+      "role": "Acts as the authoritative source of what is being purchased, feeding item quantities and prices to the totals panel and delivery estimates.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Order Totals & Promo Panel",
+            "description": "When an applied promo code targets specific line items, the totals panel emits the discount mapping (item id → discounted amount) and each affected line item renders a strikethrough original price with a discount badge."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Order Totals & Promo Panel",
+            "description": "On any quantity change, item removal, or gift-wrap toggle, emit the full updated line-item array (id, unit price, qty, gift-wrap fee); the totals panel recomputes subtotal, tax, and grand total and re-renders immediately."
+          },
+          {
+            "name": "Checkout: Delivery Method Selector",
+            "description": "Emits the updated item set with weights/shipping classes whenever quantities change or items are removed, causing the delivery selector to re-fetch and re-render available shipping speeds, prices, and arrival-date estimates."
+          }
+        ]
+      },
+      "features": [
+        "Item Thumbnails",
+        "Product Title & Variant",
+        "Unit Price Display",
+        "Quantity Stepper",
+        "Remove Item Button",
+        "Line Total",
+        "Discount Badge",
+        "Gift Wrap Toggle",
+        "Scrollable Item List",
+        "Item Count Header"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "name": "Checkout: Shipping Address Form",
+      "genInstructions": "Build a two-column contact and shipping address form with email, phone, full name, autocompleted street address, apt/suite, city, state/region, postal code, country select, inline validation, and a 'save address' checkbox. It captures where and to whom the order ships.",
+      "role": "Collects the destination and contact details that drive available delivery options, tax calculation, and billing defaults for the rest of the checkout.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "Receives a 'navigate to step: shipping' event when the shopper clicks the Shipping step, scrolling itself into view, expanding if collapsed, and focusing the first input."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "On successful validation of all required fields, emits 'shipping step complete' with the validated address object so the stepper marks Shipping done and advances to Delivery."
+          },
+          {
+            "name": "Checkout: Delivery Method Selector",
+            "description": "On postal code / country / state change (debounced, once valid), emits the destination address; the delivery selector re-queries carrier rates and re-renders the method list with updated prices and arrival dates, disabling methods unavailable for that region."
+          },
+          {
+            "name": "Checkout: Order Totals & Promo Panel",
+            "description": "Emits the validated destination (country, state, postal code) so the totals panel recalculates the tax line and updates the grand total."
+          },
+          {
+            "name": "Checkout: Payment Method Panel",
+            "description": "Emits the current shipping address so that when the payment panel's 'billing same as shipping' checkbox is checked, its billing fields auto-populate and stay synced with any later address edits."
+          }
+        ]
+      },
+      "features": [
+        "Email & Phone Fields",
+        "Recipient Name Fields",
+        "Street Address Autocomplete",
+        "Apt / Suite Field",
+        "City Field",
+        "State Region Select",
+        "Postal Code Field",
+        "Country Select",
+        "Inline Validation Errors",
+        "Save Address Checkbox",
+        "Saved Address Picker"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "Checkout: Delivery Method Selector",
+      "genInstructions": "Build a set of selectable radio cards for shipping speeds (Standard, Expedited, Overnight, Local Pickup), each showing carrier, price, and estimated arrival date range, plus an optional delivery-instructions note field. It lets the shopper choose how fast and how the order arrives.",
+      "role": "Converts the shipping destination and cart contents into a chosen delivery option whose cost and ETA flow into the order totals.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Shipping Address Form",
+            "description": "Receives the validated destination address on change; re-queries carrier rates and re-renders the option cards with region-specific prices, ETAs, and disabled states for unavailable methods."
+          },
+          {
+            "name": "Checkout: Cart Line Items Review",
+            "description": "Receives the updated line-item set (weights, shipping classes) on quantity change or removal and recomputes each method's price and arrival estimate."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Order Totals & Promo Panel",
+            "description": "On selection of a delivery option, emits the method id, its shipping cost, and ETA; the totals panel replaces the shipping line item with that cost, recalculates tax and grand total, and displays the estimated arrival date."
+          },
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "On selection, emits 'delivery step complete' with the chosen method id so the stepper marks Delivery complete and advances to Payment."
+          }
+        ]
+      },
+      "features": [
+        "Shipping Method Cards",
+        "Radio Selection State",
+        "Carrier & Service Name",
+        "Price Per Method",
+        "Estimated Arrival Dates",
+        "Local Pickup Option",
+        "Unavailable Method Disabled State",
+        "Delivery Instructions Note"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Checkout: Payment Method Panel",
+      "genInstructions": "Build a payment section with tabs for card, digital wallets (Apple Pay/PayPal), and gift card, containing a formatted card number field with live brand detection, expiry, CVC, name on card, a 'billing address same as shipping' checkbox with a collapsible billing address form, and encryption notice. It captures how the shopper pays.",
+      "role": "Collects and validates the payment instrument that authorizes the order, gating the place-order action in the totals panel.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Shipping Address Form",
+            "description": "Receives the current shipping address; when 'billing same as shipping' is checked, the collapsed billing fields mirror it and stay synced with subsequent address edits."
+          },
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "Receives a 'navigate to step: payment' event on stepper click, scrolling into view, expanding, and focusing the card number field."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "On successful client-side validation of the selected payment method, emits 'payment step complete' with method type and masked identifier so the stepper marks Payment done."
+          },
+          {
+            "name": "Checkout: Order Totals & Promo Panel",
+            "description": "Emits payment validity state plus the selected method label and masked last-four; the totals panel enables or disables the Place Order button accordingly and shows the chosen payment method in its review summary."
+          }
+        ]
+      },
+      "features": [
+        "Payment Method Tabs",
+        "Card Number Field",
+        "Card Brand Detection",
+        "Expiry & CVC Fields",
+        "Name On Card",
+        "Digital Wallet Buttons",
+        "Gift Card Redemption",
+        "Billing Same As Shipping",
+        "Collapsible Billing Form",
+        "Inline Card Validation",
+        "Encryption Notice"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "Checkout: Order Totals & Promo Panel",
+      "genInstructions": "Build a sticky right-rail summary card with a promo code input and apply button, itemized subtotal, discount, shipping, tax, and bold grand total, estimated arrival line, chosen payment method summary, a large Place Order button with loading state, and terms/refund policy links. It is where the shopper confirms cost and commits to the purchase.",
+      "role": "Aggregates cart, delivery, discount, and payment state into the final price and hosts the single action that submits the order.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Cart Line Items Review",
+            "description": "Receives the updated line-item array (id, unit price, qty, gift-wrap fee) on any quantity change, removal, or toggle and recomputes subtotal, tax, and grand total."
+          },
+          {
+            "name": "Checkout: Shipping Address Form",
+            "description": "Receives the validated destination (country, state, postal code) and recalculates the tax line and grand total."
+          },
+          {
+            "name": "Checkout: Delivery Method Selector",
+            "description": "Receives the selected method id, shipping cost, and ETA; updates the shipping line, grand total, and estimated arrival text."
+          },
+          {
+            "name": "Checkout: Payment Method Panel",
+            "description": "Receives payment validity plus method label and masked last-four; enables or disables the Place Order button and renders the payment method summary line."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Cart Line Items Review",
+            "description": "After a promo code is applied successfully, emits the per-item discount mapping so affected line items render strikethrough pricing and a discount badge."
+          }
+        ]
+      },
+      "features": [
+        "Promo Code Input",
+        "Apply Code Button",
+        "Applied Code Chip",
+        "Subtotal Line",
+        "Discount Line",
+        "Shipping Cost Line",
+        "Tax Line",
+        "Grand Total",
+        "Estimated Arrival Line",
+        "Payment Method Summary",
+        "Place Order Button",
+        "Button Loading State",
+        "Terms & Refund Links",
+        "Sticky Positioning"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
+    }
+  ]
+}

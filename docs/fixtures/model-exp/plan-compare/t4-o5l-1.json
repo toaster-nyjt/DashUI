@@ -1,0 +1,325 @@
+{
+  "meta": {
+    "task": "Smart home control panel",
+    "model": "claude-opus-5",
+    "effort": "low",
+    "secs": 41.351,
+    "outTok": 3859,
+    "inTok": 2880,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 6,
+    "features": 50,
+    "edges": 14,
+    "meanEdgeDescChars": 144,
+    "issues": [
+      "connectivity: \"Smart Home: Room Navigator Sidebar\" has a target connection to \"Smart Home: Activity & Automation Feed\", which is not one of this UI's component names. Every connection \"name\" must exactly match another component's \"name\".",
+      "unmirrored: Smart Home: Room Navigator Sidebar -> Smart Home: Security & Activity Feed (effector only)",
+      "unmirrored: Smart Home: Device Control Grid -> Smart Home: Security & Activity Feed (effector only)",
+      "unmirrored: Smart Home: Climate Control Dial -> Smart Home: Security & Activity Feed (effector only)",
+      "unmirrored: Smart Home: Scene Launcher Strip -> Smart Home: Security & Activity Feed (effector only)"
+    ]
+  },
+  "defs": [
+    {
+      "name": "Smart Home: Room Navigator Sidebar",
+      "genInstructions": "Build a vertical sidebar listing home zones (Living Room, Kitchen, Bedroom, Office, Garage, Outdoor) with icons, per-room active-device counts, temperature badge, and an 'All Rooms' entry; selecting a room becomes the global scope filter for the rest of the panel.",
+      "role": "The primary navigation scope for the panel, selecting which room's devices, climate, and activity the rest of the UI displays.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Scene Launcher Strip",
+            "description": "When a scene is activated, the sidebar receives the updated per-room active-device counts and temperature badges and re-renders them to reflect the new device states."
+          },
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "When a device is toggled on/off in the grid, it emits a room id and delta so the sidebar increments/decrements that room's active-device count badge."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "On room selection, emits the selected room id (or 'all'); the grid re-queries and renders only device tiles belonging to that room, resetting scroll and its category filter to 'All'."
+          },
+          {
+            "name": "Smart Home: Climate Control Dial",
+            "description": "On room selection, emits the room id; the dial loads and displays that room's thermostat target/current temperature, humidity and mode, and subsequent adjustments apply to that room's thermostat."
+          },
+          {
+            "name": "Smart Home: Activity & Automation Feed",
+            "description": "On room selection, emits the room id; the feed filters its event list to events originating from devices in that room ('all' shows the whole home)."
+          },
+          {
+            "name": "Smart Home: Energy Usage Monitor",
+            "description": "On room selection, emits the room id; the monitor scopes its consumption charts and per-device breakdown to that room, or shows whole-home totals for 'all'."
+          }
+        ]
+      },
+      "features": [
+        "Room List",
+        "Room Icons",
+        "Active Device Counts",
+        "Room Temperature Badge",
+        "All Rooms Entry",
+        "Selected Room Highlight",
+        "Home Status Header",
+        "Search Rooms"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Device Control Grid",
+      "genInstructions": "Build a responsive grid of device tiles (lights, plugs, locks, blinds, speakers, fans) each with icon, name, state label, quick toggle and an inline control (brightness/level slider) plus a category filter row and a tile detail expansion.",
+      "role": "The main workspace where the user directly views and controls every device in the selected room.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected room id and renders only that room's device tiles, resetting category filter to 'All'."
+          },
+          {
+            "name": "Smart Home: Scene Launcher Strip",
+            "description": "On scene activation, receives the batch of device state changes (on/off, brightness, color) and animates the affected tiles to their new states."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Emits room id and +/-1 whenever a device is switched on or off so the sidebar's active-device count badge updates live."
+          },
+          {
+            "name": "Smart Home: Activity & Automation Feed",
+            "description": "Every device interaction emits an event {device name, room, action, value, timestamp, source:'manual'} which the feed prepends as a new entry."
+          },
+          {
+            "name": "Smart Home: Energy Usage Monitor",
+            "description": "Toggling a device or changing its level emits its updated estimated wattage so the monitor recomputes current draw and updates the live total and per-device bars."
+          }
+        ]
+      },
+      "features": [
+        "Device Tiles",
+        "On/Off Toggles",
+        "Brightness/Level Sliders",
+        "Device Category Filter",
+        "Device Status Labels",
+        "Tile Detail Expansion",
+        "Color Picker",
+        "Offline Device Indicator",
+        "Add Device Tile",
+        "Grid Header Count"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "name": "Smart Home: Climate Control Dial",
+      "genInstructions": "Build a circular thermostat dial for the selected room with drag-to-set target temperature, current temp and humidity readout, heat/cool/auto/off mode buttons, fan speed selector and a compact 24h temperature trend sparkline.",
+      "role": "The dedicated climate console for the selected room, complementing the device grid with fine-grained thermostat control.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected room id and loads that room's thermostat target, current temperature, humidity, mode and trend history."
+          },
+          {
+            "name": "Smart Home: Scene Launcher Strip",
+            "description": "Scene activation pushes a target temperature and HVAC mode for the active room; the dial animates to the new setpoint and updates mode buttons."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Smart Home: Activity & Automation Feed",
+            "description": "Setpoint, mode or fan changes emit an event {room, 'Thermostat set to X°', timestamp, source:'manual'} that the feed prepends."
+          },
+          {
+            "name": "Smart Home: Energy Usage Monitor",
+            "description": "Changing setpoint or HVAC mode emits the new expected HVAC load so the monitor updates the HVAC segment of the consumption chart and the live draw total."
+          }
+        ]
+      },
+      "features": [
+        "Circular Temp Dial",
+        "Drag Setpoint Control",
+        "Current Temp Readout",
+        "Humidity Readout",
+        "HVAC Mode Buttons",
+        "Fan Speed Selector",
+        "24h Trend Sparkline",
+        "Schedule Preview"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Scene Launcher Strip",
+      "genInstructions": "Build a horizontal strip of scene cards (Good Morning, Away, Movie Night, Bedtime, Party) with icons, affected-device counts, one-tap activation with active-state highlight, plus create/edit scene controls.",
+      "role": "The one-tap macro layer that applies coordinated device and climate presets across the home, driving the grid, dial, sidebar and feed.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "Activating a scene emits its full device state payload (per-device on/off, brightness, color); the grid applies and animates each affected tile."
+          },
+          {
+            "name": "Smart Home: Climate Control Dial",
+            "description": "Activating a scene emits target temperature and HVAC mode; the dial animates to the new setpoint and mode."
+          },
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "After a scene applies, emits recalculated per-room active-device counts and temperatures so the sidebar badges refresh."
+          },
+          {
+            "name": "Smart Home: Activity & Automation Feed",
+            "description": "Scene activation emits an event {scene name, device count, timestamp, source:'scene'} that the feed prepends as a highlighted entry."
+          },
+          {
+            "name": "Smart Home: Energy Usage Monitor",
+            "description": "Scene activation emits the aggregate wattage delta of all changed devices so the monitor updates its live draw figure and chart."
+          }
+        ]
+      },
+      "features": [
+        "Scene Cards",
+        "Scene Icons",
+        "One-Tap Activation",
+        "Active Scene Highlight",
+        "Affected Device Count",
+        "Create Scene Button",
+        "Edit Scene Menu",
+        "Schedule Badge"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Energy Usage Monitor",
+      "genInstructions": "Build an energy panel with a live current-draw figure, a stacked consumption chart over selectable ranges (day/week/month), a ranked per-device/per-category breakdown with bars, and cost estimate.",
+      "role": "The analytics surface that reports the power and cost consequences of the device, climate and scene states controlled elsewhere.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected room id and scopes its charts and breakdown to that room, or whole-home totals for 'all'."
+          },
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "Receives wattage deltas when devices are toggled or dimmed and updates the live draw total and per-device bars."
+          },
+          {
+            "name": "Smart Home: Climate Control Dial",
+            "description": "Receives HVAC load changes from setpoint/mode edits and updates the HVAC segment and live total."
+          },
+          {
+            "name": "Smart Home: Scene Launcher Strip",
+            "description": "Receives the aggregate wattage delta of a scene activation and updates the live draw and chart."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Live Draw Readout",
+        "Consumption Chart",
+        "Range Selector",
+        "Per-Device Breakdown",
+        "Category Bars",
+        "Cost Estimate",
+        "Comparison To Yesterday",
+        "Peak Usage Marker"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Smart Home: Security & Activity Feed",
+      "genInstructions": "Build a right-hand panel combining home security status (arm/disarm toggle, door/window sensor list, camera thumbnail) with a chronological, filterable activity and automation event log.",
+      "role": "The awareness panel that arms the home and records every manual, scene, and automated event happening across the other components.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Smart Home: Room Navigator Sidebar",
+            "description": "Receives the selected room id and filters the event log to events from devices in that room; 'all' shows whole-home history."
+          },
+          {
+            "name": "Smart Home: Device Control Grid",
+            "description": "Receives manual device-interaction events and prepends them to the log with device name, action, value and timestamp."
+          },
+          {
+            "name": "Smart Home: Climate Control Dial",
+            "description": "Receives thermostat setpoint/mode change events and prepends them to the log."
+          },
+          {
+            "name": "Smart Home: Scene Launcher Strip",
+            "description": "Receives scene activation events and prepends them as highlighted log entries showing scene name and affected device count."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Arm/Disarm Toggle",
+        "Sensor Status List",
+        "Camera Thumbnail",
+        "Chronological Event Log",
+        "Event Source Filter",
+        "Event Timestamps",
+        "Alert Highlighting",
+        "Clear Log Action"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+VISUAL GUIDELINES — "NIGHT AMBER" DJ CONSOLE SYSTEM (shared token sheet; apply verbatim)
+
+THEME CONCEPT
+- Warm-metal club console: charcoal graphite chassis, brushed-slate panels, molten amber/gold as the primary accent, with teal-cyan and magenta-rose reserved strictly as secondary channel identifiers (Deck A = amber, Deck B = teal, master/FX = rose). No neon blue. No pure white anywhere.
+
+BACKGROUND LAYERS
+- Outermost UI container: bg-neutral-950 with an overlaid radial glow — apply classes: bg-neutral-950 bg-[radial-gradient(120%_120%_at_50%_-10%,#221a10_0%,#0c0b0a_55%,#050505_100%)]
+- Card/panel surface: bg-gradient-to-b from-neutral-800/70 to-neutral-900/90 backdrop-blur-sm
+- Inset/recessed surface (fader tracks, waveform beds, meter wells, list bodies): bg-neutral-950/80 shadow-[inset_0_2px_6px_rgba(0,0,0,0.8)]
+- Raised knob/jog caps: bg-gradient-to-b from-neutral-700 to-neutral-900
+
+BORDERS & RADIUS
+- Panels/cards: border border-white/[0.06] rounded-2xl (rounded via ring not white line — see note) — never a bright border; use border-amber-400/10 on hover.
+- Inputs (search, selectors): border border-neutral-700/60 rounded-lg
+- Buttons: border border-neutral-600/50 rounded-lg
+- Chips / pads / tags: border border-amber-400/20 rounded-md
+- Knob wells / circular controls: rounded-full border border-neutral-700/70
+- NOTE: never use a solid white border; the /[0.06] and /20 opacities keep edges as soft metal seams, not white lines.
+
+COLOR PALETTE
+- Primary text: text-neutral-100
+- Secondary text: text-neutral-400
+- Muted/disabled text: text-neutral-600
+- Primary accent fill: bg-amber-500  (hover bg-amber-400)  accent text-neutral-950 on amber fills
+- Accent text/border: text-amber-400 / border-amber-400/40
+- Deck A identity: text-amber-400 / bg-amber-500/15 / border-amber-400/30
+- Deck B identity: text-teal-300 / bg-teal-500/15 / border-teal-400/30
+- Master/FX identity: text-rose-300 / bg-rose-500/15 / border-rose-400/30
+- Success: text-emerald-400 / bg-emerald-500/20
+- Warning: text-amber-300 / bg-amber-500/20
+- Danger: text-rose-400 / bg-rose-500/20
+
+TYPOGRAPHY
+- Headings (section titles inside body): text-sm font-semibold tracking-tight leading-tight text-neutral-100
+- Large numeric readouts (BPM, time, pitch %): font-mono text-2xl font-bold tabular-nums tracking-tight leading-none text-amber-300
+- Body / list rows: text-[13px] font-medium leading-snug text-neutral-200
+- Labels (knob/fader labels): text-[10px] font-semibold uppercase tracking-widest text-neutral-400
+- Captions / metadata (artist, key, duration): text-[11px] font-normal tracking-normal leading-tight text-neutral-500
+- All fonts: default sans; numeric displays use font-mono.
+
+SPACING
+- Inter-component gap (between panels in the layout): gap-3
+- Card padding: p-4
+- Compact item padding (list rows, pads, chips): px-2.5 py-1.5
+- Control cluster internal gap: gap-2
+- Knob/fader column vertical rhythm: gap-1.5
+
+STRUCTURAL CHROME (fixed; only components that include it — apply exactly when present)
+- Panel header/title bar: h-9 px-3 flex items-center justify-between shrink-0 border-b border-white/[0.06] bg-neutral-900/60
+- Panel title within header: text-[11px] font-semibold tracking-widest uppercase text-amber-400/90 (use text-teal-300/90 for Deck B header, text-rose-300/90 for FX/mixer master header)
+- Footer/status strip: h-7 px-3 flex items-center justify-between shrink-0 border-t border-white/[0.06] bg-neutral-900/60 text-[10px] tracking-wide text-neutral-500
+- Body region between chrome: flex-1 min-h-0 overflow-hidden p-4 (body flexes; header/footer stay constant regardless of box size)
+
+ELEVATION & SHADOW
+- Floating panels/cards: shadow-[0_8px_30px_rgba(0,0,0,0.6)]
+- Raised interactive controls (buttons, pads, knobs): shadow-md shadow-black/40
+- Flat/inset surfaces: use inset shadow only (see recessed surface); no drop shadow.
+- Active accent glow (playing deck, armed FX, lit pad): shadow-[0_0_16px_-2px] shadow-amber-500/60 (teal-500/60 for Deck B, rose-500/60 for FX).
+
+MOTION & FEEDBACK
+- Global transition on interactive elements: transition-all duration-200 ease-out
+- Buttons hover: hover:bg-amber-400 hover:shadow-[0_0_14px_-2px] hover:shadow-amber-500/50 hover:-translate-y-px; active:translate-y-0 active:scale-[0.97]
+- List/track rows hover: hover:bg-amber-500/10 hover:border-l-2 hover:border-amber-400/50 transition-colors duration-150
+- Interactive chips/pads hover: hover:border-amber-400/50 hover:bg-amber-500/15 hover:scale-[1.03]
+- Toggle ON state: bg-amber-500 text-neutral-950 shadow-[0_0_12px_-1px] shadow-amber-500/60; OFF state: bg-neutral-800 text-neutral-400
+- Knob/jog rotation & fader travel: transition-transform duration-100 ease-linear
+- Continuous motion (playhead sweep, VU meter, spinning jog, waveform scroll): animate with linear timing; VU peaks ease-out duration-75.
+- Pulse for beat-sync / armed states: animate-pulse on the accent ring only.
+- Focus-visible (inputs/buttons): focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 focus-visible:ring-offset-0
+- Reduced-motion: honor motion-reduce:transition-none motion-reduce:animate-none on decorative animations.

@@ -1,0 +1,119 @@
+{
+  "config": {
+    "budget": true,
+    "MODEL": "claude-opus-4-8",
+    "THINKING": "disabled",
+    "EFFORT": "max"
+  },
+  "wall": 63.836,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "DJ Table: Waveform Display",
+      "box": {
+        "x": 2497,
+        "y": 277.44444444444446
+      },
+      "secs": 55.849,
+      "outTok": 5692,
+      "codeTok": 5688,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + gap 0.5 + laneA 3 + gap 0.5 + laneB 3 + gap 0.5 + minimap-row 1.5 + footer 1.75 + padding 0.5 = 13.5 ≤ 17.3",
+        "// BUDGET width: zoom-rail 6 + gap 0.75 + lanes(flex-1 ≥ 12) + gap 0.75 + padding 0.5 = well under 156.1 (lanes absorb the rest)"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 1,
+      "leaf": "DJ Table: Deck A (Left Player)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 60.648,
+      "outTok": 6059,
+      "codeTok": 6055,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + gap 0.75 + displays 3.0 + gap 0.75 + platterRow 12.5 + gap 0.75 + faderRow 8.0 + gap 0.75 + pads(2*2.5=5.0)+gap0.5 = 34.5 + footer 1.75 = ~36.25 ≤ 41.6",
+        "// BUDGET width: leftCol(fader 2.2) + gap 0.75 + platter 12.5 + gap 0.75 + rightCol 6.0 + padding 1.5 = ~23.7 ≤ 52.0 (fluid columns absorb remainder)"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 2,
+      "leaf": "DJ Table: Central Mixer",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 62.648,
+      "outTok": 6532,
+      "codeTok": 6528,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + body(gain 2.5 + eq 3*2.5=7.5 + fader 6 + cue 1.75 + gaps/pad ~3) ~22.9 + xfader row ~3.5 + footer 1.75 = ~30.4 ≤ 41.6",
+        "// BUDGET width: chA(fader 2.2 + gap) + meterA 1 + master(knob 2.5 + meters) + meterB 1 + chB(fader 2.2) + gaps/pad ~ 40 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 3,
+      "leaf": "DJ Table: Deck B (Right Player)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 63.516,
+      "outTok": 6160,
+      "codeTok": 6156,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + body[ metaRow 3.2 + gap 0.75 + platterRow(jog 8 + tempo 6→ max 8) + gap 0.75 + loopRow 2.6 + gap 0.75 + padRow(cue 4) + gap 0.75 + transportRow 2.6 ] + footer 1.75 = 2.25 + 3.2+0.75+8+0.75+2.6+0.75+4+0.75+2.6 + 1.75 = 27.4 ≤ 41.6",
+        "// BUDGET width: platterRow[ jog 8 + gap 0.75 + tempoBlock 4 + gap 0.75 + rightControls 6 ] padding 0.75*2 = 8+0.75+4+0.75+6+1.5 = 21 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 4,
+      "leaf": "DJ Table: Track Library Browser",
+      "box": {
+        "x": 1498.2,
+        "y": 332.93333333333334
+      },
+      "secs": 52.342,
+      "outTok": 5252,
+      "codeTok": 5248,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + body 18.55 (>= TrackTable 6, TreeSelector 4) = 20.8 <= 20.8",
+        "// BUDGET width: p-3(0.75) + tree 16 + gap-3(0.75) + main-col flex-1(~57.6) + gap-3(0.75) + stage 16 + p-3(0.75) = ~93.4 <= 93.6"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 5,
+      "leaf": "DJ Table: Effects Rack",
+      "box": {
+        "x": 998.8,
+        "y": 332.93333333333334
+      },
+      "secs": 44.305,
+      "outTok": 4386,
+      "codeTok": 4382,
+      "thinkTok": 4,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + body(flex-1, holds knob rows floor 2.5) + footer 1.75 = chrome 4.0, body gets 16.8 ≥ 2.5 ✓  ≤ 20.8",
+        "// BUDGET width: pad-left 0.75 + selectorCol 12 + gap 0.75 + routingCol 9 + gap 0.75 + dryWet 5 + gap 0.75 + params(4×5=20) + gap 0.75 + onoff 6 + pad-right 0.75 = 57.8 ≤ 62.4"
+      ],
+      "postProcessed": true
+    }
+  ]
+}

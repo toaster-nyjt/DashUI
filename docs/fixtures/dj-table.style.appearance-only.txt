@@ -1,0 +1,77 @@
+VISUAL GUIDELINES — "NOCTURNE DECK" DESIGN SYSTEM (shared token sheet; appearance only, never layout/sizing)
+
+THEME: Deep charcoal-graphite console with molten amber/tangerine accents and electric-lime signal highlights, plus a violet secondary. Warm metallic feel, no neon blue/pink, NO white borders anywhere.
+
+BACKGROUND LAYERS
+- Outermost container: bg-gradient-to-b from-neutral-950 via-stone-950 to-neutral-900
+- Card/panel surface: bg-neutral-900/90 with subtle inner sheen via bg-gradient-to-b from-neutral-800/40 to-neutral-950/60 (apply as the panel background)
+- Inset/recessed surface (waveform beds, meter wells, list bodies): bg-stone-950/80
+- Deep well (jog wheel center, VU well): bg-black/70
+- Faint decorative texture allowed via ring-inset only, never white.
+
+BORDERS & RADIUS
+- Panels: border border-amber-500/15 rounded-2xl
+- Insets/wells: border border-stone-800/70 rounded-xl
+- Inputs / search / selects: border border-stone-700/60 rounded-lg
+- Buttons (standard): border border-amber-500/25 rounded-lg
+- Chips / tags / hot-cue pads: border border-amber-400/30 rounded-md
+- Knobs & jog wheel rings: border-2 border-stone-700/80 rounded-full
+- Faders / fader tracks: rounded-full
+- Toggle switches: rounded-full
+- NEVER use white or neutral-100/50 borders.
+
+COLOR PALETTE
+- Primary text: text-stone-100
+- Secondary text: text-stone-400
+- Muted/disabled text: text-stone-600
+- Primary accent fill: bg-amber-500 (hover bg-amber-400); on-accent text: text-neutral-950
+- Accent text: text-amber-400 ; accent border: border-amber-500/40
+- Secondary accent (violet, for FX/keylock/alt states): bg-violet-600 / text-violet-300 / border-violet-500/40
+- Signal highlight (lime, for meters, active playheads, sync-lock): bg-lime-400 / text-lime-300
+- Success: text-emerald-400 / bg-emerald-500
+- Warning: text-amber-300 / bg-amber-400
+- Danger (cue/rec/clip peak): text-red-400 / bg-red-500
+- Waveform strokes: use amber-400 (Deck A lane) and violet-400 (Deck B lane); beat grid lines stone-600/40; playhead lime-400.
+
+TYPOGRAPHY
+- Global font family: font-sans (system UI stack).
+- Headings/panel titles: font-semibold tracking-tight leading-tight text-stone-100, size text-sm
+- Body: font-normal tracking-normal leading-snug text-stone-300, size text-sm
+- Labels (knob/fader/button captions): font-medium uppercase tracking-widest leading-none text-stone-400, size text-[10px]
+- Captions (metadata, column subtext): font-normal tracking-wide leading-none text-stone-500, size text-[11px]
+- DISPLAY text (BPM readouts, time counters, big numerals): font-mono font-bold tracking-tight text-amber-400 (use text-lime-300 when locked/synced, text-stone-100 for neutral time) — NO font-size, sized to fit.
+- Button/pad printed text: font-semibold uppercase tracking-wider — color inherits from button state; NO font-size.
+
+SPACING (values only; placement is generator's call)
+- Inter-component gap: gap-2
+- Card/panel padding: p-3
+- Compact item / row / pad padding: p-2 ; tight control clusters px-2 py-1
+- Intra-cluster gap: gap-2 (loosen to gap-3 for knob rows)
+
+STRUCTURAL CHROME (only when a component has it; fixed heights, constant regardless of box size)
+- Header/title bar height: h-8 ; appearance: px-3, border-b border-amber-500/15, bg-neutral-900/80 with bg-gradient-to-r from-amber-500/5 to-transparent; title type: font-semibold uppercase tracking-widest text-[11px] text-stone-200 with a leading text-amber-400 accent glyph/dot.
+- Footer/status strip height: h-6 ; appearance: px-3, border-t border-stone-800/70, bg-stone-950/70; text-[10px] uppercase tracking-widest text-stone-500, live values in text-lime-300.
+
+ELEVATION & SHADOW
+- Floating panels / decks: shadow-2xl shadow-black/60
+- Buttons & pads at rest: shadow-md shadow-black/40
+- Active/lit pads & synced elements: shadow-lg shadow-amber-500/30 (violet variant shadow-violet-500/30, lime for signal shadow-lime-400/30)
+- Flat surfaces (list rows, inset beds): shadow-none
+- Knobs/jog wheels: shadow-inner shadow-black/70 plus outer shadow-lg shadow-black/50
+
+MOTION & FEEDBACK (mandatory — animate generously)
+- Global transition: transition-all duration-200 ease-out on every interactive element.
+- Buttons hover: hover:bg-amber-400 hover:border-amber-400/60 hover:text-neutral-950 hover:shadow-lg hover:shadow-amber-500/40 hover:-translate-y-px ; active:translate-y-0 active:scale-95 active:brightness-95
+- Rows (track list) hover: hover:bg-amber-500/10 hover:text-stone-100 ; selected row: bg-amber-500/15 text-amber-200 ring-1 ring-inset ring-amber-500/40
+- Interactive chips / hot-cue pads hover: hover:border-amber-400/60 hover:text-amber-300 hover:shadow-md hover:shadow-amber-500/30 ; when armed/lit: bg-amber-500/20 text-amber-200 border-amber-400/50 animate-pulse
+- Toggles (on): bg-lime-400/90 shadow-lime-400/40 ; (off): bg-stone-700 ; knob transition-all duration-200 ease-out
+- Play/active transport: use animate-pulse on the lit indicator; sync-locked state pulses text-lime-300.
+- Playhead & VU meters: transition-all duration-100 ease-linear (fast, tick-accurate).
+- FX engaged: ring-1 ring-inset ring-violet-500/50 with transition-all duration-300 ease-out.
+- Focus (search/inputs): focus:outline-none focus:ring-2 focus:ring-inset focus:ring-amber-500/50 focus:border-amber-500/40
+- Knob/jog rotation & fader travel: transition-transform duration-150 ease-out.
+- Keep all motion GPU-cheap (transform, opacity, color, shadow) — never animate layout dimensions.
+
+CONSISTENCY RULES
+- Deck A identity leans amber; Deck B identity leans violet; shared/master surfaces stay amber-neutral. Meters and live playheads are always lime.
+- Absolutely NO white or off-white borders, rings, or fills — use amber/violet/lime/stone tints at low opacity for all edges.

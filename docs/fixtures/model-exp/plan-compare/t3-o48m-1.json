@@ -1,0 +1,185 @@
+{
+  "meta": {
+    "task": "Build me a checkout page for an online store",
+    "model": "claude-opus-4-8",
+    "effort": "medium",
+    "secs": 32.787,
+    "outTok": 2703,
+    "inTok": 2885,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 4,
+    "features": 37,
+    "edges": 4,
+    "meanEdgeDescChars": 285,
+    "issues": [
+      "Checkout: Payment Details Form: feature over 4 words: \"Billing Same As Shipping Toggle\""
+    ]
+  },
+  "defs": [
+    {
+      "name": "Checkout: Contact & Shipping Address Form",
+      "genInstructions": "Build a form card collecting customer email/phone and full shipping address (name, street, apt, city, state, ZIP, country) with inline validation; this is where the buyer enters where and to whom the order ships.",
+      "role": "Captures the buyer's contact and destination details that drive shipping options, tax calculation, and final order validation for the rest of the checkout.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Checkout: Shipping Method Selector",
+            "description": "When the user completes or edits the destination country/state/ZIP, emit the normalized shipping address so the Shipping Method Selector re-queries and re-renders the available carrier options and their rates valid for that region; if the region has no options the selector shows an unavailable state."
+          },
+          {
+            "name": "Checkout: Order Summary Panel",
+            "description": "On a valid, completed address the form emits the destination (state/ZIP/country) so the Order Summary recomputes and re-renders the estimated tax line and total; the address form also reports its overall validity so the Place Order button in the summary stays disabled until the address is complete and valid."
+          }
+        ]
+      },
+      "features": [
+        "Email Field",
+        "Phone Field",
+        "Full Name Field",
+        "Street Address Field",
+        "Apt Suite Field",
+        "City Field",
+        "State Dropdown",
+        "ZIP Field",
+        "Country Dropdown",
+        "Inline Validation",
+        "Save Address Toggle"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "Checkout: Shipping Method Selector",
+      "genInstructions": "Build a selectable list of shipping methods (Standard, Express, Overnight) each showing carrier, delivery estimate, and price as radio options; lets the buyer choose delivery speed and cost.",
+      "role": "Lets the buyer pick a delivery speed based on their destination and feeds the chosen shipping cost into the order total.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Contact & Shipping Address Form",
+            "description": "Receives the normalized shipping address (country/state/ZIP) whenever it changes and re-queries/re-renders the list of carrier options and rates valid for that region, auto-selecting the cheapest available option and showing an unavailable state when the region has no service."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Order Summary Panel",
+            "description": "When the user selects a shipping method radio, emit the chosen method's cost and label so the Order Summary updates its shipping line item and recalculates the grand total; selecting a method is also required for the summary's Place Order button to enable."
+          }
+        ]
+      },
+      "features": [
+        "Method Radio List",
+        "Carrier Labels",
+        "Delivery Estimates",
+        "Price Per Method",
+        "Default Selection",
+        "Unavailable State"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "Checkout: Payment Details Form",
+      "genInstructions": "Build a payment card with method tabs (card, PayPal/wallet), card number, expiry, CVC, name-on-card fields with formatting and validation, plus a billing-address-same-as-shipping toggle; this is where the buyer authorizes payment.",
+      "role": "Collects and validates the buyer's payment information and reports payment readiness so the order can be placed.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Checkout: Order Summary Panel",
+            "description": "Continuously reports its overall payment validity (all required card/wallet fields present and correctly formatted) to the Order Summary so the Place Order button stays disabled until payment details are valid, and passes the selected payment method label for confirmation."
+          }
+        ]
+      },
+      "features": [
+        "Payment Method Tabs",
+        "Card Number Field",
+        "Expiry Field",
+        "CVC Field",
+        "Name On Card Field",
+        "Card Formatting",
+        "Inline Validation",
+        "Billing Same As Shipping Toggle"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Checkout: Order Summary Panel",
+      "genInstructions": "Build a sticky right-side summary listing each cart line item (thumbnail, name, qty, price), a promo/discount code input with apply, and a totals block (subtotal, shipping, tax, discount, grand total) topped off with the primary Place Order button; this is the buyer's review-and-confirm surface.",
+      "role": "Aggregates line items, shipping, tax, and discounts into the final total and gates order placement on the validity of all other checkout components.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Contact & Shipping Address Form",
+            "description": "Receives the destination (state/ZIP/country) to recompute and re-render the estimated tax line and total, and receives an address-validity flag that must be true for the Place Order button to enable."
+          },
+          {
+            "name": "Checkout: Shipping Method Selector",
+            "description": "Receives the selected shipping method's cost and label to fill the shipping line item and recompute the grand total; a method must be selected for Place Order to enable."
+          },
+          {
+            "name": "Checkout: Payment Details Form",
+            "description": "Receives a payment-validity flag and selected payment method label; Place Order stays disabled until payment is valid, and the method label is shown in the confirmation state."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Line Item List",
+        "Item Thumbnails",
+        "Quantity Display",
+        "Promo Code Input",
+        "Apply Promo Button",
+        "Subtotal Row",
+        "Shipping Row",
+        "Tax Row",
+        "Discount Row",
+        "Grand Total Row",
+        "Place Order Button",
+        "Order Confirmation State"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    }
+  ]
+}

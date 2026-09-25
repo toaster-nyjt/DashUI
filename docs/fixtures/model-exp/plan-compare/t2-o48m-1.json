@@ -1,0 +1,207 @@
+{
+  "meta": {
+    "task": "I want to listen to music",
+    "model": "claude-opus-4-8",
+    "effort": "medium",
+    "secs": 34.087,
+    "outTok": 2819,
+    "inTok": 2880,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 5,
+    "features": 33,
+    "edges": 6,
+    "meanEdgeDescChars": 200,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Music Player: Search Bar",
+      "genInstructions": "Build a top search bar with a text input and instant results dropdown that lets the user search the music library by song, artist, album, or playlist. Filters what the Library Browser shows in real time.",
+      "role": "The entry point for finding music, driving the Library Browser to show only content matching the user's query.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Music Player: Library Browser",
+            "description": "As the user types (debounced keystrokes) or submits a query, emit the current search string; the Library Browser re-queries its catalog and re-renders only tracks/albums/artists/playlists whose metadata matches the query. Clearing the field restores the full unfiltered library."
+          }
+        ]
+      },
+      "features": [
+        "Search Input",
+        "Clear Button",
+        "Results Dropdown",
+        "Category Filters",
+        "Recent Searches"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "name": "Music Player: Library Browser",
+      "genInstructions": "Build the main content area as a scrollable grid/list of albums, artists, playlists, and tracks with cover art and metadata, plus tabs to switch between these views. Serves as the primary place to browse and pick music.",
+      "role": "The central browsing surface where the user explores the collection and chooses what to play or enqueue, feeding both the player and the queue.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Search Bar",
+            "description": "Receives the current search string from the Search Bar; filters and re-renders the grid/list to show only items matching the query, or the full library when cleared."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Music Player: Now Playing Bar",
+            "description": "When the user double-clicks or hits play on a track/album, emit that track (and its containing collection) as the new current track; the Now Playing Bar loads it, starts playback, and updates its transport state."
+          },
+          {
+            "name": "Music Player: Queue Side Panel",
+            "description": "When the user chooses 'Add to Queue' or plays an album/playlist, emit the ordered list of track IDs; the Queue Side Panel appends or replaces its queue with those tracks."
+          }
+        ]
+      },
+      "features": [
+        "View Tabs",
+        "Album Grid",
+        "Track List",
+        "Cover Art",
+        "Play Button",
+        "Add To Queue Button",
+        "Context Menu",
+        "Scroll Area"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "name": "Music Player: Queue Side Panel",
+      "genInstructions": "Build a right-side panel listing upcoming tracks in play order with drag-to-reorder, remove buttons, and a highlight on the currently playing track. Lets the user manage what plays next.",
+      "role": "The playback order manager that holds and lets the user reorder upcoming tracks, supplying the next track to the player and reflecting the player's current position.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Library Browser",
+            "description": "Receives ordered track ID lists when the user adds an item or plays a collection; appends them to the queue or replaces the queue accordingly."
+          },
+          {
+            "name": "Music Player: Now Playing Bar",
+            "description": "When the player advances (track ends, next/previous pressed), receives the new current-track index; scrolls to and highlights that track and removes consumed tracks from the up-next list."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Music Player: Now Playing Bar",
+            "description": "When the user clicks a queued track or reorders the queue, emit the newly selected/next track; the Now Playing Bar loads and plays it and syncs its next/previous targets to the new order."
+          }
+        ]
+      },
+      "features": [
+        "Queue List",
+        "Drag Reorder",
+        "Remove Track",
+        "Now Playing Highlight",
+        "Clear Queue",
+        "Track Click Play"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "name": "Music Player: Now Playing Bar",
+      "genInstructions": "Build a fixed bottom transport bar with play/pause, next/previous, a seekable progress bar with time labels, shuffle/repeat toggles, a volume slider, and compact current-track info. This is the core playback controller.",
+      "role": "The central playback engine and control surface that governs the current track, transport state, and volume, coordinating the queue and the art panel.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Library Browser",
+            "description": "Receives a track (and its collection) selected for immediate play; loads it as the current track and begins playback, updating all transport controls."
+          },
+          {
+            "name": "Music Player: Queue Side Panel",
+            "description": "Receives a track selected or reordered in the queue; loads and plays it and aligns next/previous behavior to the queue order."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Music Player: Queue Side Panel",
+            "description": "On track end or next/previous press, emit the advanced current-track index so the queue highlights the new track and drops consumed entries."
+          },
+          {
+            "name": "Music Player: Now Playing Art Panel",
+            "description": "On every current-track change and play/pause/seek event, emit the track's cover art, title, artist, album, and playback progress; the Art Panel updates its large artwork, metadata, and any progress visualization."
+          }
+        ]
+      },
+      "features": [
+        "Play Pause Button",
+        "Next Previous Buttons",
+        "Seek Progress Bar",
+        "Time Labels",
+        "Shuffle Toggle",
+        "Repeat Toggle",
+        "Volume Slider",
+        "Mute Button",
+        "Track Info Mini"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "name": "Music Player: Now Playing Art Panel",
+      "genInstructions": "Build a large focal panel showing the current track's full-size cover art, title, artist, album name, and an optional animated visualizer or lyrics area. Provides an immersive view of what's playing.",
+      "role": "The visual centerpiece that showcases the currently playing track in detail, driven entirely by the Now Playing Bar's playback state.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Music Player: Now Playing Bar",
+            "description": "Receives the current track's cover art, title, artist, album, and live playback progress on every track change and play/pause/seek event; updates the large artwork, metadata text, and visualizer accordingly."
+          }
+        ],
+        "targets": []
+      },
+      "features": [
+        "Large Cover Art",
+        "Track Title",
+        "Artist Album Text",
+        "Audio Visualizer",
+        "Lyrics View"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  ]
+}

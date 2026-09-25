@@ -1,0 +1,84 @@
+{
+  "LEAVES": [
+    {
+      "name": "DJ Table: Deck A (Left)",
+      "box": {
+        "x": 448,
+        "y": 416
+      }
+    },
+    {
+      "name": "DJ Table: Central Mixer",
+      "box": {
+        "x": 384,
+        "y": 416
+      }
+    },
+    {
+      "name": "DJ Table: Deck B (Right)",
+      "box": {
+        "x": 448,
+        "y": 416
+      }
+    }
+  ],
+  "config": {
+    "MODEL": "claude-sonnet-5",
+    "THINKING": "adaptive",
+    "EFFORT": "medium",
+    "MAX_TOKENS": 64000
+  },
+  "results": [
+    {
+      "mode": "prim",
+      "i": 0,
+      "name": "DJ Table: Deck A (Left)",
+      "box": {
+        "x": 448,
+        "y": 416
+      },
+      "secs": 71.381,
+      "out": 7393,
+      "stop": "end_turn",
+      "thinkingBlocks": 1,
+      "errs": [],
+      "notes": [
+        "uses Fader×1, Button×4, ToggleButton×3, Pad×1, JogWheel×1, Waveform×1, Readout×3"
+      ]
+    },
+    {
+      "mode": "prim",
+      "i": 1,
+      "name": "DJ Table: Central Mixer",
+      "box": {
+        "x": 384,
+        "y": 416
+      },
+      "secs": 75.24,
+      "out": 8430,
+      "stop": "end_turn",
+      "thinkingBlocks": 1,
+      "errs": [],
+      "notes": [
+        "uses Knob×10, Fader×3, ToggleButton×2, LevelMeter×2"
+      ]
+    },
+    {
+      "mode": "prim",
+      "i": 2,
+      "name": "DJ Table: Deck B (Right)",
+      "box": {
+        "x": 448,
+        "y": 416
+      },
+      "secs": 109.644,
+      "out": 10691,
+      "stop": "end_turn",
+      "thinkingBlocks": 1,
+      "errs": [],
+      "notes": [
+        "uses Fader×1, Button×5, ToggleButton×3, Pad×1, JogWheel×1, Waveform×1, Readout×3"
+      ]
+    }
+  ]
+}

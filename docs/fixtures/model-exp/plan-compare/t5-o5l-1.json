@@ -1,0 +1,341 @@
+{
+  "meta": {
+    "task": "Flight avionics dashboard",
+    "model": "claude-opus-5",
+    "effort": "low",
+    "secs": 57.819,
+    "outTok": 5013,
+    "inTok": 2883,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 6,
+    "features": 72,
+    "edges": 11,
+    "meanEdgeDescChars": 195,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Avionics: Primary Flight Display",
+      "genInstructions": "Build the central glass-cockpit PFD with an artificial horizon attitude indicator, sliding airspeed and altitude tapes, vertical speed indicator, heading strip, and flight director bars plus autopilot mode annunciator row across the top. It gives the pilot instantaneous aircraft state and shows the targets commanded by the autopilot.",
+      "role": "The primary attitude and air-data reference of the dashboard, displaying live flight state and visualizing the bugs and modes commanded by the autopilot and navigation components.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "When the pilot changes selected altitude, airspeed, heading, or vertical speed on the MCP, the new target values and armed/active mode strings are pushed to the PFD, which repositions the magenta altitude/speed/heading bugs on the tapes, redraws flight director command bars toward the target, and updates the mode annunciator row (e.g. 'ALT HLD', 'HDG SEL', 'LNAV')."
+          },
+          {
+            "name": "Avionics: Navigation Map Display",
+            "description": "Selecting or activating a route leg or waypoint on the map emits the desired track and course deviation, which the PFD renders as course pointer deviation on the heading strip and drives the flight director when LNAV is engaged."
+          },
+          {
+            "name": "Avionics: Alerts And Caution Panel",
+            "description": "Critical alerts (stall, overspeed, terrain, altitude deviation) are forwarded to the PFD, which overlays the corresponding red/amber warning flag and highlights the affected tape."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Alerts And Caution Panel",
+            "description": "The PFD continuously publishes airspeed, altitude, vertical speed, pitch and bank values; when any exceeds its envelope limit (overspeed, stall margin, excessive bank, altitude deviation from selected altitude) it raises a parameter-tagged alert event that the alert panel logs and displays with severity."
+          }
+        ]
+      },
+      "features": [
+        "Attitude Indicator",
+        "Airspeed Tape",
+        "Altitude Tape",
+        "Vertical Speed Indicator",
+        "Heading Strip",
+        "Course Deviation Pointer",
+        "Flight Director Bars",
+        "Mode Annunciator Row",
+        "Selected Value Bugs",
+        "Baro Setting Readout",
+        "Warning Flag Overlay",
+        "Slip Skid Indicator"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "name": "Avionics: Navigation Map Display",
+      "genInstructions": "Build a moving-map navigation display with aircraft symbol, magnetic compass rose, active flight plan route line with waypoints, range rings with zoom control, weather/terrain overlay toggles, and a waypoint list allowing direct-to selection. It handles route awareness and lateral navigation targeting.",
+      "role": "The lateral navigation authority of the dashboard, supplying route and course guidance to the PFD and autopilot while giving spatial situational awareness.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "When the pilot engages LNAV or dials a heading, the MCP sends the engaged lateral mode and selected heading; the map draws the selected heading bug on the compass rose and highlights the active route leg being tracked (or greys the route when in heading mode)."
+          },
+          {
+            "name": "Avionics: Alerts And Caution Panel",
+            "description": "Terrain, traffic, and weather alerts are forwarded with position data so the map highlights the offending terrain cell, traffic target, or weather cell in the corresponding caution color."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Primary Flight Display",
+            "description": "On waypoint selection or leg sequencing the map emits desired track and cross-track deviation, which the PFD shows as course pointer deviation and uses for flight director guidance in LNAV."
+          },
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "Activating a direct-to waypoint or route leg sends the leg's course to the MCP, which updates the course/heading readout and enables the LNAV mode button as armable."
+          },
+          {
+            "name": "Avionics: Engine And Fuel Systems Panel",
+            "description": "The map emits remaining route distance and estimated time enroute for the active flight plan; the fuel panel uses it with current flow to compute fuel-at-destination and reserve margin."
+          }
+        ]
+      },
+      "features": [
+        "Moving Map Canvas",
+        "Aircraft Symbol",
+        "Compass Rose",
+        "Flight Plan Route Line",
+        "Waypoint Markers",
+        "Waypoint List",
+        "Direct To Control",
+        "Range Zoom Control",
+        "Weather Overlay Toggle",
+        "Terrain Overlay Toggle",
+        "Traffic Targets",
+        "Heading Bug",
+        "Distance ETE Readout"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    },
+    {
+      "name": "Avionics: Autopilot Mode Control Panel",
+      "genInstructions": "Build a horizontal MCP strip with selector spinners for altitude, airspeed, heading, and vertical speed, plus engage buttons for AP, FD, autothrottle, HDG SEL, LNAV, VNAV, ALT HLD, and APPR with lit state. It is the pilot's command interface for automated flight targets.",
+      "role": "The command input hub that sets flight targets and modes, driving the PFD's bugs and annunciations and the navigation display's lateral tracking.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Navigation Map Display",
+            "description": "Activating a direct-to or route leg on the map sends its course to the MCP, updating the course readout and arming the LNAV button."
+          },
+          {
+            "name": "Avionics: Alerts And Caution Panel",
+            "description": "An autopilot-disconnect or mode-reversion alert from the panel causes the MCP to flash the affected mode button and drop it to disengaged state."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Primary Flight Display",
+            "description": "Every change of selected altitude/speed/heading/vertical speed and every mode engage-disengage emits target values and mode strings; the PFD moves its magenta bugs, redraws flight director bars, and rewrites the mode annunciator row accordingly."
+          },
+          {
+            "name": "Avionics: Navigation Map Display",
+            "description": "Engaged lateral mode and selected heading are sent to the map, which renders the heading bug on the compass rose and highlights or de-emphasizes the active route leg depending on LNAV vs HDG SEL."
+          }
+        ]
+      },
+      "features": [
+        "Altitude Selector",
+        "Airspeed Selector",
+        "Heading Selector",
+        "Vertical Speed Selector",
+        "Course Readout",
+        "AP Engage Button",
+        "Flight Director Button",
+        "Autothrottle Button",
+        "HDG SEL Button",
+        "LNAV Button",
+        "VNAV Button",
+        "ALT HLD Button",
+        "Approach Button",
+        "Mode Lit Indicators",
+        "Disconnect Button"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      "name": "Avionics: Engine And Fuel Systems Panel",
+      "genInstructions": "Build an engine and fuel monitoring panel with per-engine N1/N2, EGT, oil pressure and temperature gauges, thrust lever position bars, fuel tank quantity bars with total and flow rate, and a computed fuel-at-destination/endurance readout. It covers powerplant and consumables health monitoring.",
+      "role": "The systems-health monitor of the dashboard, tracking powerplant and fuel state and feeding exceedances to the alert panel while consuming route data for endurance planning.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Navigation Map Display",
+            "description": "Receives remaining route distance and ETE for the active flight plan and combines it with live fuel flow to compute and display fuel-at-destination and reserve margin."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Alerts And Caution Panel",
+            "description": "When any engine parameter crosses its caution or red-line limit, or fuel quantity/imbalance/low-reserve thresholds are breached, the panel emits a system-tagged alert with parameter name, value and severity that the alert panel lists and colors."
+          }
+        ]
+      },
+      "features": [
+        "N1 N2 Gauges",
+        "EGT Gauges",
+        "Oil Pressure Temp",
+        "Thrust Lever Bars",
+        "Fuel Tank Bars",
+        "Total Fuel Readout",
+        "Fuel Flow Rate",
+        "Fuel At Destination",
+        "Endurance Readout",
+        "Redline Limit Markers",
+        "Exceedance Highlight",
+        "Engine Selector Tabs"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "name": "Avionics: Alerts And Caution Panel",
+      "genInstructions": "Build a CAS-style alert stack listing warnings, cautions, and advisories with severity color coding, timestamps, master caution/warning lamps, acknowledge and mute controls, and an expandable checklist for the selected alert. It centralizes abnormal-condition awareness and response.",
+      "role": "The central annunciation hub that aggregates exceedances from all monitoring components and pushes critical warnings back to the flight and navigation displays.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Avionics: Primary Flight Display",
+            "description": "Receives envelope-exceedance events (overspeed, stall margin, bank angle, altitude deviation) with parameter and value, and inserts them into the alert stack at warning severity with timestamp."
+          },
+          {
+            "name": "Avionics: Engine And Fuel Systems Panel",
+            "description": "Receives engine and fuel exceedance events with parameter name, value, and severity, and lists them as cautions or warnings with the matching checklist attached."
+          },
+          {
+            "name": "Avionics: Radio And Transponder Stack",
+            "description": "Receives comm/nav radio failure, squawk-emergency-code, and lost-signal events and logs them as advisories or cautions in the stack."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Avionics: Primary Flight Display",
+            "description": "Forwards active critical alerts to the PFD so it overlays the corresponding red/amber warning flag and highlights the affected tape until acknowledged."
+          },
+          {
+            "name": "Avionics: Navigation Map Display",
+            "description": "Forwards terrain, traffic, and weather alerts along with their geographic position so the map highlights the offending cell or traffic target in caution color."
+          },
+          {
+            "name": "Avionics: Autopilot Mode Control Panel",
+            "description": "On an autopilot-disconnect or mode-reversion alert, signals the MCP to flash the affected mode button and set it to disengaged."
+          }
+        ]
+      },
+      "features": [
+        "Alert Stack List",
+        "Severity Color Coding",
+        "Master Warning Lamp",
+        "Master Caution Lamp",
+        "Timestamp Column",
+        "Acknowledge Control",
+        "Mute Aural Control",
+        "Expandable Checklist",
+        "Severity Filter Tabs",
+        "Active Alert Count"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "name": "Avionics: Radio And Transponder Stack",
+      "genInstructions": "Build a radio stack with COM1/COM2 and NAV1/NAV2 active/standby frequency fields with swap buttons, a keypad for frequency entry, transponder squawk code entry with mode selector (STBY/ON/ALT/IDENT), and an ATC message log. It handles communication and identification duties.",
+      "role": "The communication and identification console of the dashboard, managing radio/navaid frequencies and transponder state and reporting its own faults to the alert panel.",
+      "connectivity": {
+        "effectors": [],
+        "targets": [
+          {
+            "name": "Avionics: Alerts And Caution Panel",
+            "description": "Emits advisory/caution events when a radio fails, a NAV signal is lost, or an emergency squawk code (7500/7600/7700) is entered, which the alert panel logs with severity and timestamp."
+          }
+        ]
+      },
+      "features": [
+        "COM Frequency Rows",
+        "NAV Frequency Rows",
+        "Active Standby Swap",
+        "Frequency Keypad",
+        "Transponder Squawk Entry",
+        "Transponder Mode Selector",
+        "Ident Button",
+        "Signal Strength Bars",
+        "ATC Message Log",
+        "Volume Squelch Sliders"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    }
+  ]
+}

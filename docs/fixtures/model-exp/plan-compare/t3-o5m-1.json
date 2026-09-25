@@ -1,0 +1,358 @@
+{
+  "meta": {
+    "task": "Build me a checkout page for an online store",
+    "model": "claude-opus-5",
+    "effort": "medium",
+    "secs": 64.473,
+    "outTok": 5981,
+    "inTok": 2885,
+    "stop": "end_turn"
+  },
+  "summary": {
+    "components": 6,
+    "features": 68,
+    "edges": 14,
+    "meanEdgeDescChars": 213,
+    "issues": []
+  },
+  "defs": [
+    {
+      "name": "Checkout: Progress Stepper Header",
+      "genInstructions": "Build a horizontal checkout progress bar across the top showing the ordered stages (Cart, Shipping, Delivery, Payment, Review) with completion checkmarks, active-step highlighting, and clickable steps that jump to the matching section. It orients the shopper and lets them move back to edit any completed stage.",
+      "role": "Serves as the navigational spine of the checkout, indicating and controlling which stage of the flow the shopper is currently completing.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Shipping Address Form",
+            "description": "When all required address fields pass validation and the shopper confirms the address, the form emits a 'shipping-complete' event with a short address summary; the stepper marks the Shipping step as complete with a checkmark and auto-advances the active highlight to the Delivery step."
+          },
+          {
+            "name": "Checkout: Payment Details Form",
+            "description": "When card number, expiry, CVC and billing address validate successfully, the payment form emits 'payment-complete' with the masked card label; the stepper marks the Payment step complete and advances the active state to Review."
+          },
+          {
+            "name": "Checkout: Order Summary Sidebar",
+            "description": "When the shopper clicks Place Order and the submission succeeds, the sidebar emits 'order-submitted'; the stepper marks every step complete and moves the active indicator to a final Review/Confirmation state."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Cart Items Review Panel",
+            "description": "Clicking the 'Cart' step emits a step-change event with id 'cart'; the cart panel scrolls into view, expands to its editable state, and focuses its first line item so quantities can be changed."
+          },
+          {
+            "name": "Checkout: Shipping Address Form",
+            "description": "Clicking the 'Shipping' step emits step id 'shipping'; the address form becomes the active/expanded section, scrolls into view, and focuses its first empty required input."
+          },
+          {
+            "name": "Checkout: Delivery Method Selector",
+            "description": "Clicking the 'Delivery' step emits step id 'delivery'; the delivery selector becomes the active section and scrolls into view with the currently selected shipping option highlighted."
+          },
+          {
+            "name": "Checkout: Payment Details Form",
+            "description": "Clicking the 'Payment' step emits step id 'payment'; the payment form becomes the active section, scrolls into view, and focuses the card number field."
+          }
+        ]
+      },
+      "features": [
+        "Step Nodes",
+        "Active Step Highlight",
+        "Completion Checkmarks",
+        "Clickable Step Navigation",
+        "Connector Progress Bar",
+        "Step Labels",
+        "Secure Checkout Badge"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "name": "Checkout: Cart Items Review Panel",
+      "genInstructions": "Build a scrollable list of cart line items with product thumbnail, title, variant attributes, unit price, quantity stepper, per-line total, remove button, and a save-for-later action. It is the shopper's last chance to adjust what they are buying before paying.",
+      "role": "Holds the editable contents of the order and is the authoritative source of line items and subtotal for the rest of the checkout.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "Receives a step-change event with id 'cart' from the stepper; scrolls itself into view, expands to its editable state and focuses the first line item's quantity stepper."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Order Summary Sidebar",
+            "description": "On every quantity change, item removal, or save-for-later action, emits the updated line-item array (id, qty, unit price, weight) and the recomputed merchandise subtotal; the sidebar re-renders its subtotal, re-applies any active promo discount, recalculates tax and grand total, and updates the item count badge."
+          },
+          {
+            "name": "Checkout: Delivery Method Selector",
+            "description": "Emits the cart's total weight, item count and any oversized/digital-only flags whenever contents change; the delivery selector re-prices its shipping options, hides methods that are ineligible for the current basket, and recomputes estimated delivery dates."
+          }
+        ]
+      },
+      "features": [
+        "Line Item Rows",
+        "Product Thumbnails",
+        "Variant Details",
+        "Quantity Stepper",
+        "Unit And Line Price",
+        "Remove Item Button",
+        "Save For Later",
+        "Item Count Header",
+        "Scrollable List",
+        "Empty Cart State",
+        "Stock Warning Badge"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "name": "Checkout: Shipping Address Form",
+      "genInstructions": "Build a validated address form with contact email/phone, full name, street lines, city, state/region select, postal code, country select, autocomplete suggestions, a saved-address picker, and a 'save this address' toggle. It captures where the order ships and supplies the region used for rates and tax.",
+      "role": "Collects the destination and contact details that drive delivery pricing, tax estimation, and billing defaults for the rest of the checkout.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "Receives step id 'shipping' from the stepper; becomes the active expanded section, scrolls into view and focuses the first empty required field."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Delivery Method Selector",
+            "description": "On a valid/complete country + postal code (debounced on blur), emits the destination {country, state, postalCode}; the delivery selector re-queries carrier rates for that destination, refreshes each option's price and estimated arrival window, and disables methods unavailable to that region."
+          },
+          {
+            "name": "Checkout: Payment Details Form",
+            "description": "When 'Billing same as shipping' is checked in the payment form, this form pushes its current address object so the billing fields are mirrored read-only; any subsequent edit here re-syncs those mirrored billing fields."
+          },
+          {
+            "name": "Checkout: Order Summary Sidebar",
+            "description": "Emits the validated destination region and postal code; the sidebar recalculates the estimated tax line for that jurisdiction, updates the grand total, and shows the shipping-to address snippet."
+          },
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "On successful validation of all required fields, emits 'shipping-complete' with an address summary so the stepper checkmarks the Shipping step and advances the active step to Delivery."
+          }
+        ]
+      },
+      "features": [
+        "Contact Email Field",
+        "Phone Field",
+        "Full Name Field",
+        "Street Address Lines",
+        "City Field",
+        "State Region Select",
+        "Postal Code Field",
+        "Country Select",
+        "Address Autocomplete",
+        "Saved Address Picker",
+        "Inline Validation Errors",
+        "Save Address Toggle",
+        "Continue Button"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    },
+    {
+      "name": "Checkout: Delivery Method Selector",
+      "genInstructions": "Build a set of selectable shipping option cards (Standard, Express, Overnight, Store Pickup) each showing carrier, price, estimated arrival date range, and a radio selection state, plus a delivery-date preference and gift/delivery instructions note field. It determines how fast and at what cost the order arrives.",
+      "role": "Lets the shopper choose a shipping speed for their validated destination and feeds the resulting shipping cost and ETA into the order totals.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Shipping Address Form",
+            "description": "Receives the destination {country, state, postalCode} when the address validates; re-queries carrier rates, updates each option's price and estimated arrival window, and disables or hides options not serviceable at that destination."
+          },
+          {
+            "name": "Checkout: Cart Items Review Panel",
+            "description": "Receives updated cart weight, item count and oversized/digital flags on any cart edit; re-prices each shipping option accordingly and hides methods ineligible for the current basket."
+          },
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "Receives step id 'delivery'; becomes the active section, scrolls into view with the currently selected option highlighted."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Order Summary Sidebar",
+            "description": "When a shipping option radio is selected, emits {methodId, label, price, etaRange}; the sidebar replaces its Shipping line with that price and label, re-runs tax on the new shippable total, and updates the grand total and displayed delivery estimate."
+          }
+        ]
+      },
+      "features": [
+        "Shipping Option Cards",
+        "Radio Selection State",
+        "Carrier And Price",
+        "Estimated Arrival Dates",
+        "Store Pickup Option",
+        "Delivery Date Preference",
+        "Delivery Instructions Note",
+        "Gift Options Toggle",
+        "Unavailable Option State"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "name": "Checkout: Payment Details Form",
+      "genInstructions": "Build a payment section with method tabs (Card, PayPal, Apple Pay, Buy Now Pay Later), a card form with formatted number, expiry, CVC, name on card and live card-brand detection, a saved-cards picker, a 'billing same as shipping' checkbox revealing billing fields when unchecked, and security/encryption messaging. It captures and validates how the order is paid for.",
+      "role": "Captures and validates the shopper's payment instrument and billing address, unlocking the final order submission.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Shipping Address Form",
+            "description": "When 'Billing same as shipping' is checked, receives the shipping address object and mirrors it into the read-only billing fields, re-syncing whenever the shipping address is edited."
+          },
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "Receives step id 'payment'; becomes the active section, scrolls into view and focuses the card number field."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Order Summary Sidebar",
+            "description": "On successful validation, emits {methodType, maskedLabel, brand, valid:true}; the sidebar displays the chosen payment method line and enables its Place Order button (and disables it again if payment becomes invalid or the method is cleared)."
+          },
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "On full validation of card/billing details, emits 'payment-complete' with the masked card label so the stepper checkmarks Payment and advances to Review."
+          }
+        ]
+      },
+      "features": [
+        "Payment Method Tabs",
+        "Card Number Field",
+        "Expiry Field",
+        "CVC Field",
+        "Name On Card",
+        "Card Brand Detection",
+        "Saved Cards Picker",
+        "Billing Same As Shipping",
+        "Billing Address Fields",
+        "Inline Validation Errors",
+        "Encryption Notice",
+        "Wallet Express Buttons"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "name": "Checkout: Order Summary Sidebar",
+      "genInstructions": "Build a sticky right-hand summary panel with a condensed item thumbnail list and count, promo/gift-card code input with apply and applied-discount chips, subtotal, discount, shipping, estimated tax and grand total rows, delivery estimate, a large Place Order button with loading state, and trust/return-policy microcopy. It is where all checkout state converges and the order is submitted.",
+      "role": "Aggregates cart, shipping and payment state into the final price breakdown and provides the single action that submits the order.",
+      "connectivity": {
+        "effectors": [
+          {
+            "name": "Checkout: Cart Items Review Panel",
+            "description": "Receives the updated line-item array and merchandise subtotal on any quantity change or removal; re-renders the subtotal and condensed item list, re-applies active promo discounts, and recomputes tax and grand total."
+          },
+          {
+            "name": "Checkout: Delivery Method Selector",
+            "description": "Receives {methodId, label, price, etaRange} when a shipping option is selected; replaces the Shipping cost line and delivery estimate text and recalculates the grand total."
+          },
+          {
+            "name": "Checkout: Shipping Address Form",
+            "description": "Receives the validated destination region/postal code; recalculates the estimated tax line for that jurisdiction, updates the grand total, and shows the shipping-to address snippet."
+          },
+          {
+            "name": "Checkout: Payment Details Form",
+            "description": "Receives {methodType, maskedLabel, valid} on payment validation; shows the selected payment method line and enables the Place Order button, disabling it again if payment validity is lost."
+          }
+        ],
+        "targets": [
+          {
+            "name": "Checkout: Progress Stepper Header",
+            "description": "On a successful Place Order click, emits 'order-submitted' with the order total; the stepper marks all steps complete and switches the active indicator to the Confirmation state."
+          }
+        ]
+      },
+      "features": [
+        "Condensed Item List",
+        "Item Count Badge",
+        "Promo Code Input",
+        "Apply Code Button",
+        "Applied Discount Chips",
+        "Subtotal Row",
+        "Discount Row",
+        "Shipping Cost Row",
+        "Estimated Tax Row",
+        "Grand Total Row",
+        "Delivery Estimate Line",
+        "Payment Method Line",
+        "Place Order Button",
+        "Submit Loading State",
+        "Trust And Return Notice",
+        "Sticky Positioning"
+      ],
+      "defaultActiveIdx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    }
+  ]
+}

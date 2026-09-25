@@ -1,0 +1,15 @@
+hoist 52s  4400 out  valid=true  types=14
+  Knob             {"min":"number","max":"number","value":"number","onChange":"(v: number) => void","mode?":"'continuous' | 'stepped'","steps?":"number[]"}
+  Fader            {"min":"number","max":"number","value":"number","onChange":"(v: number) => void","orientation?":"'vertical' | 'horizontal'"}
+  Button           {"onPress":"() => void","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  Toggle           {"on":"boolean","onChange":"(on: boolean) => void","children?":"React.ReactNode"}
+  CuePad           {"onPress":"() => void","on?":"boolean","children?":"React.ReactNode"}
+  JogWheel         {"angle":"number","onScrub":"(deltaRadians: number) => void"}
+  Waveform         {"data":"number[]","playhead":"number","beatGrid?":"number[]","zoom?":"number","onScrub?":"(position: number) => void"}
+  Readout          {"value":"React.ReactNode"}
+  SearchInput      {"value":"string","onChange":"(v: string) => void","placeholder?":"string"}
+  TrackList        {"options":"{ id: string; title: string; artist: string; bpm: number; key: string; duration: string }[]","value":"string","onChange":"(id: string) => void","onActivate?":"(id: string) => void"}
+  SortHeaders      {"columns":"{ id: string; label: string }[]","value":"{ column: string; direction: 'asc' | 'desc' }","onChange":"(sort: { column: string; direction: 'asc' | 'desc' }) => void"}
+  TreeSelector     {"options":"{ id: string; label: string; children?: any[] }[]","value":"string","onChange":"(id: string) => void"}
+  OptionSelector   {"options":"{ id: string; label: string }[]","value":"string","onChange":"(id: string) => void"}
+  LevelMeter       {"level":"number"}

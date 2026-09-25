@@ -1,0 +1,211 @@
+[
+  {
+    "name": "DJ Table: Track Library Browser",
+    "genInstructions": "Build a top-mounted library browser with a folder/crate tree, searchable sortable track list (title, artist, BPM, key, duration columns), a preview button and explicit 'Load to Deck A' and 'Load to Deck B' actions so the user can find and route tracks onto either deck.",
+    "role": "This is the track source of the DJ table; it lets the user search and select music and load chosen tracks onto Deck A or Deck B.",
+    "connectivity": {
+      "effectors": [],
+      "targets": [
+        {
+          "name": "DJ Table: Deck A (Left)",
+          "description": "When the user selects a track and clicks 'Load to Deck A', the browser sends that track's audio file, title, artist and BPM to Deck A, which loads it and renders its waveform."
+        },
+        {
+          "name": "DJ Table: Deck B (Right)",
+          "description": "When the user selects a track and clicks 'Load to Deck B', the browser sends that track's audio file, title, artist and BPM to Deck B, which loads it and renders its waveform."
+        }
+      ]
+    },
+    "features": [
+      "Search Bar",
+      "Folder Crate Tree",
+      "Track List",
+      "Sort Headers",
+      "BPM Key Columns",
+      "Preview Button",
+      "Load To Deck A",
+      "Load To Deck B"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "DJ Table: Master Waveform Display",
+    "genInstructions": "Build a wide, top-centered dual-lane waveform overview showing both decks' full track waveforms stacked, with aligned beat grids, moving playhead markers, elapsed/remaining time readouts and a zoom control so the user can visually beat-match and see phrase alignment.",
+    "role": "This is the visual beat-matching surface of the DJ table; it displays both decks' waveforms and playheads together so the user can see how the two tracks line up.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "DJ Table: Deck A (Left)",
+          "description": "Deck A streams its full waveform, current playhead position and beat grid to the upper lane, which redraws the overview and moves the playhead marker as the track plays or is scratched."
+        },
+        {
+          "name": "DJ Table: Deck B (Right)",
+          "description": "Deck B streams its full waveform, current playhead position and beat grid to the lower lane, which redraws the overview and moves the playhead marker as the track plays or is scratched."
+        }
+      ],
+      "targets": []
+    },
+    "features": [
+      "Dual Waveform Lanes",
+      "Playhead Markers",
+      "Beat Grid",
+      "Time Display",
+      "Zoom Control"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "DJ Table: Deck A (Left)",
+    "genInstructions": "Build the left playback deck with a large jog wheel, transport controls, pitch/tempo fader, per-deck scrolling waveform, hot cue pads and loop controls so the user can play, cue, scratch, pitch-bend and loop the track loaded on channel 1.",
+    "role": "This is the left playback engine of the DJ table; it plays a track loaded from the library, feeds its audio and waveform to the mixer and master display, and can be beat-synced with Deck B.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "DJ Table: Track Library Browser",
+          "description": "When the user clicks 'Load to Deck A' on a selected library track, the browser sends that track's audio file, title, artist and BPM metadata to Deck A, which loads it, resets the playhead to the start and renders its waveform."
+        },
+        {
+          "name": "DJ Table: Effects Rack",
+          "description": "When an FX unit is assigned to Deck A and toggled on, the Effects Rack sends the effect type, dry/wet amount and beat-multiplier to Deck A, which applies the processed effect to its outgoing audio in real time."
+        },
+        {
+          "name": "DJ Table: Deck B (Right)",
+          "description": "When the user presses Sync on Deck A, Deck B emits its current BPM and beat-phase; Deck A adjusts its own pitch fader value and phase to match Deck B's tempo and downbeat."
+        }
+      ],
+      "targets": [
+        {
+          "name": "DJ Table: Master Waveform Display",
+          "description": "Deck A continuously streams its loaded track's full waveform data, current playhead position and beat grid to the upper lane of the Master Waveform Display so the overview and beat markers stay in sync with playback and scratching."
+        },
+        {
+          "name": "DJ Table: Central Mixer",
+          "description": "Deck A outputs its post-fader audio level and signal into mixer channel 1, driving channel 1's VU meter, EQ, gain and channel fader processing."
+        },
+        {
+          "name": "DJ Table: Deck B (Right)",
+          "description": "When the user presses Sync on Deck B, Deck A emits its current BPM and beat-phase so Deck B can match Deck A's tempo and downbeat."
+        }
+      ]
+    },
+    "features": [
+      "Jog Wheel",
+      "Play Pause Button",
+      "Cue Button",
+      "Pitch Fader",
+      "Waveform Strip",
+      "Hot Cue Pads",
+      "Loop Controls",
+      "Sync Button",
+      "Track Info Display",
+      "BPM Display",
+      "Keylock Toggle"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "DJ Table: Central Mixer",
+    "genInstructions": "Build the central mixer with two channel strips (gain trim, 3-band EQ knobs, VU meters, cue/PFL, vertical channel faders), a crossfader blending channel 1 and 2, plus master volume and headphone mix controls so the user can balance, EQ and blend both decks.",
+    "role": "This is the mixing hub of the DJ table; it receives audio from both decks and lets the user shape, meter and crossfade them into the master output.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "DJ Table: Deck A (Left)",
+          "description": "Deck A feeds its post-fader audio signal and level into channel 1, driving channel 1's VU meter and being shaped by channel 1's gain, EQ and fader before the crossfader."
+        },
+        {
+          "name": "DJ Table: Deck B (Right)",
+          "description": "Deck B feeds its post-fader audio signal and level into channel 2, driving channel 2's VU meter and being shaped by channel 2's gain, EQ and fader before the crossfader."
+        }
+      ],
+      "targets": []
+    },
+    "features": [
+      "Channel Faders",
+      "Crossfader",
+      "EQ Knobs",
+      "Gain Trim",
+      "Channel VU Meters",
+      "Cue PFL Buttons",
+      "Master Volume",
+      "Headphone Mix"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "DJ Table: Deck B (Right)",
+    "genInstructions": "Build the right playback deck mirroring Deck A with jog wheel, transport controls, pitch/tempo fader, per-deck scrolling waveform, hot cue pads and loop controls so the user can play, cue, scratch, pitch-bend and loop the track loaded on channel 2.",
+    "role": "This is the right playback engine of the DJ table; it plays a track loaded from the library, feeds its audio and waveform to the mixer and master display, and can be beat-synced with Deck A.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "DJ Table: Track Library Browser",
+          "description": "When the user clicks 'Load to Deck B' on a selected library track, the browser sends that track's audio file, title, artist and BPM metadata to Deck B, which loads it, resets the playhead to the start and renders its waveform."
+        },
+        {
+          "name": "DJ Table: Effects Rack",
+          "description": "When an FX unit is assigned to Deck B and toggled on, the Effects Rack sends the effect type, dry/wet amount and beat-multiplier to Deck B, which applies the processed effect to its outgoing audio in real time."
+        },
+        {
+          "name": "DJ Table: Deck A (Left)",
+          "description": "When the user presses Sync on Deck B, Deck A emits its current BPM and beat-phase; Deck B adjusts its own pitch fader value and phase to match Deck A's tempo and downbeat."
+        }
+      ],
+      "targets": [
+        {
+          "name": "DJ Table: Master Waveform Display",
+          "description": "Deck B continuously streams its loaded track's full waveform data, current playhead position and beat grid to the lower lane of the Master Waveform Display so the overview and beat markers stay in sync with playback and scratching."
+        },
+        {
+          "name": "DJ Table: Central Mixer",
+          "description": "Deck B outputs its post-fader audio level and signal into mixer channel 2, driving channel 2's VU meter, EQ, gain and channel fader processing."
+        },
+        {
+          "name": "DJ Table: Deck A (Left)",
+          "description": "When the user presses Sync on Deck A, Deck B emits its current BPM and beat-phase so Deck A can match Deck B's tempo and downbeat."
+        }
+      ]
+    },
+    "features": [
+      "Jog Wheel",
+      "Play Pause Button",
+      "Cue Button",
+      "Pitch Fader",
+      "Waveform Strip",
+      "Hot Cue Pads",
+      "Loop Controls",
+      "Sync Button",
+      "Track Info Display",
+      "BPM Display",
+      "Keylock Toggle"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "DJ Table: Effects Rack",
+    "genInstructions": "Build an effects rack with two selectable FX units, each offering an effect selector (echo, reverb, filter, flanger, etc.), a dry/wet knob, a beat-multiplier control, an on/off toggle and deck-assign buttons so the user can apply real-time effects to either deck.",
+    "role": "This is the effects processor of the DJ table; it lets the user assign and apply real-time audio effects to Deck A or Deck B's playing audio.",
+    "connectivity": {
+      "effectors": [],
+      "targets": [
+        {
+          "name": "DJ Table: Deck A (Left)",
+          "description": "When an FX unit is assigned to Deck A via its assign button and toggled on, the rack sends the selected effect type, dry/wet amount and beat-multiplier to Deck A, which applies the effect to its outgoing audio in real time."
+        },
+        {
+          "name": "DJ Table: Deck B (Right)",
+          "description": "When an FX unit is assigned to Deck B via its assign button and toggled on, the rack sends the selected effect type, dry/wet amount and beat-multiplier to Deck B, which applies the effect to its outgoing audio in real time."
+        }
+      ]
+    },
+    "features": [
+      "FX Unit Slots",
+      "Effect Selector",
+      "Dry Wet Knob",
+      "Beat Multiplier",
+      "Assign Deck Buttons",
+      "On Off Toggle"
+    ],
+    "excludedFeatures": []
+  }
+]

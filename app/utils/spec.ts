@@ -76,6 +76,50 @@ export type ComponentDef = {
   defaultActiveIdx: number[]; // which features are on by default
 }
 
+/* PRIMITIVE HOIST (see docs/PRIMITIVE_HOIST_PLAN) */
+
+// One primitive type in the shared library. `props` is a plain signature:
+// propName -> TypeScript type string; a trailing "?" on the name marks it optional.
+export type PrimitiveType = {
+  type: string;                    // PascalCase JSX identifier, e.g. "Knob"
+  description: string;             // what it is / how input maps to value; mechanism only, no styling
+  props: Record<string, string>;   // spanning prop contract, e.g. { value: "number", "steps?": "number[]" }
+};
+
+// featureName -> the distinct primitive type names that feature is built from
+export type FeatureTypes = Record<string, string[]>;
+
+// A leaf's resolved features: the hoist's types, [] for a structural feature, null for an
+// active feature the hoist never mapped (toggled on later, user-added, or its type dropped).
+export type LeafFeatures = Record<string, string[] | null>;
+
+export type HoistResult = {
+  library: PrimitiveType[];
+  components: { name: string; features: FeatureTypes }[];
+};
+
+// One use of a primitive type: the component + feature built from it.
+export type PrimitiveUse = { component: string; feature: string };
+
+// A primitive's declared floor, parsed from its generated "<Type>_MIN" constant:
+// "base" plus "<prop>:<value>" overrides, each [width, height] in rem.
+export type PrimitiveFloor = Record<string, [number, number]>;
+
+// Everything the primitive stage produced for one generated UI, stored per taskID beside
+// its style. code = each type's generated source; floors = its parsed FLOOR.
+export type PrimitiveSet = {
+  hoist: HoistResult;
+  code: Record<string, string>;
+  floors: Record<string, PrimitiveFloor>;
+};
+
+// What the generate route needs from a PrimitiveSet: the types a leaf may use (the ones that
+// generated) and their floors. The code itself goes to Preview, never to the model.
+export type LeafPrimitives = {
+  library: PrimitiveType[];
+  floors: Record<string, PrimitiveFloor>;
+};
+
 // Used in getCode to represent messages
 export interface Message {
   id: string;
