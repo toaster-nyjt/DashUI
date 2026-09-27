@@ -38,10 +38,11 @@ Both flows converge on the same endpoint: a box's component is resolved to JSON 
   | focal | `claude-opus-5` | adaptive / `high` | 16000 | once on Opus 4.8, adaptive / `low` |
   | primitives | `claude-opus-5` | adaptive / `low` | 64000 | once on Opus 4.8, thinking off / `max` |
   | generate (leaves) | `claude-opus-5` | adaptive / `low` | 64000 | once on Opus 4.8, thinking off / `max` |
-  | path | `claude-opus-4-8` | thinking off / `max` | 32000 | — |
+  | contracts (Wire) | `claude-opus-4-8` | thinking off / `max` | 16000 | once on Opus 5, adaptive / `low` |
+  | wire (one call per component) | `claude-opus-4-8` | thinking off / `max` | 32000 | once on Opus 5, adaptive / `low` |
   | spec | `claude-sonnet-4-6` | default | 16000 | — |
 
-  generate streams to the client; hoist, primitives and path stream internally (`finalMessage()`); plan, layout, style, focal and spec are non-streaming. Every route reads **text blocks only**; thinking blocks are never parsed as output.
+  generate streams to the client; hoist, primitives, contracts and wire stream internally (`finalMessage()`); plan, layout, style, focal and spec are non-streaming. Every route reads **text blocks only**; thinking blocks are never parsed as output.
 - **Primitive pipeline is the latest major feature — see §14.** A generated UI now hoists a shared library of primitive components, generates each once, and builds its leaves from them. Dev runs log every stage to `logs/task-<taskID>.jsonl` (§13).
 - **Comment style.** Keep code comments only as long as necessary; put rationale,
   background, and design context in this doc, not in long inline comments.
@@ -86,7 +87,8 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
      `validateHoist` and retried. `null` after the retries → this UI is built without
      primitives (hand-built leaves); the UI is never aborted. As soon as the hoist returns,
      **FOCAL** (`fetchValidFocal` → `POST /api/focal`) picks the ONE library type the whole UI
-     is recognized by (§14), still inside this parallel stage.
+     is recognized by (§14), still inside this parallel stage. Switched by `FOCAL_ENABLED` in `SpatialGrid`
+     (on; when off, the route is skipped and every prompt is the no-focal one).
    - **LAYOUT** — tile the region interior `w × h`. A single component skips the route and
      fills the box; multiple components go through `fetchValidLayout` → `POST /api/layout`
      → `Placement[]` (LOCAL coords), validated and retried.
@@ -124,7 +126,8 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
 | layout | `validateLayout` (exact tiling: no gaps, overlaps, out-of-bounds) | 3 (`LAYOUT_RETRIES`) | UI aborted |
 | build: primitives (each type) | `repairSyntax` first, then `checkPrimitive`: compiles, one `export function <Type>`, no imports/default export, prefixed names, no hard-coded SVG ids / ResizeObserver / redefined FitText / unanchored cq units / % padding, valid floor (`parsePrimitiveFloor`), and `checkPlacement` for holders and held types | 3 (`PRIMITIVE_RETRIES`); refusal → once on Opus 4.8 | type dropped; its features become `null` (hand-built) |
 | leaves (build or generate route, shared `leafGen.ts`) | `repairSyntax` (compile guarantee), then `sanitizeLeaf` (post-processor) | 1 + one regeneration if repair can't make it compile; refusal → once on Opus 4.8 | logged `syntaxStillBroken`; a leaf whose build throws generates itself |
-| path (wiring) | `validateWiring` (every channel id in both endpoints' code) | 3 (`PATH_RETRIES`) | no wiring applied |
+| contracts (Wire, split per receiver) | `validateContracts` (every channel id exactly once, `state`/`event`, a JSON-only TypeScript payload type, an example of that type) | 3 per split (`CONTRACT_RETRIES`); refusal → once on Opus 5 | that split's channels are left unwired |
+| wire (each component) | `repairSyntax`, then `checkLeafWiring` (compiles, default export kept, every own channel emitted/subscribed with its exact id, no other ids, no bus call in a component body, a `state` channel sent from an effect, emit payloads type-check against the contract) | 3 (`WIRE_RETRIES`); refusal → once on Opus 5 | that component stays unwired (its channels half-open, logged) |
 
 Measured on a DJ Table run (2026-09-25): about 222s end to end (plan 64s, style/hoist/layout 44s,
 primitives 46s, leaves 68s). Since the build route (2026-09-27), primitives and leaves overlap. Replays of logged runs (`build-replay.cjs`) end 0–42s sooner:
@@ -205,7 +208,14 @@ which must **never render in any form**. This is what enforces `GENERATE_SYSTEM_
 
 ## 4. Files & codebase map
 
-**Primitive pipeline (most recent work, §14)**
+**Wiring (most recent work, §12)**
+- `app/api/wire/route.ts` — `POST /api/wire`: the Wire action, streamed as NDJSON (contracts, then each wired component). Replaced `/api/path`.
+- `app/utils/wireGen.ts` (server-only) — `runWire` (contracts, then every component in parallel) and `wireLeaf` (one component: model call + refusal fallback + `checkLeafWiring` + retries).
+- `app/utils/contractGen.ts` (server-only) — `generateContracts`, `splitChannels`, `generateContractsSplit`.
+- `app/utils/contractChecks.ts` / `app/utils/wireChecks.ts` (server-only, TypeScript compiler) — `validateContracts`, `checkLeafWiring`.
+- `app/api/SKILLS.ts` — `CONTRACT_SYSTEM_PROMPT`, `contractRequest`, `WIRE_SYSTEM_PROMPT`, `wireRequest` (replaced `PATH_SYSTEM_PROMPT`); `app/utils/spec.ts` — `ChannelContract`.
+
+**Primitive pipeline (§14)**
 - `app/api/hoist/route.ts` — `POST /api/hoist`: resolved components → `HoistResult`.
 - `app/api/focal/route.ts` — `POST /api/focal`: task + component roles + hoist → `{ focal }`, the ONE type the UI is recognized by.
 - `app/api/build/route.ts` — `POST /api/build`: one UI's primitives (all in parallel) and leaves
@@ -285,9 +295,9 @@ which must **never render in any form**. This is what enforces `GENERATE_SYSTEM_
   Stat Dashboard, Calendar, Chart Panel, Form).
 - `app/utils/useGetCode.ts` — `useGetCode` hook: streaming fetch to `/api/generate`,
   message history, `generatedCode` / `isGenerating`.
-- `app/api/{plan,style,layout,hoist,primitives,spec,generate,path}/route.ts` — the eight LLM routes
+- `app/api/{plan,style,layout,hoist,focal,build,spec,generate,wire}/route.ts` — the LLM routes
   (`style` → one coherent visual identity per generated UI, §9; `hoist`/`primitives` → the shared
-  primitive library, §14; `path` → runtime functional wiring between a UI's components, §12), plus
+  primitive library, §14; `wire` → runtime functional wiring between a UI's components, §12), plus
   `log` (dev-only run log, §13). `spec` defines a custom component with `DEFINE_SYSTEM_PROMPT`.
 
 **Key types**
@@ -802,7 +812,7 @@ thinking — **not** a separate call.
 - `fetchValidPlan` (`SpatialGrid`) wraps `/api/plan` in a retry loop (`PLAN_RETRIES = 3`,
   mirrors `fetchValidLayout`), feeding `previousError` back to the plan route (which now
   accepts it → `retryNote`). **Load-bearing:** returns `null` (aborts the generation) on
-  exhaustion, since names are the join key for layout adjacency and the Path route's channel
+  exhaustion, since names are the join key for layout adjacency and the wire route's channel
   ids (§12).
 
 ### Where role/connectivity flow
@@ -812,7 +822,7 @@ thinking — **not** a separate call.
 - **GENERATE** treats `role`/`connectivity` as **focus guidelines** — they shape which of the
   component's features matter most and how, but add no features beyond the canonical list
   (the controls/surfaces a connection needs are already in `features`). Actual cross-component
-  wiring is done by the **Path route** (§12).
+  wiring is done by the **wire route** (§12).
 - **LAYOUT** uses `role` (centrality/area), `connectivity` (place connected pairs adjacent —
   control beside the display it drives), and `features` (content-density → area).
 
@@ -830,7 +840,7 @@ functional wiring itself (acting on connectivity at runtime) is **built** — se
 
 ---
 
-## 12. Functional wiring — the Path route & runtime bus bridge
+## 12. Functional wiring — the wire route & runtime bus bridge
 
 The planner's `connectivity` (§11) describes which components *should* drive which; this
 feature makes it **real at runtime**. It's a manual, on-demand step: after a generated UI
@@ -854,15 +864,19 @@ relay → iframe** (iframes can't address each other; only the host hears and ca
    `on` adds a `message` listener filtered by `taskID` + `channel`. Manual boxes (no `taskID`)
    get no shim.
 2. **The host relay** (`SpatialGrid`, one `window` `message` listener set up on mount).
-   Keyed by `taskID`: on `"event"` it **caches** the payload as that channel's last value
-   and **fans it out** to the other leaves of the same UI (never echoes the sender); on
+   Keyed by `taskID`: on `"event"` it **fans the payload out** to the other leaves of the same UI
+   (never echoes the sender). It reads each channel's contract kind (`channelKinds`, set from the
+   wire stream): a `state` channel (or one without a contract) is **cached** as its last value,
+   and a payload identical to the cached one is dropped, which stops echo loops on two-way
+   channels; an `event` channel is never cached, so a remounted leaf never re-fires it. On
    `"register"` it records the leaf's window and **replays** every cached channel value to
    it. Dead windows (a remounted/removed leaf) are pruned when a post throws. Filters
    `__uibus` so it ignores Sandpack's own postMessage protocol.
-3. **The injected calls** (`/api/path`, thin layer). For each channel the route adds, in the
-   source, `useEffect(() => bus.emit(id, value), [value])` (fires on mount to seed **and**
-   on every change) and, in the receiver, `useEffect(() => bus.on(id, d => setState(d)), [])`
-   plus using that state in render. It changes as little else as possible.
+3. **The injected calls** (`/api/wire`, thin layer, one call per component). A `state` channel's
+   sender gets `useEffect(() => bus.emit(id, value), [value])` (fires on mount to seed **and**
+   on every change); an `event` channel's sender emits in the handler of its action; the
+   receiver gets `useEffect(() => bus.on(id, d => setState(d)), [])` plus using that state in
+   render. Every payload follows the channel's contract. It changes as little else as possible.
 
 ### Channel ids are computed app-side (not by the LLM)
 The #1 failure mode is the two endpoints disagreeing on the channel string. So `buildChannels`
@@ -890,43 +904,53 @@ immediately reflects A's current state" work, not just "B reacts to A's next cha
   single-component UIs never offer it).
 - **`wireUI(root)`:** `collectUIComponents` flattens the group (reusing `flattenToGlobal`
   purely as a leaf collector — coords ignored) to `{ key, name, code, role, connectivity }`
-  per leaf; `buildChannels` derives the edges;
-  `fetchValidWiring` POSTs `{ components, channels }` to `/api/path` and validates the result
-  (`validateWiring`: every channel id must appear in both its endpoints' returned code),
-  retrying up to `PATH_RETRIES = 3` with `previousError`. Results map back by name into
-  `wiredCode: Record<leafKey, string>`.
-- **Wiring feedback (shimmer):** the Path call takes a while, and a rewired leaf never runs
-  its own `useGetCode` stream, so its `isGenerating` stays false and it would otherwise sit
-  showing stale output with no signal. `wireUI` sets `wiringLeaves: Set<leafKey>` to the
-  channel-participant leaves (threaded down like `wiredCode`); `GeneratedBox` shows the
-  generation shimmer (labelled "wiring…") when `isGenerating || wiringLeaves.has(key)`.
-  Non-participant leaves stay live. Cleared in `wireUI`'s `finally` (so a failed/empty result
-  never leaves a stuck shimmer) — batched with `setWiredCode`, so a participant goes straight
-  from shimmer → wired preview with no flash of the pre-wiring output.
+  per leaf; `buildChannels` derives the edges; ONE streamed request to `/api/wire` does the rest
+  (below). The `contracts` event sets `channelKinds[taskID]` for the relay; each `leaf` event
+  maps back by name into `wiredCode: Record<leafKey, string>`.
+- **Wiring feedback (shimmer):** a rewired leaf never runs its own `useGetCode` stream, so its
+  `isGenerating` stays false. `wireUI` sets `wiringLeaves: Set<leafKey>` to the
+  channel-participant leaves; `GeneratedBox` shows the generation shimmer (labelled "wiring…")
+  when `isGenerating || wiringLeaves.has(key)`. Each leaf leaves the set when its own wired code
+  (or failure) arrives, and the `finally` clears the rest, so a failed stream never leaves a
+  stuck shimmer. Non-participant leaves stay live.
 - **Applying wiring:** a leaf renders `wiredCode[key] ?? generatedCode`, and its `Preview`
   is **keyed** on the wired flag so setting `wiredCode` **remounts** that leaf's iframe —
   the shim re-initializes and re-registers cleanly (fresh `contentWindow`). The original
   generated code is untouched in `codeMap`, so "unwire" is just clearing the entry.
 
-### The `/api/path` route
-- `claude-opus-4-8`, thinking **off** + `effort: "max"` (so the whole budget goes to the echoed
-  component code; originally adaptive/medium). `max_tokens: 32000` (several full components in one response). `PATH_SYSTEM_PROMPT`
-  in `SKILLS.ts`.
-- **Streams internally** (`messages.stream(...).finalMessage()`), unlike the other
-  non-streaming design routes. Required: at `max_tokens` this high the SDK **rejects** a
-  plain `messages.create` up front ("Streaming is required for operations that may take
-  longer than 10 minutes") — it fails in ~100ms before any work. Streaming sidesteps the
-  guard; the route still returns ONE assembled JSON response (it just consumes the model
-  output as a stream). Keep this if `max_tokens` stays > ~16000.
-- Input (user message): the deterministic channel list + each component's current code in
-  `<<<COMPONENT name="…">>> … <<<END>>>` blocks. Output: the **same delimited block format**
-  (not JSON — avoids escaping large code blobs), one block per component it edited; the route
-  parses the blocks and runs each through `extractComponentCode`. Only components that appear
-  in a channel are edited/returned; the rest keep their generated code.
-- The prompt is a **thin wiring layer**: preserve structure/styling/the outer-container
-  rules; emit only in effects/handlers; payloads must be structured-clone-serializable.
+### The wire route (`/api/wire`, `runWire` in `wireGen.ts`)
+Replaced the single-call `/api/path` (2026-09-27). That call echoed every component's code in
+one response: ~24k output tokens median per UI (~240s at ~100 tok/s), and 1 of 25 logged UIs
+needed more than its 32k `max_tokens`. Evidence: `docs/fixtures/model-exp/WIRING_CONTRACTS.md`.
+1. **Contracts** (`generateContractsSplit`, `CONTRACT_SYSTEM_PROMPT`). Each channel gets
+   `{ id, kind: "state" | "event", payload, example }`: `payload` is a JSON-only TypeScript type
+   with units and ranges in comments, `example` one value of it. The agent reads both endpoints'
+   **current** code, so payloads use the state and names the code already has (and leave out
+   data no code holds). A pull ("when B presses Refresh, A sends…") becomes `state` that A
+   always publishes, since the bus is one-way. Time is ~3s + ~1.3s per channel (output-bound),
+   so `splitChannels` groups channels by receiver (a receiver's inputs always share a call, so
+   they get consistent shapes) and packs them into parallel calls of at most 8
+   (`CONTRACT_MAX_PER_CALL`): 10/10 UIs of 10–19 channels under 20s (max 19.0s), against 23–29s
+   in one call. Input tokens roughly double.
+2. **Wiring** (`wireLeaf`, `WIRE_SYSTEM_PROMPT`). One call per component on a contracted channel,
+   all in parallel: its code and its SENDS and RECEIVES with their contracts; it outputs the whole
+   component. Each end of a channel is wired separately against the same contract, which is
+   what makes the split safe. Checked by `checkLeafWiring` and retried on its own.
+3. **Results stream** as NDJSON (`contracts`, `leaf`, `leaf-failed`, `done`). A component that
+   never passes stays unwired; a channel with one failed end is logged as half-open.
+
+Measured (Opus 4.8 thinking off, 2 logged UIs): DJ Table (10 channels) 56s end to end
+(contracts 10.8s, slowest component 45.6s); Cyberpunk (7 channels) 74.5s (contracts 20.6s,
+slowest 53.9s). 13/13 components passed on the first try. Rendered with a recording bus
+(`wire-probe.mjs`): no render errors, every channel subscribed, and every `state` sender emitted
+a correctly shaped payload on mount except one Journal, which sent a state channel only from a
+click handler. The check now rejects that; in a re-run the retry fixed it.
 
 ### Scope / deferred
+- **Sample data isn't shared between components.** Each leaf invents its own data, so an id
+  sent across a channel can match nothing on the other side (Cyberpunk: the map's quests are
+  `q-heist`…, the journal's `q1`…`q8`; a marker click is wired correctly but selects nothing).
+  One wiring call sees one component, so it can't fix this. Open.
 - **1-level UIs only** (matches §11). No recursive/cross-group wiring yet.
 - **Re-wiring after a user customizes a component** (toggles a feature → that leaf re-gens →
   its wiring is lost) is **not** handled — Wire is re-clickable to redo the whole UI, but
@@ -955,7 +979,9 @@ Every generated UI writes one file, `logs/task-<taskID>.jsonl` (gitignored), wit
 | `primitives:done` | Usable and dropped types, `focal`, `held` (holder → held types), attempts per type, all floors, stage time |
 | `leaf:start` | Resolved spec (mapped features, `[]` structural, `null` hand-built), prompt mode (primitives only / + hand-built / base), library types, `held` (its library's holders), `focal` (the UI's focal types this leaf uses), floors, box size, the full system prompt |
 | `leaf:done` | Raw output, final code, what the post-processor removed and added, syntax repairs / regeneration (`syntaxRepairs`, `syntaxRegenerated`, `syntaxStillBroken`), stop reason, refusal fallback, tokens, time |
-| `path` | Channels, input code, wired output |
+| `contracts` | Per contract call (Wire): its channels, the contracts or the rejection, raw output, tokens, time |
+| `wire:contracts` / `wire:leaf` / `wire:done` | Wire route: contracts made (and failed channels) with each split call's time; each component's attempt (sends, receives, errors, syntax repairs, code, tokens, time); components wired, half-open channels, total time |
+| `run:wire` / `wire:failed` | Client: the Wire stream's total time, or why it failed |
 
 ## 14. Primitive pipeline — hoist, shared primitives, primitive-built leaves (latest major feature)
 
@@ -998,7 +1024,7 @@ Built 2026-09-24/25 from `docs/PRIMITIVE_HOIST_PLAN (1).md` (Feature 1). The pla
 
    Why: in-flow `h-full w-full` roots stacked the map's markers out of view, and the map's pan handler captured their clicks. Without a holder, every prompt is unchanged. Evidence: `docs/fixtures/model-exp/HELD_PRIMITIVES_COMPARISON.md`.
 
-   **Focal types.** As soon as the hoist returns, the focal route picks the ONE library type that passes the IDENTITY test: it is visually central to the UI's entire core identity. When that's ambiguous, the model is told to think of what takes up the most space or is used or looked at the most, and that it is "NEVER a minor control like a button or knob". (The first version also had a PURPOSE test and allowed 1 or 2 picks; see plan §0.1.)
+   **Focal types** (`FOCAL_ENABLED` in `SpatialGrid`, currently on; `false` skips the route, so focal is `[]` and every prompt is the no-focal one). As soon as the hoist returns, the focal route picks the ONE library type that passes the IDENTITY test: it is visually central to the UI's entire core identity. When that's ambiguous, the model is told to think of what takes up the most space or is used or looked at the most, and that it is "NEVER a minor control like a button or knob". (The first version also had a PURPOSE test and allowed 1 or 2 picks; see plan §0.1.)
 
    The route uses `FOCAL_SYSTEM_PROMPT` on Opus 5, effort `high` since 2026-09-27; it took about 1.5s at `low`, and `high` hasn't been measured. `validateFocal` accepts exactly 1 exact type name and repairs a held type to its holder. The picks are switches, so with none, every prompt is byte-identical:
    - A focal primitive gets `PRIM_INTRO_FOCAL` at the end of the opening paragraph: it's a focal point, it fills a large space, build it at the highest detail.
@@ -1040,7 +1066,7 @@ Built 2026-09-24/25 from `docs/PRIMITIVE_HOIST_PLAN (1).md` (Feature 1). The pla
    - it makes the leaf's `flex-1` body a hidden-scrollbar scroll region, so an over-budget leaf scrolls instead of clipping.
 
    When anything changed, the route sends `LEAF_REPLACE_MARKER` + the cleaned code; `useGetCode` swaps it in. Leaves show the shimmer until the stream ends, so the swap is never visible. Opus 5 leaves rarely need it; it's the safety net for the refusal fallback.
-6. **Render** (`Preview`). `/primitives.tsx` is written with hooks, then `FIT_TEXT_SOURCE`, then every primitive of the UI, and the leaf gets `import { … } from "./primitives"`, so generated code stays import-free. Wiring (§12) is unchanged; `PATH_SYSTEM_PROMPT` says never to define, inline or modify a primitive.
+6. **Render** (`Preview`). `/primitives.tsx` is written with hooks, then `FIT_TEXT_SOURCE`, then every primitive of the UI, and the leaf gets `import { … } from "./primitives"`, so generated code stays import-free. Wiring (§12) edits leaves only; `WIRE_SYSTEM_PROMPT` says never to define, inline or modify a primitive.
 
 ### FitText (host code, `FIT_TEXT_SOURCE`)
 Hand-written, never generated. Primitives route all display text and face `children` through it. It binary-searches the largest font size at which its children fit in its box (wrapping multi-word content by default), measuring layout sizes so the host's `scale()` doesn't skew it, and skipping the search when nothing changed.

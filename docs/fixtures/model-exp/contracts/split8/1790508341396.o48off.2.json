@@ -1,0 +1,389 @@
+{
+  "task": "1790508341396",
+  "name": "Y2K Synthesizer",
+  "cfg": "o48off",
+  "sample": 2,
+  "channels": 15,
+  "totalSecs": 17.738,
+  "calls": [
+    {
+      "channels": 8,
+      "attempts": [
+        {
+          "secs": 17.738,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 32403,
+          "outTok": 1576
+        }
+      ]
+    },
+    {
+      "channels": 7,
+      "attempts": [
+        {
+          "secs": 17.57,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 24442,
+          "outTok": 1578
+        }
+      ]
+    }
+  ],
+  "attempts": [
+    {
+      "secs": 17.738,
+      "model": "claude-opus-4-8",
+      "stop": "end_turn",
+      "inTok": 32403,
+      "outTok": 1576
+    },
+    {
+      "secs": 17.57,
+      "model": "claude-opus-4-8",
+      "stop": "end_turn",
+      "inTok": 24442,
+      "outTok": 1578
+    }
+  ],
+  "ok": true,
+  "contracts": [
+    {
+      "id": "Y2K Synth: Playable Keyboard->Y2K Synth: Oscillator Bank",
+      "kind": "event",
+      "payload": "{ type: 'noteOn'; pitch: number /* MIDI note number 0-127 */; frequency: number /* Hz */; velocity: number /* 0-1 */; portamento: number /* glide time ms */ } | { type: 'noteOff'; pitch: number /* MIDI note number 0-127 */ }",
+      "example": {
+        "type": "noteOn",
+        "pitch": 60,
+        "frequency": 261.63,
+        "velocity": 0.57,
+        "portamento": 35
+      }
+    },
+    {
+      "id": "Y2K Synth: ADSR Envelope Panel->Y2K Synth: Oscillator Bank",
+      "kind": "state",
+      "payload": "{ attack: number /* seconds */; decay: number /* seconds */; sustain: number /* 0-1 level */; release: number /* seconds */; amount: number /* 0-100 percent, VCA gain depth */ }",
+      "example": {
+        "attack": 0.18,
+        "decay": 0.42,
+        "sustain": 0.62,
+        "release": 0.75,
+        "amount": 72
+      }
+    },
+    {
+      "id": "Y2K Synth: LFO Modulation Panel->Y2K Synth: Oscillator Bank",
+      "kind": "state",
+      "payload": "{ active: boolean /* true only when destination = pitch */; value: number /* bipolar -1 to 1, current waveform output scaled by depth */ }",
+      "example": {
+        "active": true,
+        "value": -0.42
+      }
+    },
+    {
+      "id": "Y2K Synth: Preset Browser->Y2K Synth: Oscillator Bank",
+      "kind": "state",
+      "payload": "{ osc1: { wave: 'sin' | 'tri' | 'saw' | 'sqr'; oct: number /* -2 to 2 */; detune: number /* -50 to 50 cents */ }; osc2: { wave: 'sin' | 'tri' | 'saw' | 'sqr'; oct: number /* -2 to 2 */; detune: number /* -50 to 50 cents */ }; sub: { on: boolean; level: number /* 0-100 percent */ }; noise: { type: 'wht' | 'pnk'; level: number /* 0-100 percent */ }; mix: number /* -100 to 100, osc1<->osc2 balance */; unison: number /* 1-7 voices */ }",
+      "example": {
+        "osc1": {
+          "wave": "saw",
+          "oct": 0,
+          "detune": 0
+        },
+        "osc2": {
+          "wave": "sqr",
+          "oct": -1,
+          "detune": 7
+        },
+        "sub": {
+          "on": true,
+          "level": 42
+        },
+        "noise": {
+          "type": "pnk",
+          "level": 18
+        },
+        "mix": -20,
+        "unison": 3
+      }
+    },
+    {
+      "id": "Y2K Synth: Playable Keyboard->Y2K Synth: ADSR Envelope Panel",
+      "kind": "event",
+      "payload": "{ gate: 'on'; velocity: number /* 0-1 */ } | { gate: 'off' }",
+      "example": {
+        "gate": "on",
+        "velocity": 0.57
+      }
+    },
+    {
+      "id": "Y2K Synth: Preset Browser->Y2K Synth: ADSR Envelope Panel",
+      "kind": "state",
+      "payload": "{ attack: number /* seconds */; decay: number /* seconds */; sustain: number /* 0-1 level */; release: number /* seconds */; amount: number /* 0-100 percent */ }",
+      "example": {
+        "attack": 0.18,
+        "decay": 0.42,
+        "sustain": 0.62,
+        "release": 0.75,
+        "amount": 72
+      }
+    },
+    {
+      "id": "Y2K Synth: Effects Rack->Y2K Synth: Master Output & Oscilloscope",
+      "kind": "state",
+      "payload": "{ samples: number[] /* processed audio waveform, values roughly -1 to 1 */; mix: number /* 0-100 wet/dry percent */; activeCount: number /* number of engaged effect units */ }",
+      "example": {
+        "samples": [
+          0,
+          0.31,
+          0.58,
+          0.42,
+          -0.12,
+          -0.47,
+          -0.29,
+          0.05
+        ],
+        "mix": 45,
+        "activeCount": 3
+      }
+    },
+    {
+      "id": "Y2K Synth: Step Sequencer->Y2K Synth: Playable Keyboard",
+      "kind": "event",
+      "payload": "{ type: 'noteOn'; pitch: number /* MIDI note number 0-127 */; velocity: number /* 0-1 */; gate: number /* gate length ms */ } | { type: 'noteOff'; pitch: number /* MIDI note number 0-127 */ }",
+      "example": {
+        "type": "noteOn",
+        "pitch": 72,
+        "velocity": 0.8,
+        "gate": 187
+      }
+    },
+    {
+      "id": "Y2K Synth: Oscillator Bank->Y2K Synth: Filter Module",
+      "kind": "state",
+      "payload": "{ sources: Array<{ id: 'osc1' | 'osc2' | 'sub' | 'noise'; wave: 'sin' | 'tri' | 'saw' | 'sqr' | 'wht' | 'pnk'; on: boolean; level: number /* 0-1 relative gain in the mix */ }>; unison: number /* 1-7 voices */ }",
+      "example": {
+        "sources": [
+          {
+            "id": "osc1",
+            "wave": "saw",
+            "on": true,
+            "level": 0.6
+          },
+          {
+            "id": "osc2",
+            "wave": "sqr",
+            "on": true,
+            "level": 0.8
+          },
+          {
+            "id": "sub",
+            "wave": "sin",
+            "on": true,
+            "level": 0.42
+          },
+          {
+            "id": "noise",
+            "wave": "pnk",
+            "on": true,
+            "level": 0.18
+          }
+        ],
+        "unison": 3
+      }
+    },
+    {
+      "id": "Y2K Synth: ADSR Envelope Panel->Y2K Synth: Filter Module",
+      "kind": "state",
+      "payload": "{ attack: number /* seconds, 0.001-2 */; decay: number /* seconds, 0.001-2 */; sustain: number /* 0-1 level */; release: number /* seconds, 0.001-3 */ }",
+      "example": {
+        "attack": 0.18,
+        "decay": 0.42,
+        "sustain": 0.62,
+        "release": 0.75
+      }
+    },
+    {
+      "id": "Y2K Synth: LFO Modulation Panel->Y2K Synth: Filter Module",
+      "kind": "state",
+      "payload": "{ active: boolean /* true only when destination = filter */; value: number /* -1 to 1 bipolar current LFO output already scaled by depth */ }",
+      "example": {
+        "active": true,
+        "value": -0.34
+      }
+    },
+    {
+      "id": "Y2K Synth: Preset Browser->Y2K Synth: Filter Module",
+      "kind": "state",
+      "payload": "{ type: 'lp24' | 'lp12' | 'bp12' | 'hp12' | 'notch'; cutoff: number /* Hz, 20-18000 */; reso: number /* 0-100 percent */; env: number /* -100 to 100 envelope amount */; lfo: number /* -100 to 100 LFO amount */; track: number /* 0-100 percent keytrack */; drive: number /* 0-100 */ }",
+      "example": {
+        "type": "lp24",
+        "cutoff": 6400,
+        "reso": 38,
+        "env": 45,
+        "lfo": -20,
+        "track": 60,
+        "drive": 22
+      }
+    },
+    {
+      "id": "Y2K Synth: Filter Module->Y2K Synth: Effects Rack",
+      "kind": "state",
+      "payload": "{ level: number /* 0-1 post-filter signal level */; cutoff: number /* Hz, 20-18000 current cutoff */; brightness: number /* 0-1 perceived brightness from cutoff+drive */ }",
+      "example": {
+        "level": 0.72,
+        "cutoff": 6400,
+        "brightness": 0.55
+      }
+    },
+    {
+      "id": "Y2K Synth: Preset Browser->Y2K Synth: Effects Rack",
+      "kind": "state",
+      "payload": "{ units: Array<{ id: 'rev' | 'dly' | 'cho' | 'dst' | 'bit'; on: boolean; val: number /* effect's main param in its own unit */ }>; order: Array<'rev' | 'dly' | 'cho' | 'dst' | 'bit'> /* signal-chain order */; mix: number /* 0-100 wet/dry percent */ }",
+      "example": {
+        "units": [
+          {
+            "id": "rev",
+            "on": true,
+            "val": 62
+          },
+          {
+            "id": "dly",
+            "on": true,
+            "val": 375
+          },
+          {
+            "id": "cho",
+            "on": false,
+            "val": 34
+          },
+          {
+            "id": "dst",
+            "on": true,
+            "val": 48
+          },
+          {
+            "id": "bit",
+            "on": false,
+            "val": 12
+          }
+        ],
+        "order": [
+          "dst",
+          "bit",
+          "cho",
+          "dly",
+          "rev"
+        ],
+        "mix": 45
+      }
+    },
+    {
+      "id": "Y2K Synth: Preset Browser->Y2K Synth: LFO Modulation Panel",
+      "kind": "state",
+      "payload": "{ wave: 'sin' | 'tri' | 'saw' | 'sqr' | 'snh'; rate: number /* Hz, 0.05-20, used when sync=false */; div: number /* 0-6 index into sync divisions, used when sync=true */; depth: number /* 0-100 percent */; sync: boolean /* tempo sync on */; destination: 'pitch' | 'filter' }",
+      "example": {
+        "wave": "sin",
+        "rate": 3.2,
+        "div": 3,
+        "depth": 58,
+        "sync": false,
+        "destination": "filter"
+      }
+    }
+  ],
+  "channelList": [
+    {
+      "id": "Y2K Synth: Playable Keyboard->Y2K Synth: Oscillator Bank",
+      "from": "Y2K Synth: Playable Keyboard",
+      "to": "Y2K Synth: Oscillator Bank",
+      "description": "On key press/release (or pitch-bend/glide change), emit note-on/note-off with the MIDI pitch/frequency, velocity, and portamento time; the oscillator bank sets its running pitch to that frequency and starts/stops the voice accordingly."
+    },
+    {
+      "id": "Y2K Synth: Playable Keyboard->Y2K Synth: ADSR Envelope Panel",
+      "from": "Y2K Synth: Playable Keyboard",
+      "to": "Y2K Synth: ADSR Envelope Panel",
+      "description": "On key press emit a gate-on trigger (with velocity) and on release emit gate-off; the envelope panel starts its attack/decay/sustain stage on gate-on and begins the release stage on gate-off."
+    },
+    {
+      "id": "Y2K Synth: Oscillator Bank->Y2K Synth: Filter Module",
+      "from": "Y2K Synth: Oscillator Bank",
+      "to": "Y2K Synth: Filter Module",
+      "description": "Continuously outputs the mixed oscillator audio signal into the filter's input as the next stage of the signal chain."
+    },
+    {
+      "id": "Y2K Synth: Filter Module->Y2K Synth: Effects Rack",
+      "from": "Y2K Synth: Filter Module",
+      "to": "Y2K Synth: Effects Rack",
+      "description": "Continuously outputs the filtered audio signal into the effects rack's input as the next stage of the chain."
+    },
+    {
+      "id": "Y2K Synth: ADSR Envelope Panel->Y2K Synth: Oscillator Bank",
+      "from": "Y2K Synth: ADSR Envelope Panel",
+      "to": "Y2K Synth: Oscillator Bank",
+      "description": "Sends the computed amplitude contour as the VCA gain envelope shaping oscillator output volume per note."
+    },
+    {
+      "id": "Y2K Synth: ADSR Envelope Panel->Y2K Synth: Filter Module",
+      "from": "Y2K Synth: ADSR Envelope Panel",
+      "to": "Y2K Synth: Filter Module",
+      "description": "Sends the same envelope contour to modulate filter cutoff, scaled by the filter module's Envelope Amount control."
+    },
+    {
+      "id": "Y2K Synth: LFO Modulation Panel->Y2K Synth: Oscillator Bank",
+      "from": "Y2K Synth: LFO Modulation Panel",
+      "to": "Y2K Synth: Oscillator Bank",
+      "description": "When destination = pitch, sends a bipolar modulation signal (waveform at set rate, scaled by depth) that offsets oscillator pitch for vibrato."
+    },
+    {
+      "id": "Y2K Synth: LFO Modulation Panel->Y2K Synth: Filter Module",
+      "from": "Y2K Synth: LFO Modulation Panel",
+      "to": "Y2K Synth: Filter Module",
+      "description": "When destination = filter, sends a bipolar modulation signal that sweeps the filter cutoff, further scaled by the filter's LFO Amount control."
+    },
+    {
+      "id": "Y2K Synth: Effects Rack->Y2K Synth: Master Output & Oscilloscope",
+      "from": "Y2K Synth: Effects Rack",
+      "to": "Y2K Synth: Master Output & Oscilloscope",
+      "description": "Outputs the final wet/dry processed audio to the master stage for gain control and visualization."
+    },
+    {
+      "id": "Y2K Synth: Preset Browser->Y2K Synth: Oscillator Bank",
+      "from": "Y2K Synth: Preset Browser",
+      "to": "Y2K Synth: Oscillator Bank",
+      "description": "On selecting/loading a preset, pushes the stored oscillator parameter block, which the oscillator bank applies to its controls."
+    },
+    {
+      "id": "Y2K Synth: Preset Browser->Y2K Synth: Filter Module",
+      "from": "Y2K Synth: Preset Browser",
+      "to": "Y2K Synth: Filter Module",
+      "description": "On preset load, pushes the stored filter parameter block, which the filter module applies to type, cutoff, resonance and modulation amounts."
+    },
+    {
+      "id": "Y2K Synth: Preset Browser->Y2K Synth: ADSR Envelope Panel",
+      "from": "Y2K Synth: Preset Browser",
+      "to": "Y2K Synth: ADSR Envelope Panel",
+      "description": "On preset load, pushes stored ADSR and amount values, which the envelope panel applies to its sliders and curve."
+    },
+    {
+      "id": "Y2K Synth: Preset Browser->Y2K Synth: LFO Modulation Panel",
+      "from": "Y2K Synth: Preset Browser",
+      "to": "Y2K Synth: LFO Modulation Panel",
+      "description": "On preset load, pushes stored LFO parameters (waveform, rate, depth, sync, destination), which the LFO panel applies."
+    },
+    {
+      "id": "Y2K Synth: Preset Browser->Y2K Synth: Effects Rack",
+      "from": "Y2K Synth: Preset Browser",
+      "to": "Y2K Synth: Effects Rack",
+      "description": "On preset load, pushes stored effect enable states, parameters, mix and order, which the effects rack applies."
+    },
+    {
+      "id": "Y2K Synth: Step Sequencer->Y2K Synth: Playable Keyboard",
+      "from": "Y2K Synth: Step Sequencer",
+      "to": "Y2K Synth: Playable Keyboard",
+      "description": "While the transport is running, on each active step emit a note-on/note-off event (pitch, velocity, gate length, timing derived from BPM/swing/arp mode); the keyboard plays these through the voice and highlights the matching keys."
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "configs": {
+    "o5low": {
+      "model": "claude-opus-5",
+      "max_tokens": 16000,
+      "thinking": {
+        "type": "adaptive"
+      },
+      "output_config": {
+        "effort": "low"
+      }
+    }
+  },
+  "tasks": [
+    "1790360963510"
+  ],
+  "rows": [
+    {
+      "task": "1790360963510",
+      "name": "Radio",
+      "cfg": "o5low",
+      "sample": 1,
+      "channels": 6,
+      "totalSecs": 15.689,
+      "attempts": [
+        {
+          "secs": 15.689,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 14987,
+          "outTok": 1636
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790360963510",
+      "name": "Radio",
+      "cfg": "o5low",
+      "sample": 2,
+      "channels": 6,
+      "totalSecs": 15.402,
+      "attempts": [
+        {
+          "secs": 15.402,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 14987,
+          "outTok": 1551
+        }
+      ],
+      "ok": true
+    }
+  ]
+}

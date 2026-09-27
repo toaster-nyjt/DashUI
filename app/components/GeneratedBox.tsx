@@ -56,15 +56,15 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       // only) so consumers like ungroup read where it IS, not where it spawned.
       syncBounds? : (key : string, b : { colStart : number; colEnd : number; rowStart : number; rowEnd : number }) => void
       // A UI leaf reports its finished code up (keyed by box key) so SpatialGrid can
-      // collect the whole UI's code once every leaf is done, then wire it (Path route).
+      // collect the whole UI's code once every leaf is done, then wire it (wire route).
       reportCode? : (key : string, code : string) => void
-      // leafKey -> wired code from the Path route. When this leaf has an entry, it
+      // leafKey -> wired code from the wire route. When this leaf has an entry, it
       // renders the wired code (bus.emit/on injected) in place of its generated code.
       wiredCode? : Record<string, string>
       // leafKey -> the code the build route generated on the server for a serverGen leaf (null =
       // its build failed: generate yourself). The box waits for its entry instead of generating.
       builtCode? : Record<string, string | null>
-      // Leaf keys currently being rewired by the Path route -> show the generation
+      // Leaf keys currently being rewired by the wire route -> show the generation
       // shimmer while wiring runs (this leaf isn't running its own useGetCode stream).
       wiringLeaves? : Set<string>
     }) {
@@ -145,7 +145,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   // cover the fractional-pixel seam between them (see UI_GENERATOR.md §6).
   const seamBleed = interactMode && isChild && !hasChildren;
 
-  // Wired code (from the Path route) takes precedence over this leaf's own
+  // Wired code (from the wire route) takes precedence over this leaf's own
   // generated code once its UI has been wired. undefined until then.
   const wired = wiredCode?.[props.key];
   // A serverGen leaf shows its built code until it regenerates itself (customization).
@@ -153,7 +153,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   const awaitingBuild = !!props.serverGen && built === undefined;
   const codeToShow = wired ?? (generatedCode || built || "");
 
-  // True while the Path route is rewiring this leaf (it isn't running its own gen
+  // True while the wire route is rewiring this leaf (it isn't running its own gen
   // stream, so isGenerating stays false) — drives the shimmer for wiring feedback.
   const isWiring = !!wiringLeaves?.has(props.key);
 
@@ -657,7 +657,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
           </div>
         ) : (isGenerating || isWiring || awaitingBuild) ? (
           <div className="flex justify-center items-center animate-vertical-shimmer size-full rounded-lg bg-neutral-900 border border-white/5">
-            {/* Generating (own stream) | Wiring (Path route) | Empty | Preview */}
+            {/* Generating (own stream) | Wiring (wire route) | Empty | Preview */}
             <span>{isWiring && !isGenerating ? 'wiring...' : 'generating...'}</span>
           </div>
         ) : (codeToShow == "") ? (

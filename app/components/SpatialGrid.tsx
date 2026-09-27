@@ -3,20 +3,20 @@ import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
 import { XY, defaultXY, GeneratedBoxProps, ComponentDef, Placement, numGridBlocksWide, numVHTall, HoistResult, PrimitiveSet } from '../utils/spec';
 import { COMPONENT_REGISTRY } from '../utils/componentRegistry';
-import { validateLayout, validateConnectivity, logRegistry, resolveComponent, buildChannels, validateWiring, validateStyleSheet, validateHoist, validateFocal } from '../utils/helpers';
+import { validateLayout, validateConnectivity, logRegistry, resolveComponent, buildChannels, validateStyleSheet, validateHoist, validateFocal } from '../utils/helpers';
 
 // How many times to re-ask the layout route for a valid (gap-free) tiling
 const LAYOUT_RETRIES = 3;
 // How many times to re-ask the plan route for valid intra-UI connectivity names
 const PLAN_RETRIES = 3;
-// How many times to re-ask the path route for valid (channel-injected) wiring
-const PATH_RETRIES = 3;
 // How many times to re-ask the style route for an appearance-only token sheet
 const STYLE_RETRIES = 3;
 // How many times to re-ask the hoist route for a library that covers every feature
 const HOIST_RETRIES = 3;
 // How many times to re-ask the focal route for a valid focal type name
 const FOCAL_RETRIES = 3;
+// Off = skip the focal route; every primitive and leaf prompt is the no-focal one
+const FOCAL_ENABLED = true;
 
 export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning, setHasEmptyTarget, canvasWidth, setCanvasWidth }
   : { interactMode: boolean; taskRequest: { prompt: string; id: number } | null; setIsDesigning: React.Dispatch<React.SetStateAction<boolean>>; setHasEmptyTarget: React.Dispatch<React.SetStateAction<boolean>>;
@@ -69,10 +69,10 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
 
   // Code hoist: leafKey -> that leaf's finished generated code. Every UI leaf
   // reports here when it finishes (reportCode), so the Wire action can collect a
-  // whole UI's code once all its leaves are done, then send it to the Path route.
+  // whole UI's code once all its leaves are done, then send it to the wire route.
   const [codeMap, setCodeMap] = useState<Record<string, string>>({});
 
-  // Wiring result: leafKey -> Path-route code with the runtime bus (emit/subscribe)
+  // Wiring result: leafKey -> wire-route code with the runtime bus (emit/subscribe)
   // injected. A leaf with an entry renders this in place of its generated code.
   const [wiredCode, setWiredCode] = useState<Record<string, string>>({});
 
@@ -80,9 +80,12 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   // (null = its build failed, so the box generates itself). Read by serverGen boxes.
   const [builtCode, setBuiltCode] = useState<Record<string, string | null>>({});
 
-  // Leaf keys currently being (re)wired by the Path route: they show the generation
-  // shimmer while it runs (non-participant leaves stay live). Cleared when wireUI ends.
+  // Leaf keys currently being (re)wired by the wire route: they show the generation
+  // shimmer until their own wired code arrives (non-participant leaves stay live).
   const [wiringLeaves, setWiringLeaves] = useState<Set<string>>(new Set());
+
+  // taskID -> channel id -> contract kind, from the wire route. Read by the bus relay.
+  const channelKinds = useRef<Record<number, Record<string, "state" | "event">>>({});
 
   // A UI leaf reports its finished code so the whole UI can be wired later.
   const reportCode = (key: string, code: string) =>
@@ -99,8 +102,11 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   //   - "register" (posted by a leaf's App on mount): remember that leaf's window
   //     under its taskID, then REPLAY the last value of every channel to it, so a
   //     leaf that mounts late still receives the current state (initial-sync cache).
-  //   - "event" (a bus.emit): cache it as the channel's last value, then fan it out
-  //     to the OTHER leaves of the SAME taskID (never echo to the sender).
+  //   - "event" (a bus.emit): fan it out to the OTHER leaves of the SAME taskID (never
+  //     echo to the sender). A "state" channel (or one without a contract) is cached as
+  //     the channel's last value, and a payload identical to the cached one is dropped,
+  //     which stops echo loops on two-way channels. An "event" channel is never cached,
+  //     so a remounted leaf never re-fires it.
   // Dead windows (a remounted/removed leaf) are pruned when a post to them throws.
   useEffect(() => {
     const groups = new Map<number, Set<Window>>(); // taskID -> live leaf windows
@@ -125,9 +131,12 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       }
 
       if (d.type === "event") {
-        let channels = cache.get(taskID);
-        if (!channels) { channels = new Map(); cache.set(taskID, channels); }
-        channels.set(d.channel, d.payload); // last-value cache for late subscribers
+        if (channelKinds.current[taskID]?.[d.channel] !== "event") {
+          let channels = cache.get(taskID);
+          if (!channels) { channels = new Map(); cache.set(taskID, channels); }
+          if (channels.has(d.channel) && JSON.stringify(channels.get(d.channel)) === JSON.stringify(d.payload)) return;
+          channels.set(d.channel, d.payload); // last-value cache for late subscribers
+        }
         const set = groups.get(taskID);
         if (set) for (const w of [...set]) {
           if (w === src) continue; // don't echo back to the emitter
@@ -362,43 +371,6 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
     }
   };
 
-  // Calls the path route and re-asks (feeding back the validation error) until every
-  // channel's emitter/subscriber actually references its channel id. `components` is
-  // each leaf's { name, code, role, connectivity }; `channels` is the deterministic,
-  // app-computed edge list (buildChannels) both endpoints must wire to. Returns the
-  // per-component wired code, or null if it can't be made valid within the budget.
-  const fetchValidWiring = async (
-    components: Record<string, unknown>[],
-    channels: ReturnType<typeof buildChannels>,
-    taskID?: number,
-  ): Promise<{ name: string; code: string }[] | null> => {
-    let previousError: string | undefined;
-    for (let attempt = 1; attempt <= PATH_RETRIES; attempt++) {
-      try {
-        const res = await fetch('/api/path', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ components, channels, previousError, taskID }),
-        });
-        if (!res.ok) throw new Error(`request failed (${res.status})`);
-        const wired = await res.json() as { name: string; code: string }[];
-
-        const { ok, error } = validateWiring(wired, channels);
-        if (ok) { logRun(taskID, "path:valid", `attempt ${attempt}`); return wired; }
-
-        previousError = error;
-        console.error(`Path attempt ${attempt}/${PATH_RETRIES} invalid: ${error}`);
-        logRun(taskID, "path:rejected", `attempt ${attempt}/${PATH_RETRIES}: ${error}`);
-      } catch (e) {
-        previousError = e instanceof Error ? e.message : String(e);
-        console.error(`Path attempt ${attempt}/${PATH_RETRIES} errored:`, e);
-      }
-    }
-    console.error(`Path failed after ${PATH_RETRIES} attempts. Last error: ${previousError}`);
-    logRun(taskID, "path:exhausted", `Last error: ${previousError}`);
-    return null;
-  };
-
   // Full pipeline: decompose the task into component defs, register them, lay
   // them out across the visible window, then drop in self-generating boxes.
   const runUIGeneration = async (task: string, target: GeneratedBoxProps | null): Promise<GeneratedBoxProps | null> => {
@@ -444,7 +416,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
         JSON.parse(resolveComponent({ name: s.name, activeIdx: s.defaultActiveIdx }, defs)));
       const [style, { hoist, focal }, placements] = await Promise.all([
         fetchValidStyle(task, resolvedDefs),
-        fetchValidHoist(task, resolvedDefs).then(async (hoist) => ({ hoist, focal: hoist ? await fetchValidFocal(task, resolvedDefs, hoist) : [] })),
+        fetchValidHoist(task, resolvedDefs).then(async (hoist) => ({ hoist, focal: hoist && FOCAL_ENABLED ? await fetchValidFocal(task, resolvedDefs, hoist) : [] })),
         defs.length === 1
           ? Promise.resolve<Placement[]>([{ name: defs[0].name, colStart: 1, colEnd: w, rowStart: 1, rowEnd: h }])
           : fetchValidLayout(task, resolvedDefs, w, h),
@@ -583,37 +555,64 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       return { key: l.key, name: l.autoName!, code: codeMap[l.key] ?? '', role: def?.role, connectivity: def?.connectivity };
     });
 
-  // Wire a finished UI (the manual right-click "Wire" action). Collect every leaf's
-  // code + its planner connectivity, derive the deterministic channel list, ask the
-  // Path route to inject the bus emit/subscribe calls, then store the wired code per
-  // leaf — which remounts each leaf's iframe so the runtime bus initializes and the
-  // components start talking. No-op when the UI has no real connections.
+  // Wire a finished UI (the manual right-click "Wire" action) through ONE streamed request to the
+  // wire route: it makes a typed contract per channel, then wires each component on its own call.
+  // Each wired leaf lands in wiredCode as it arrives (its iframe remounts with the bus live), and
+  // the contracts' kinds go to the bus relay. No-op when the UI has no real connections.
   const wireUI = async (root: GeneratedBoxProps) => {
     const components = collectUIComponents(root);
     const channels = buildChannels(components);
     if (!channels.length) return; // single component / no real connections -> nothing to wire
 
-    // Leaves that will actually be rewired = those on a channel endpoint. They show the
-    // generation shimmer while the Path route runs; non-participant leaves stay live.
+    // Leaves on a channel endpoint show the shimmer until their own wired code (or failure)
+    // arrives; non-participant leaves stay live.
     const participants = new Set(channels.flatMap((c) => [c.from, c.to]));
     setWiringLeaves(new Set(components.filter((c) => participants.has(c.name)).map((c) => c.key)));
     setIsDesigning(true);
+    const t0 = Date.now();
+    const settle = (name: string) => setWiringLeaves((prev) => {
+      const next = new Set(prev);
+      for (const c of components) if (c.name === name) next.delete(c.key);
+      return next;
+    });
     try {
       // Send only what the route reads (name/code/role); channels carry the wiring.
-      const payload = components.map((c) => ({ name: c.name, code: c.code, role: c.role }));
-      const wired = await fetchValidWiring(payload, channels, root.taskID);
-      if (!wired) return; // exhausted retries; already logged
-      setWiredCode((prev) => {
-        const next = { ...prev };
-        for (const w of wired) {
-          const leaf = components.find((c) => c.name === w.name); // map result back to a leaf key
-          if (leaf) next[leaf.key] = w.code;
-        }
-        return next;
+      const res = await fetch("/api/wire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ components: components.map((c) => ({ name: c.name, code: c.code, role: c.role })), channels, taskID: root.taskID }),
       });
+      if (!res.ok || !res.body) throw new Error(`request failed (${res.status})`);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let nl;
+        while ((nl = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          const e = JSON.parse(line);
+          if (e.type === "contracts" && root.taskID !== undefined)
+            channelKinds.current[root.taskID] = Object.fromEntries((e.contracts as { id: string; kind: "state" | "event" }[]).map((k) => [k.id, k.kind]));
+          else if (e.type === "leaf") {
+            const leaf = components.find((c) => c.name === e.name); // map the result back to a leaf key
+            if (leaf) setWiredCode((prev) => ({ ...prev, [leaf.key]: e.code }));
+            settle(e.name);
+          } else if (e.type === "leaf-failed") settle(e.name);
+          else if (e.type === "error") console.error("Wire failed:", e.error);
+        }
+      }
+    } catch (e) {
+      console.error("Wire failed:", e);
+      logRun(root.taskID, "wire:failed", e instanceof Error ? e.message : String(e));
     } finally {
       setWiringLeaves(new Set());
       setIsDesigning(false);
+      logRun(root.taskID, "run:wire", `wire stream ended after ${((Date.now() - t0) / 1000).toFixed(1)}s`);
     }
   };
 
@@ -933,7 +932,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
             style={{ left: ungroupMenu.x, top: ungroupMenu.y }}
           >
             {/* Wire: only once every leaf has generated AND the UI has real
-                connections. Runs the Path route to make the components talk. */}
+                connections. Runs the wire route to make the components talk. */}
             {canWire && (
               <button
                 type="button"

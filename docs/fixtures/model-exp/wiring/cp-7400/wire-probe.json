@@ -1,0 +1,89 @@
+{
+  "summary": {
+    "renderErrors": {
+      "original": 0,
+      "wired": 0
+    },
+    "channels": 7,
+    "subscribed": 7,
+    "stateEmittedOnMount": "4/5",
+    "payloadShapeOk": "4/4",
+    "reacts": 5,
+    "animated": 1,
+    "noReaction": [
+      "Cyberpunk 2077: Night City Map->Cyberpunk 2077: Quest Journal"
+    ],
+    "handlerErrors": 0
+  },
+  "results": {
+    "original": {
+      "errors": []
+    },
+    "wired": {
+      "errors": [],
+      "channels": [
+        {
+          "id": "Cyberpunk 2077: Attributes & Perks Panel->Cyberpunk 2077: V Vitals Status HUD",
+          "kind": "state",
+          "subscribed": true,
+          "emittedOnMount": true,
+          "payloadShapeOk": true,
+          "handlers": 1,
+          "reacts": "animated (can't tell)"
+        },
+        {
+          "id": "Cyberpunk 2077: Attributes & Perks Panel->Cyberpunk 2077: Cyberware Ripperdoc Loadout",
+          "kind": "state",
+          "subscribed": true,
+          "emittedOnMount": true,
+          "payloadShapeOk": true,
+          "handlers": 1,
+          "reacts": true
+        },
+        {
+          "id": "Cyberpunk 2077: Cyberware Ripperdoc Loadout->Cyberpunk 2077: V Vitals Status HUD",
+          "kind": "state",
+          "subscribed": true,
+          "emittedOnMount": true,
+          "payloadShapeOk": true,
+          "handlers": 1,
+          "reacts": true
+        },
+        {
+          "id": "Cyberpunk 2077: Weapons & Inventory Loadout->Cyberpunk 2077: V Vitals Status HUD",
+          "kind": "state",
+          "subscribed": true,
+          "emittedOnMount": true,
+          "payloadShapeOk": true,
+          "handlers": 1,
+          "reacts": true
+        },
+        {
+          "id": "Cyberpunk 2077: Night City Map->Cyberpunk 2077: Quest Journal",
+          "kind": "event",
+          "subscribed": true,
+          "emittedOnMount": "n/a (event)",
+          "handlers": 1,
+          "reacts": false
+        },
+        {
+          "id": "Cyberpunk 2077: Quest Journal->Cyberpunk 2077: Night City Map",
+          "kind": "state",
+          "subscribed": true,
+          "emittedOnMount": false,
+          "handlers": 1,
+          "reacts": true
+        },
+        {
+          "id": "Cyberpunk 2077: Quest Journal->Cyberpunk 2077: V Vitals Status HUD",
+          "kind": "event",
+          "subscribed": true,
+          "emittedOnMount": "n/a (event)",
+          "handlers": 1,
+          "reacts": true
+        }
+      ],
+      "handlerErrors": []
+    }
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "task": "1790508636151",
+  "name": "Red Newspaper",
+  "cfg": "o5low",
+  "sample": 1,
+  "channels": 6,
+  "totalSecs": 16.897,
+  "attempts": [
+    {
+      "secs": 16.897,
+      "model": "claude-opus-5",
+      "stop": "end_turn",
+      "inTok": 15026,
+      "outTok": 1734
+    }
+  ],
+  "ok": true,
+  "contracts": [
+    {
+      "id": "Red Newspaper: Masthead Header->Red Newspaper: Article Grid",
+      "kind": "state",
+      "payload": "{ query: string /* trimmed search term; empty string means no search filter */ }",
+      "example": {
+        "query": "copper"
+      }
+    },
+    {
+      "id": "Red Newspaper: Category Navigation Bar->Red Newspaper: Article Grid",
+      "kind": "state",
+      "payload": "{ categoryId: string /* e.g. 'world' | 'politics' | 'business' | 'sports' | 'culture' | 'opinion' | 'tech' | 'science' | 'health' | 'travel' | 'obituaries' | 'crossword' */; label: string /* display label, e.g. 'World' */ }",
+      "example": {
+        "categoryId": "world",
+        "label": "World"
+      }
+    },
+    {
+      "id": "Red Newspaper: Category Navigation Bar->Red Newspaper: Sidebar Most Read Panel",
+      "kind": "state",
+      "payload": "{ categoryId: string /* e.g. 'world' | 'politics' | 'business' | 'sports' | 'culture' | 'opinion' | 'tech' | 'science' | 'health' | 'travel' | 'obituaries' | 'crossword' */; label: string /* display label, e.g. 'World' */ }",
+      "example": {
+        "categoryId": "business",
+        "label": "Business"
+      }
+    },
+    {
+      "id": "Red Newspaper: Breaking News Ticker->Red Newspaper: Lead Story Feature",
+      "kind": "state",
+      "payload": "{ id: string; headline: string; dek: string /* short summary, may be empty */; byline: string /* e.g. 'By M. Halloran' */; tag: string /* section label, uppercase e.g. 'WORLD' */; imageUrl: string /* absolute URL, empty string if none */; imageCaption: string; body: string[] /* article paragraphs */; timestamp: string /* 'HH:MM' filed time */; breaking: boolean } | null",
+      "example": {
+        "id": "brk-04",
+        "headline": "Tech giant confirms acquisition of rival chip designer for $41B",
+        "dek": "The deal would consolidate two of the largest designers in the sector.",
+        "byline": "By A. Mercer",
+        "tag": "TECH",
+        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=70",
+        "imageCaption": "Wafer inspection at the company's northern fabrication plant.",
+        "body": [
+          "Executives confirmed the agreement in a filing released before markets opened.",
+          "Regulators in three jurisdictions are expected to review the transaction."
+        ],
+        "timestamp": "03:22",
+        "breaking": true
+      }
+    },
+    {
+      "id": "Red Newspaper: Article Grid->Red Newspaper: Lead Story Feature",
+      "kind": "state",
+      "payload": "{ id: string; headline: string; dek: string; byline: string /* e.g. 'By M. Halloran' */; tag: string /* section label, uppercase e.g. 'WORLD' */; imageUrl: string /* absolute URL, empty string if none */; imageCaption: string; body: string[] /* article paragraphs */; timestamp: string /* 'HH:MM' filed time */; breaking: boolean } | null",
+      "example": {
+        "id": "s2",
+        "headline": "Copper Surges to a Four-Year High",
+        "dek": "Supply constraints in the southern belt pushed contracts past the previous ceiling.",
+        "byline": "By D. Ferris",
+        "tag": "MARKETS",
+        "imageUrl": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1400&q=70",
+        "imageCaption": "Cathode sheets stacked at a southern smelter.",
+        "body": [
+          "Prices climbed through the session as inventories fell to multi-year lows.",
+          "Analysts expect the squeeze to ease only after the next shipping cycle."
+        ],
+        "timestamp": "06:40",
+        "breaking": false
+      }
+    },
+    {
+      "id": "Red Newspaper: Sidebar Most Read Panel->Red Newspaper: Lead Story Feature",
+      "kind": "state",
+      "payload": "{ id: string; headline: string; dek: string; byline: string; tag: string /* section label, uppercase e.g. 'WORLD' */; imageUrl: string /* absolute URL, empty string if none */; imageCaption: string; body: string[] /* article paragraphs */; timestamp: string /* 'HH:MM' filed time */; breaking: boolean; rank: number /* 1-based position in most-read list */; metric: string /* e.g. '298K views' */ } | null",
+      "example": {
+        "id": "a3",
+        "headline": "Inside the Harbor Deal That Redrew a Coastline",
+        "dek": "A decade of quiet negotiation reshaped forty kilometres of shoreline.",
+        "byline": "By N. Iqbal",
+        "tag": "WORLD",
+        "imageUrl": "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1400&q=70",
+        "imageCaption": "The new breakwater at dawn.",
+        "body": [
+          "The agreement was signed without public hearings.",
+          "Residents learned of the plan only after dredging began."
+        ],
+        "timestamp": "05:18",
+        "breaking": false,
+        "rank": 3,
+        "metric": "298K views"
+      }
+    }
+  ],
+  "channelList": [
+    {
+      "id": "Red Newspaper: Masthead Header->Red Newspaper: Article Grid",
+      "from": "Red Newspaper: Masthead Header",
+      "to": "Red Newspaper: Article Grid",
+      "description": "When the reader types a keyword into the masthead search field and submits, emit the query string; the Article Grid re-queries its story list and re-renders only articles whose headline, dek, or body matches the term, showing a 'results for X' state."
+    },
+    {
+      "id": "Red Newspaper: Category Navigation Bar->Red Newspaper: Article Grid",
+      "from": "Red Newspaper: Category Navigation Bar",
+      "to": "Red Newspaper: Article Grid",
+      "description": "When the reader clicks a section tab, emit the selected category id; the Article Grid filters and re-renders to show only stories tagged with that section and marks the tab as active."
+    },
+    {
+      "id": "Red Newspaper: Category Navigation Bar->Red Newspaper: Sidebar Most Read Panel",
+      "from": "Red Newspaper: Category Navigation Bar",
+      "to": "Red Newspaper: Sidebar Most Read Panel",
+      "description": "When the reader clicks a section tab, emit the selected category id; the Most Read panel refreshes its ranked list to the most-read stories within that section."
+    },
+    {
+      "id": "Red Newspaper: Breaking News Ticker->Red Newspaper: Lead Story Feature",
+      "from": "Red Newspaper: Breaking News Ticker",
+      "to": "Red Newspaper: Lead Story Feature",
+      "description": "When the reader clicks a scrolling breaking headline, emit that article's id and payload; the Lead Story Feature replaces its current content with the selected breaking story's headline, image, and body."
+    },
+    {
+      "id": "Red Newspaper: Article Grid->Red Newspaper: Lead Story Feature",
+      "from": "Red Newspaper: Article Grid",
+      "to": "Red Newspaper: Lead Story Feature",
+      "description": "When the reader clicks a story card, emit that article's id and full payload; the Lead Story Feature loads and displays the selected article."
+    },
+    {
+      "id": "Red Newspaper: Sidebar Most Read Panel->Red Newspaper: Lead Story Feature",
+      "from": "Red Newspaper: Sidebar Most Read Panel",
+      "to": "Red Newspaper: Lead Story Feature",
+      "description": "When the reader clicks a ranked headline, emit that article's id and payload; the Lead Story Feature loads and displays the selected story."
+    }
+  ]
+}

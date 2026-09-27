@@ -1,0 +1,571 @@
+{
+  "configs": {
+    "o48off": {
+      "model": "claude-opus-4-8",
+      "max_tokens": 16000,
+      "thinking": {
+        "type": "disabled"
+      },
+      "output_config": {
+        "effort": "max"
+      }
+    }
+  },
+  "tasks": [
+    "1790503859796",
+    "1790499847643",
+    "1790505558905",
+    "1790507124328",
+    "1790508341396"
+  ],
+  "rows": [
+    {
+      "task": "1790503859796",
+      "name": "DJ Table",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 14,
+      "totalSecs": 16.48,
+      "calls": [
+        {
+          "channels": 7,
+          "attempts": [
+            {
+              "secs": 16.48,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 26032,
+              "outTok": 1475
+            }
+          ]
+        },
+        {
+          "channels": 7,
+          "attempts": [
+            {
+              "secs": 12.51,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 25984,
+              "outTok": 1053
+            }
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "secs": 16.48,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 26032,
+          "outTok": 1475
+        },
+        {
+          "secs": 12.51,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 25984,
+          "outTok": 1053
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790503859796",
+      "name": "DJ Table",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 14,
+      "totalSecs": 15.863,
+      "calls": [
+        {
+          "channels": 7,
+          "attempts": [
+            {
+              "secs": 15.863,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 26032,
+              "outTok": 1487
+            }
+          ]
+        },
+        {
+          "channels": 7,
+          "attempts": [
+            {
+              "secs": 12.956,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 25984,
+              "outTok": 1032
+            }
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "secs": 15.863,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 26032,
+          "outTok": 1487
+        },
+        {
+          "secs": 12.956,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 25984,
+          "outTok": 1032
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790499847643",
+      "name": "DJ Table",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 10,
+      "totalSecs": 10.848,
+      "calls": [
+        {
+          "channels": 5,
+          "attempts": [
+            {
+              "secs": 10.848,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 25276,
+              "outTok": 835
+            }
+          ]
+        },
+        {
+          "channels": 5,
+          "attempts": [
+            {
+              "secs": 8.993,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 24857,
+              "outTok": 710
+            }
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "secs": 10.848,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 25276,
+          "outTok": 835
+        },
+        {
+          "secs": 8.993,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 24857,
+          "outTok": 710
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790499847643",
+      "name": "DJ Table",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 10,
+      "totalSecs": 11.547,
+      "calls": [
+        {
+          "channels": 5,
+          "attempts": [
+            {
+              "secs": 10.197,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 25276,
+              "outTok": 850
+            }
+          ]
+        },
+        {
+          "channels": 5,
+          "attempts": [
+            {
+              "secs": 11.546,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 24857,
+              "outTok": 798
+            }
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "secs": 10.197,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 25276,
+          "outTok": 850
+        },
+        {
+          "secs": 11.546,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 24857,
+          "outTok": 798
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790505558905",
+      "name": "Synthesizer",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 19,
+      "totalSecs": 16.112,
+      "calls": [
+        {
+          "channels": 7,
+          "attempts": [
+            {
+              "secs": 12.634,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 25875,
+              "outTok": 1158
+            }
+          ]
+        },
+        {
+          "channels": 6,
+          "attempts": [
+            {
+              "secs": 10.515,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 22833,
+              "outTok": 966
+            }
+          ]
+        },
+        {
+          "channels": 6,
+          "attempts": [
+            {
+              "secs": 16.111,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 22273,
+              "outTok": 1472
+            }
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "secs": 12.634,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 25875,
+          "outTok": 1158
+        },
+        {
+          "secs": 10.515,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 22833,
+          "outTok": 966
+        },
+        {
+          "secs": 16.111,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 22273,
+          "outTok": 1472
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790505558905",
+      "name": "Synthesizer",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 19,
+      "totalSecs": 17.956,
+      "calls": [
+        {
+          "channels": 7,
+          "attempts": [
+            {
+              "secs": 12.316,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 25875,
+              "outTok": 1122
+            }
+          ]
+        },
+        {
+          "channels": 6,
+          "attempts": [
+            {
+              "secs": 11.041,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 22833,
+              "outTok": 919
+            }
+          ]
+        },
+        {
+          "channels": 6,
+          "attempts": [
+            {
+              "secs": 17.955,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 22273,
+              "outTok": 1735
+            }
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "secs": 12.316,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 25875,
+          "outTok": 1122
+        },
+        {
+          "secs": 11.041,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 22833,
+          "outTok": 919
+        },
+        {
+          "secs": 17.955,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 22273,
+          "outTok": 1735
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790507124328",
+      "name": "Synthesizer",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 15,
+      "totalSecs": 15.729,
+      "calls": [
+        {
+          "channels": 8,
+          "attempts": [
+            {
+              "secs": 15.729,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 29469,
+              "outTok": 1495
+            }
+          ]
+        },
+        {
+          "channels": 7,
+          "attempts": [
+            {
+              "secs": 14.088,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 25802,
+              "outTok": 1379
+            }
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "secs": 15.729,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 29469,
+          "outTok": 1495
+        },
+        {
+          "secs": 14.088,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 25802,
+          "outTok": 1379
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790507124328",
+      "name": "Synthesizer",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 15,
+      "totalSecs": 15.188,
+      "calls": [
+        {
+          "channels": 8,
+          "attempts": [
+            {
+              "secs": 15.188,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 29469,
+              "outTok": 1477
+            }
+          ]
+        },
+        {
+          "channels": 7,
+          "attempts": [
+            {
+              "secs": 12.399,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 25802,
+              "outTok": 1176
+            }
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "secs": 15.188,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 29469,
+          "outTok": 1477
+        },
+        {
+          "secs": 12.399,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 25802,
+          "outTok": 1176
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790508341396",
+      "name": "Y2K Synthesizer",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 15,
+      "totalSecs": 18.986,
+      "calls": [
+        {
+          "channels": 8,
+          "attempts": [
+            {
+              "secs": 18.986,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 32403,
+              "outTok": 1624
+            }
+          ]
+        },
+        {
+          "channels": 7,
+          "attempts": [
+            {
+              "secs": 14.88,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 24442,
+              "outTok": 1371
+            }
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "secs": 18.986,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 32403,
+          "outTok": 1624
+        },
+        {
+          "secs": 14.88,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 24442,
+          "outTok": 1371
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790508341396",
+      "name": "Y2K Synthesizer",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 15,
+      "totalSecs": 17.738,
+      "calls": [
+        {
+          "channels": 8,
+          "attempts": [
+            {
+              "secs": 17.738,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 32403,
+              "outTok": 1576
+            }
+          ]
+        },
+        {
+          "channels": 7,
+          "attempts": [
+            {
+              "secs": 17.57,
+              "model": "claude-opus-4-8",
+              "stop": "end_turn",
+              "inTok": 24442,
+              "outTok": 1578
+            }
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "secs": 17.738,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 32403,
+          "outTok": 1576
+        },
+        {
+          "secs": 17.57,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 24442,
+          "outTok": 1578
+        }
+      ],
+      "ok": true
+    }
+  ]
+}

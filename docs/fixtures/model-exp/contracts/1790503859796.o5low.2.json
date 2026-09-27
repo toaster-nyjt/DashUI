@@ -1,0 +1,321 @@
+{
+  "task": "1790503859796",
+  "name": "DJ Table",
+  "cfg": "o5low",
+  "sample": 2,
+  "channels": 14,
+  "totalSecs": 24.773,
+  "attempts": [
+    {
+      "secs": 24.773,
+      "model": "claude-opus-5",
+      "stop": "end_turn",
+      "inTok": 26820,
+      "outTok": 2634
+    }
+  ],
+  "ok": true,
+  "contracts": [
+    {
+      "id": "DJ Table: Left Deck->DJ Table: Dual Waveform Display",
+      "kind": "state",
+      "payload": "{ title: string; bpm: number /* effective BPM incl. pitch */; duration: number /* seconds */; position: number /* seconds, playhead */; playhead: number /* 0-1 fraction of track */; playing: boolean; peaks: number[] /* 0-1 waveform amplitudes, whole track */; beatgrid: number[] /* beat positions as 0-1 fractions */; cues: { id: string; position: number /* 0-1 fraction */; label?: string }[] }",
+      "example": {
+        "title": "NEON MIRAGE",
+        "bpm": 126,
+        "duration": 214,
+        "position": 47.05,
+        "playhead": 0.2199,
+        "playing": true,
+        "peaks": [
+          0.12,
+          0.48,
+          0.91,
+          0.63,
+          0.22
+        ],
+        "beatgrid": [
+          0,
+          0.0022,
+          0.0044,
+          0.0066
+        ],
+        "cues": [
+          {
+            "id": "a1",
+            "position": 0,
+            "label": "1"
+          },
+          {
+            "id": "a2",
+            "position": 0.1519,
+            "label": "2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "DJ Table: Left Deck->DJ Table: Central Mixer",
+      "kind": "state",
+      "payload": "{ level: number /* 0-1 pre-fader output level */; peak: number /* 0-1 decayed peak hold */ }",
+      "example": {
+        "level": 0.62,
+        "peak": 0.74
+      }
+    },
+    {
+      "id": "DJ Table: Left Deck->DJ Table: Right Deck",
+      "kind": "state",
+      "payload": "{ isMaster: boolean /* true when this deck's Sync is engaged as master */; bpm: number /* effective BPM incl. pitch */; beatPhase: number /* 0-1 within current beat */ }",
+      "example": {
+        "isMaster": true,
+        "bpm": 126,
+        "beatPhase": 0.42
+      }
+    },
+    {
+      "id": "DJ Table: Right Deck->DJ Table: Dual Waveform Display",
+      "kind": "state",
+      "payload": "{ title: string; bpm: number /* effective BPM incl. pitch */; duration: number /* seconds */; position: number /* seconds, playhead */; playhead: number /* 0-1 fraction of track */; playing: boolean; peaks: number[] /* 0-1 waveform amplitudes, whole track */; beatgrid: number[] /* beat positions as 0-1 fractions */; cues: { id: string; position: number /* 0-1 fraction */; label?: string }[] }",
+      "example": {
+        "title": "NEON HORIZON",
+        "bpm": 128,
+        "duration": 287,
+        "position": 42.5,
+        "playhead": 0.1481,
+        "playing": false,
+        "peaks": [
+          0.3,
+          0.55,
+          0.77,
+          0.41,
+          0.18
+        ],
+        "beatgrid": [
+          0,
+          0.0016,
+          0.0033,
+          0.0049
+        ],
+        "cues": [
+          {
+            "id": "b1",
+            "position": 0.16,
+            "label": "CUE 1"
+          },
+          {
+            "id": "b2",
+            "position": 0.55,
+            "label": "CUE 2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "DJ Table: Right Deck->DJ Table: Central Mixer",
+      "kind": "state",
+      "payload": "{ level: number /* 0-1 pre-fader output level */; peak: number /* 0-1 decayed peak hold */ }",
+      "example": {
+        "level": 0.48,
+        "peak": 0.55
+      }
+    },
+    {
+      "id": "DJ Table: Right Deck->DJ Table: Left Deck",
+      "kind": "state",
+      "payload": "{ isMaster: boolean /* true when this deck's Sync is engaged as master */; bpm: number /* effective BPM incl. pitch */; beatPhase: number /* 0-1 within current beat */ }",
+      "example": {
+        "isMaster": false,
+        "bpm": 128,
+        "beatPhase": 0.11
+      }
+    },
+    {
+      "id": "DJ Table: Central Mixer->DJ Table: Left Deck",
+      "kind": "state",
+      "payload": "{ fader: number /* 0-100 channel A fader */; gain: number /* -12..12 dB trim */; eq: { hi: number /* -24..12 dB */; mid: number /* -24..12 dB */; low: number /* -24..12 dB */ }; crossfader: number /* -100 (full A) .. 100 (full B) */; master: number /* 0-100 master level */ }",
+      "example": {
+        "fader": 82,
+        "gain": 2,
+        "eq": {
+          "hi": 3,
+          "mid": 0,
+          "low": -2
+        },
+        "crossfader": 0,
+        "master": 74
+      }
+    },
+    {
+      "id": "DJ Table: Central Mixer->DJ Table: Right Deck",
+      "kind": "state",
+      "payload": "{ fader: number /* 0-100 channel B fader */; gain: number /* -12..12 dB trim */; eq: { hi: number /* -24..12 dB */; mid: number /* -24..12 dB */; low: number /* -24..12 dB */ }; crossfader: number /* -100 (full A) .. 100 (full B) */; master: number /* 0-100 master level */ }",
+      "example": {
+        "fader": 64,
+        "gain": -1,
+        "eq": {
+          "hi": -1,
+          "mid": 2,
+          "low": 1
+        },
+        "crossfader": 0,
+        "master": 74
+      }
+    },
+    {
+      "id": "DJ Table: Dual Waveform Display->DJ Table: Left Deck",
+      "kind": "event",
+      "payload": "{ position: number /* 0-1 fraction of track duration */; scrubbing: boolean /* true while dragging, false on final click/release */ }",
+      "example": {
+        "position": 0.3742,
+        "scrubbing": false
+      }
+    },
+    {
+      "id": "DJ Table: Dual Waveform Display->DJ Table: Right Deck",
+      "kind": "event",
+      "payload": "{ position: number /* 0-1 fraction of track duration */; scrubbing: boolean /* true while dragging, false on final click/release */ }",
+      "example": {
+        "position": 0.615,
+        "scrubbing": true
+      }
+    },
+    {
+      "id": "DJ Table: Effects Rack->DJ Table: Left Deck",
+      "kind": "state",
+      "payload": "{ units: { id: number; type: 'echo' | 'reverb' | 'filter' | 'flanger'; wet: number /* 0-100 dry/wet % */; div: '1/16' | '1/8' | '1/4' | '1/2' | '1' | '2' | '4' /* beat division */ }[] /* only units assigned to channel A and toggled on; empty = no FX */ }",
+      "example": {
+        "units": [
+          {
+            "id": 1,
+            "type": "echo",
+            "wet": 64,
+            "div": "1/2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "DJ Table: Effects Rack->DJ Table: Right Deck",
+      "kind": "state",
+      "payload": "{ units: { id: number; type: 'echo' | 'reverb' | 'filter' | 'flanger'; wet: number /* 0-100 dry/wet % */; div: '1/16' | '1/8' | '1/4' | '1/2' | '1' | '2' | '4' /* beat division */ }[] /* only units assigned to channel B and toggled on; empty = no FX */ }",
+      "example": {
+        "units": []
+      }
+    },
+    {
+      "id": "DJ Table: Track Library Browser->DJ Table: Left Deck",
+      "kind": "event",
+      "payload": "{ id: string; title: string; artist: string; key: string /* Camelot, e.g. '11B' */; duration: number /* seconds */; bpm: number /* analyzed BPM */; src: string /* audio file URL */ }",
+      "example": {
+        "id": "t3",
+        "title": "Neon Forge",
+        "artist": "AXIOM",
+        "key": "11B",
+        "duration": 425,
+        "bpm": 128,
+        "src": "/library/t3.mp3"
+      }
+    },
+    {
+      "id": "DJ Table: Track Library Browser->DJ Table: Right Deck",
+      "kind": "event",
+      "payload": "{ id: string; title: string; artist: string; key: string /* Camelot, e.g. '9B' */; duration: number /* seconds */; bpm: number /* analyzed BPM */; src: string /* audio file URL */ }",
+      "example": {
+        "id": "t5",
+        "title": "Iron Lantern",
+        "artist": "Kodex",
+        "key": "9B",
+        "duration": 347,
+        "bpm": 132,
+        "src": "/library/t5.mp3"
+      }
+    }
+  ],
+  "channelList": [
+    {
+      "id": "DJ Table: Left Deck->DJ Table: Dual Waveform Display",
+      "from": "DJ Table: Left Deck",
+      "to": "DJ Table: Dual Waveform Display",
+      "description": "Streams this deck's loaded track waveform data, beatgrid, cue-point markers and live playhead position to the top waveform lane so it renders and animates in real time."
+    },
+    {
+      "id": "DJ Table: Left Deck->DJ Table: Central Mixer",
+      "from": "DJ Table: Left Deck",
+      "to": "DJ Table: Central Mixer",
+      "description": "Feeds channel A its live audio level so the mixer's channel-A VU meter reflects this deck's output signal."
+    },
+    {
+      "id": "DJ Table: Left Deck->DJ Table: Right Deck",
+      "from": "DJ Table: Left Deck",
+      "to": "DJ Table: Right Deck",
+      "description": "When this deck's Tempo Sync is engaged as master, it emits its BPM and beat phase for Deck B to lock onto."
+    },
+    {
+      "id": "DJ Table: Right Deck->DJ Table: Dual Waveform Display",
+      "from": "DJ Table: Right Deck",
+      "to": "DJ Table: Dual Waveform Display",
+      "description": "Streams this deck's loaded track waveform data, beatgrid, cue-point markers and live playhead position to the bottom waveform lane so it renders and animates in real time."
+    },
+    {
+      "id": "DJ Table: Right Deck->DJ Table: Central Mixer",
+      "from": "DJ Table: Right Deck",
+      "to": "DJ Table: Central Mixer",
+      "description": "Feeds channel B its live audio level so the mixer's channel-B VU meter reflects this deck's output signal."
+    },
+    {
+      "id": "DJ Table: Right Deck->DJ Table: Left Deck",
+      "from": "DJ Table: Right Deck",
+      "to": "DJ Table: Left Deck",
+      "description": "When this deck's Tempo Sync is engaged as master, it emits its BPM and beat phase for Deck A to lock onto."
+    },
+    {
+      "id": "DJ Table: Central Mixer->DJ Table: Left Deck",
+      "from": "DJ Table: Central Mixer",
+      "to": "DJ Table: Left Deck",
+      "description": "The channel-A fader, gain knob, 3-band EQ and crossfader position emit the volume/EQ/balance settings that scale and tone-shape Deck A's output into the master mix."
+    },
+    {
+      "id": "DJ Table: Central Mixer->DJ Table: Right Deck",
+      "from": "DJ Table: Central Mixer",
+      "to": "DJ Table: Right Deck",
+      "description": "The channel-B fader, gain knob, 3-band EQ and crossfader position emit the volume/EQ/balance settings that scale and tone-shape Deck B's output into the master mix."
+    },
+    {
+      "id": "DJ Table: Dual Waveform Display->DJ Table: Left Deck",
+      "from": "DJ Table: Dual Waveform Display",
+      "to": "DJ Table: Left Deck",
+      "description": "When the user clicks or drags on the top lane, emits the target seek position so Deck A jumps its playhead to that point."
+    },
+    {
+      "id": "DJ Table: Dual Waveform Display->DJ Table: Right Deck",
+      "from": "DJ Table: Dual Waveform Display",
+      "to": "DJ Table: Right Deck",
+      "description": "When the user clicks or drags on the bottom lane, emits the target seek position so Deck B jumps its playhead to that point."
+    },
+    {
+      "id": "DJ Table: Effects Rack->DJ Table: Left Deck",
+      "from": "DJ Table: Effects Rack",
+      "to": "DJ Table: Left Deck",
+      "description": "When an FX unit's channel-assign is set to A and toggled on, emits the effect type, dry/wet amount and beat division so the effect is applied to Deck A's audio output."
+    },
+    {
+      "id": "DJ Table: Effects Rack->DJ Table: Right Deck",
+      "from": "DJ Table: Effects Rack",
+      "to": "DJ Table: Right Deck",
+      "description": "When an FX unit's channel-assign is set to B and toggled on, emits the effect type, dry/wet amount and beat division so the effect is applied to Deck B's audio output."
+    },
+    {
+      "id": "DJ Table: Track Library Browser->DJ Table: Left Deck",
+      "from": "DJ Table: Track Library Browser",
+      "to": "DJ Table: Left Deck",
+      "description": "When the user selects a track and clicks 'Load to Deck A' (or drags it there), emits the track's audio file, metadata (title, artist, key, duration) and analyzed BPM so Deck A loads it and resets its playhead."
+    },
+    {
+      "id": "DJ Table: Track Library Browser->DJ Table: Right Deck",
+      "from": "DJ Table: Track Library Browser",
+      "to": "DJ Table: Right Deck",
+      "description": "When the user selects a track and clicks 'Load to Deck B' (or drags it there), emits the track's audio file, metadata (title, artist, key, duration) and analyzed BPM so Deck B loads it and resets its playhead."
+    }
+  ]
+}

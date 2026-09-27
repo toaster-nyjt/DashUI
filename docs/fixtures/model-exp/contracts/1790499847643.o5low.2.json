@@ -1,0 +1,228 @@
+{
+  "task": "1790499847643",
+  "name": "DJ Table",
+  "cfg": "o5low",
+  "sample": 2,
+  "channels": 10,
+  "totalSecs": 30.108,
+  "attempts": [
+    {
+      "secs": 16.275,
+      "model": "claude-opus-5",
+      "stop": "end_turn",
+      "inTok": 29841,
+      "outTok": 1543,
+      "error": "Your output could not be parsed. Return ONLY the JSON object {\"contracts\": [...]}."
+    },
+    {
+      "secs": 13.833,
+      "model": "claude-opus-5",
+      "stop": "end_turn",
+      "inTok": 29900,
+      "outTok": 1501
+    }
+  ],
+  "ok": true,
+  "contracts": [
+    {
+      "id": "DJ Table: Left Deck (Deck A)->DJ Table: Dual Waveform Display",
+      "kind": "state",
+      "payload": "{ position: number /* seconds */; duration: number /* seconds */; playing: boolean; bpm: number /* effective BPM after pitch */; pitch: number /* percent, -8..8 */ }",
+      "example": {
+        "position": 74.2,
+        "duration": 372,
+        "playing": true,
+        "bpm": 128,
+        "pitch": 0
+      }
+    },
+    {
+      "id": "DJ Table: Left Deck (Deck A)->DJ Table: Central Mixer Console",
+      "kind": "state",
+      "payload": "{ playing: boolean; levels: [number, number] /* L,R linear 0-1 */ }",
+      "example": {
+        "playing": true,
+        "levels": [
+          0.42,
+          0.38
+        ]
+      }
+    },
+    {
+      "id": "DJ Table: Right Deck (Deck B)->DJ Table: Dual Waveform Display",
+      "kind": "state",
+      "payload": "{ position: number /* seconds */; duration: number /* seconds */; playing: boolean; bpm: number /* effective BPM after pitch */; pitch: number /* percent, -8..8 */ }",
+      "example": {
+        "position": 51.6,
+        "duration": 312,
+        "playing": false,
+        "bpm": 128,
+        "pitch": 0
+      }
+    },
+    {
+      "id": "DJ Table: Right Deck (Deck B)->DJ Table: Central Mixer Console",
+      "kind": "state",
+      "payload": "{ playing: boolean; levels: [number, number] /* L,R linear 0-1 */ }",
+      "example": {
+        "playing": true,
+        "levels": [
+          0.31,
+          0.33
+        ]
+      }
+    },
+    {
+      "id": "DJ Table: Dual Waveform Display->DJ Table: Left Deck (Deck A)",
+      "kind": "event",
+      "payload": "{ time: number /* seconds into track */ }",
+      "example": {
+        "time": 128.4
+      }
+    },
+    {
+      "id": "DJ Table: Dual Waveform Display->DJ Table: Right Deck (Deck B)",
+      "kind": "event",
+      "payload": "{ time: number /* seconds into track */ }",
+      "example": {
+        "time": 63.75
+      }
+    },
+    {
+      "id": "DJ Table: Central Mixer Console->DJ Table: Master Output & VU Meters",
+      "kind": "state",
+      "payload": "{ levels: [number, number] /* post-crossfader L,R linear 0-1 */; peak: [number, number] /* held peaks, linear 0-1 */; clip: boolean; crossfader: number /* -1 = full A, 0 = center, 1 = full B */ }",
+      "example": {
+        "levels": [
+          0.62,
+          0.58
+        ],
+        "peak": [
+          0.71,
+          0.69
+        ],
+        "clip": false,
+        "crossfader": 0
+      }
+    },
+    {
+      "id": "DJ Table: Effects Rack->DJ Table: Central Mixer Console",
+      "kind": "state",
+      "payload": "{ on: boolean; channel: 'a' | 'b' | 'm'; fx: 'echo' | 'reverb' | 'filter' | 'flanger' | 'gate'; wet: number /* 0-100 percent */; params: [number, number, number] /* 0-100 each, meaning depends on fx */; beatDivision: '1/8' | '1/4' | '1/2' | '1' | '2' | '4' }",
+      "example": {
+        "on": true,
+        "channel": "a",
+        "fx": "echo",
+        "wet": 42,
+        "params": [
+          55,
+          30,
+          68
+        ],
+        "beatDivision": "1/4"
+      }
+    },
+    {
+      "id": "DJ Table: Track Library Browser->DJ Table: Left Deck (Deck A)",
+      "kind": "event",
+      "payload": "{ id: string; title: string; artist: string; bpm: number /* BPM */; key: string /* Camelot key */; duration: number /* seconds */; waveform: number[] /* amplitude 0-1 per sample bucket */ }",
+      "example": {
+        "id": "t3",
+        "title": "Cold Signal",
+        "artist": "Vessel Park",
+        "bpm": 128,
+        "key": "11B",
+        "duration": 356,
+        "waveform": [
+          0.12,
+          0.44,
+          0.81,
+          0.63,
+          0.29
+        ]
+      }
+    },
+    {
+      "id": "DJ Table: Track Library Browser->DJ Table: Right Deck (Deck B)",
+      "kind": "event",
+      "payload": "{ id: string; title: string; artist: string; bpm: number /* BPM */; key: string /* Camelot key */; duration: number /* seconds */; waveform: number[] /* amplitude 0-1 per sample bucket */ }",
+      "example": {
+        "id": "t5",
+        "title": "Iron Lantern",
+        "artist": "Sevvo",
+        "bpm": 134,
+        "key": "7B",
+        "duration": 421,
+        "waveform": [
+          0.2,
+          0.55,
+          0.9,
+          0.4,
+          0.33
+        ]
+      }
+    }
+  ],
+  "channelList": [
+    {
+      "id": "DJ Table: Left Deck (Deck A)->DJ Table: Dual Waveform Display",
+      "from": "DJ Table: Left Deck (Deck A)",
+      "to": "DJ Table: Dual Waveform Display",
+      "description": "On every playback tick and on play/pause/cue/pitch changes, this deck emits its current playhead position, play state, and effective tempo so the display continuously scrolls and renders Deck A's waveform lane and beat grid."
+    },
+    {
+      "id": "DJ Table: Left Deck (Deck A)->DJ Table: Central Mixer Console",
+      "from": "DJ Table: Left Deck (Deck A)",
+      "to": "DJ Table: Central Mixer Console",
+      "description": "This deck streams its live output signal level and play state into the mixer's channel A input, driving channel A's VU meter and providing the source that channel A's fader, EQ, gain, and the crossfader then process."
+    },
+    {
+      "id": "DJ Table: Right Deck (Deck B)->DJ Table: Dual Waveform Display",
+      "from": "DJ Table: Right Deck (Deck B)",
+      "to": "DJ Table: Dual Waveform Display",
+      "description": "On every playback tick and on play/pause/cue/pitch changes, this deck emits its current playhead position, play state, and effective tempo so the display continuously scrolls and renders Deck B's waveform lane and beat grid."
+    },
+    {
+      "id": "DJ Table: Right Deck (Deck B)->DJ Table: Central Mixer Console",
+      "from": "DJ Table: Right Deck (Deck B)",
+      "to": "DJ Table: Central Mixer Console",
+      "description": "This deck streams its live output signal level and play state into the mixer's channel B input, driving channel B's VU meter and providing the source that channel B's fader, EQ, gain, and the crossfader then process."
+    },
+    {
+      "id": "DJ Table: Dual Waveform Display->DJ Table: Left Deck (Deck A)",
+      "from": "DJ Table: Dual Waveform Display",
+      "to": "DJ Table: Left Deck (Deck A)",
+      "description": "When the user clicks or drags within the top (Deck A) lane, the display computes the corresponding track time and emits a seek command that repositions Deck A's playhead."
+    },
+    {
+      "id": "DJ Table: Dual Waveform Display->DJ Table: Right Deck (Deck B)",
+      "from": "DJ Table: Dual Waveform Display",
+      "to": "DJ Table: Right Deck (Deck B)",
+      "description": "When the user clicks or drags within the bottom (Deck B) lane, the display computes the corresponding track time and emits a seek command that repositions Deck B's playhead."
+    },
+    {
+      "id": "DJ Table: Central Mixer Console->DJ Table: Master Output & VU Meters",
+      "from": "DJ Table: Central Mixer Console",
+      "to": "DJ Table: Master Output & VU Meters",
+      "description": "The final post-crossfader mixed stereo signal and its combined level are sent to the master section, driving the master VU meters and being scaled by the master/booth volume before final output and recording."
+    },
+    {
+      "id": "DJ Table: Effects Rack->DJ Table: Central Mixer Console",
+      "from": "DJ Table: Effects Rack",
+      "to": "DJ Table: Central Mixer Console",
+      "description": "The channel routing selector chooses which mixer channel (A or B) the effect inserts on; while the FX on/off toggle is engaged, the rack emits the selected effect type, wet/dry ratio, parameter values, and beat division, and the mixer applies this processing to that channel's signal before the crossfader and master mix."
+    },
+    {
+      "id": "DJ Table: Track Library Browser->DJ Table: Left Deck (Deck A)",
+      "from": "DJ Table: Track Library Browser",
+      "to": "DJ Table: Left Deck (Deck A)",
+      "description": "When the user selects a row and clicks 'Load to Deck A', the browser sends that track's metadata, audio buffer, BPM, and waveform data to Deck A, which loads it fresh at the cue point."
+    },
+    {
+      "id": "DJ Table: Track Library Browser->DJ Table: Right Deck (Deck B)",
+      "from": "DJ Table: Track Library Browser",
+      "to": "DJ Table: Right Deck (Deck B)",
+      "description": "When the user selects a row and clicks 'Load to Deck B', the browser sends that track's metadata, audio buffer, BPM, and waveform data to Deck B, which loads it fresh at the cue point."
+    }
+  ]
+}

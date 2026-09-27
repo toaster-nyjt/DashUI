@@ -1,0 +1,170 @@
+{
+  "task": "1790488443585",
+  "name": "Cyberpunk 2077 Dashboard",
+  "cfg": "o48off",
+  "sample": 1,
+  "channels": 8,
+  "totalSecs": 13.889,
+  "attempts": [
+    {
+      "secs": 13.889,
+      "model": "claude-opus-4-8",
+      "stop": "end_turn",
+      "inTok": 39812,
+      "outTok": 1345
+    }
+  ],
+  "ok": true,
+  "contracts": [
+    {
+      "id": "Cyberpunk: Attributes & Skills Panel->Cyberpunk: Character Vitals HUD",
+      "kind": "state",
+      "payload": "{ maxHp: number /* max health, absolute value */; maxStamina: number /* max stamina, absolute value */ }",
+      "example": {
+        "maxHp": 980,
+        "maxStamina": 100
+      }
+    },
+    {
+      "id": "Cyberpunk: Attributes & Skills Panel->Cyberpunk: Quickhack Deck",
+      "kind": "state",
+      "payload": "{ ramCapacity: number /* total RAM units */; effectivenessMultiplier: number /* quickhack potency multiplier, e.g. 1.25 = +25% */ }",
+      "example": {
+        "ramCapacity": 16,
+        "effectivenessMultiplier": 1.25
+      }
+    },
+    {
+      "id": "Cyberpunk: Cyberware Slot Grid->Cyberpunk: Character Vitals HUD",
+      "kind": "state",
+      "payload": "{ armor: number /* aggregate armor rating, absolute value */; bonusMaxHp: number /* bonus max health from cyberware, added on top of base */ }",
+      "example": {
+        "armor": 164,
+        "bonusMaxHp": 65
+      }
+    },
+    {
+      "id": "Cyberpunk: Cyberware Slot Grid->Cyberpunk: Quickhack Deck",
+      "kind": "state",
+      "payload": "{ ram: number /* cyberdeck RAM capacity in units */; quickhackSlots: number /* number of equippable quickhack slots */ } | null /* null when no cyberdeck installed */",
+      "example": {
+        "ram": 12,
+        "quickhackSlots": 6
+      }
+    },
+    {
+      "id": "Cyberpunk: Mission Journal->Cyberpunk: Night City Map",
+      "kind": "state",
+      "payload": "{ questId: string; label: string; location: { x: number /* 0-1 fraction of map width */; y: number /* 0-1 fraction of map height */ }; markerType: 'quest' | 'gig' | 'vendor' | 'fast-travel' } | null /* null when no quest is tracked */",
+      "example": {
+        "questId": "m1",
+        "label": "The Heist",
+        "location": {
+          "x": 0.68,
+          "y": 0.28
+        },
+        "markerType": "quest"
+      }
+    },
+    {
+      "id": "Cyberpunk: Night City Map->Cyberpunk: Mission Journal",
+      "kind": "event",
+      "payload": "{ questId: string }",
+      "example": {
+        "questId": "q-arasaka"
+      }
+    },
+    {
+      "id": "Cyberpunk: Inventory & Resources Ledger->Cyberpunk: Weapon Loadout Rack",
+      "kind": "event",
+      "payload": "{ item: { id: string; label: string; icon?: string; rarity?: string; subLabel?: string }; slot: 'p1' | 'p2' | 'p3' | 'grenade' | 'consumable' }",
+      "example": {
+        "item": {
+          "id": "w1",
+          "label": "Yinglong Smart SMG",
+          "icon": "⌖",
+          "rarity": "legendary",
+          "subLabel": "Tech · Smart-Link"
+        },
+        "slot": "p1"
+      }
+    },
+    {
+      "id": "Cyberpunk: Inventory & Resources Ledger->Cyberpunk: Cyberware Slot Grid",
+      "kind": "event",
+      "payload": "{ item: { id: string; label: string; icon?: string; rarity?: string; subLabel?: string; stats: { label: string; value: string; delta?: number }[] }; slotType: 'cortex' | 'ocular' | 'nervous' | 'circ' | 'integ' | 'arms' | 'skel' | 'legs' }",
+      "example": {
+        "item": {
+          "id": "c3",
+          "label": "Subdermal Armor",
+          "icon": "▤",
+          "rarity": "rare",
+          "subLabel": "Integumentary",
+          "stats": [
+            {
+              "label": "ARMOR",
+              "value": "+412",
+              "delta": 412
+            },
+            {
+              "label": "MAX HEALTH",
+              "value": "+120",
+              "delta": 120
+            }
+          ]
+        },
+        "slotType": "integ"
+      }
+    }
+  ],
+  "channelList": [
+    {
+      "id": "Cyberpunk: Attributes & Skills Panel->Cyberpunk: Character Vitals HUD",
+      "from": "Cyberpunk: Attributes & Skills Panel",
+      "to": "Cyberpunk: Character Vitals HUD",
+      "description": "When the player increases Body or Reflexes via the upgrade controls, emit the new max-health/max-stamina values so the Vitals HUD raises its Health and Stamina bar maximums."
+    },
+    {
+      "id": "Cyberpunk: Attributes & Skills Panel->Cyberpunk: Quickhack Deck",
+      "from": "Cyberpunk: Attributes & Skills Panel",
+      "to": "Cyberpunk: Quickhack Deck",
+      "description": "When Intelligence is increased, emit the new RAM capacity and quickhack-effectiveness multiplier so the Quickhack Deck raises its total RAM units and updates per-hack damage/duration displays."
+    },
+    {
+      "id": "Cyberpunk: Cyberware Slot Grid->Cyberpunk: Character Vitals HUD",
+      "from": "Cyberpunk: Cyberware Slot Grid",
+      "to": "Cyberpunk: Character Vitals HUD",
+      "description": "When armor- or health-granting cyberware is equipped/unequipped, emit the aggregate armor rating and bonus max-health so the Vitals HUD updates its Armor bar and Health bar maximum."
+    },
+    {
+      "id": "Cyberpunk: Cyberware Slot Grid->Cyberpunk: Quickhack Deck",
+      "from": "Cyberpunk: Cyberware Slot Grid",
+      "to": "Cyberpunk: Quickhack Deck",
+      "description": "When a cyberdeck is installed or swapped in the frontal-cortex slot, emit its RAM capacity and equippable quickhack slot count so the Quickhack Deck reconfigures its RAM pool and available program slots."
+    },
+    {
+      "id": "Cyberpunk: Mission Journal->Cyberpunk: Night City Map",
+      "from": "Cyberpunk: Mission Journal",
+      "to": "Cyberpunk: Night City Map",
+      "description": "When the player toggles 'Track' on a quest, emit the quest id, objective location, and marker type so the map pins the active waypoint, draws the route, and centers on it."
+    },
+    {
+      "id": "Cyberpunk: Night City Map->Cyberpunk: Mission Journal",
+      "from": "Cyberpunk: Night City Map",
+      "to": "Cyberpunk: Mission Journal",
+      "description": "When the player clicks a quest marker on the map, emit that quest's id so the journal highlights and selects the matching entry."
+    },
+    {
+      "id": "Cyberpunk: Inventory & Resources Ledger->Cyberpunk: Weapon Loadout Rack",
+      "from": "Cyberpunk: Inventory & Resources Ledger",
+      "to": "Cyberpunk: Weapon Loadout Rack",
+      "description": "When the player selects Equip on a weapon or throwable, emit the item and chosen slot so the loadout rack fills that slot; the previously equipped item is returned to this ledger."
+    },
+    {
+      "id": "Cyberpunk: Inventory & Resources Ledger->Cyberpunk: Cyberware Slot Grid",
+      "from": "Cyberpunk: Inventory & Resources Ledger",
+      "to": "Cyberpunk: Cyberware Slot Grid",
+      "description": "When the player selects Install on a cyberware item, emit the item and its target slot type so the cyberware grid places it into the matching body slot."
+    }
+  ]
+}

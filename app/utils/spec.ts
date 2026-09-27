@@ -66,6 +66,16 @@ export type Connectivity = {
   targets: Connection[];   // OUTGOING: sibling components THIS one drives/affects
 }
 
+// The typed data contract of one wiring channel (contract agent, made when Wire is pressed).
+// state = latest value, sent on mount + change and replayed; event = one-off, never replayed.
+// payload = a JSON-only TypeScript type expression; example = one value of that type.
+export type ChannelContract = {
+  id: string;
+  kind: "state" | "event";
+  payload: string;
+  example: unknown;
+}
+
 // A component-type entry in the shared registry (componentRegistry).
 // `role` + `connectivity` are populated by the PLANNER only (they describe a
 // component's place inside ONE generated UI). Preset/custom (manual) defs leave

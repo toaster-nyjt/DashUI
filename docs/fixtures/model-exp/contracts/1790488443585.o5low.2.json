@@ -1,0 +1,178 @@
+{
+  "task": "1790488443585",
+  "name": "Cyberpunk 2077 Dashboard",
+  "cfg": "o5low",
+  "sample": 2,
+  "channels": 8,
+  "totalSecs": 15.918,
+  "attempts": [
+    {
+      "secs": 15.918,
+      "model": "claude-opus-5",
+      "stop": "end_turn",
+      "inTok": 39813,
+      "outTok": 1625
+    }
+  ],
+  "ok": true,
+  "contracts": [
+    {
+      "id": "Cyberpunk: Attributes & Skills Panel->Cyberpunk: Character Vitals HUD",
+      "kind": "state",
+      "payload": "{ body: number /* Body attribute level, 3-20 */; reflexes: number /* Reflexes attribute level, 3-20 */; maxHp: number /* derived max health, HP */; maxStamina: number /* derived max stamina, percent-scale units */ }",
+      "example": {
+        "body": 5,
+        "reflexes": 6,
+        "maxHp": 1060,
+        "maxStamina": 112
+      }
+    },
+    {
+      "id": "Cyberpunk: Attributes & Skills Panel->Cyberpunk: Quickhack Deck",
+      "kind": "state",
+      "payload": "{ intelligence: number /* Intelligence attribute level, 3-20 */; ramCapacity: number /* RAM units granted by Intelligence */; effectiveness: number /* quickhack damage/duration multiplier, e.g. 1.25 = +25% */ }",
+      "example": {
+        "intelligence": 7,
+        "ramCapacity": 7,
+        "effectiveness": 1.35
+      }
+    },
+    {
+      "id": "Cyberpunk: Cyberware Slot Grid->Cyberpunk: Character Vitals HUD",
+      "kind": "state",
+      "payload": "{ armor: number /* aggregate armor rating points */; bonusHp: number /* bonus max health, HP */ }",
+      "example": {
+        "armor": 164,
+        "bonusHp": 65
+      }
+    },
+    {
+      "id": "Cyberpunk: Cyberware Slot Grid->Cyberpunk: Quickhack Deck",
+      "kind": "state",
+      "payload": "{ deck: { id: string; label: string; rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' } | null /* null when frontal-cortex slot is empty */; ram: number /* RAM units from cyberdeck */; qhSlots: number /* equippable quickhack program slots */ }",
+      "example": {
+        "deck": {
+          "id": "cd-01",
+          "label": "ARASAKA MK.4",
+          "rarity": "legendary"
+        },
+        "ram": 12,
+        "qhSlots": 6
+      }
+    },
+    {
+      "id": "Cyberpunk: Mission Journal->Cyberpunk: Night City Map",
+      "kind": "state",
+      "payload": "{ questId: string; label: string; markerKind: 'quest' | 'gig' | 'vendor' | 'fast-travel'; objectiveLabel: string /* current objective text */; x: number /* 0-1 map fraction */; y: number /* 0-1 map fraction */ } | null /* null when nothing tracked */",
+      "example": {
+        "questId": "m1",
+        "label": "The Heist",
+        "markerKind": "quest",
+        "objectiveLabel": "Infiltrate Konpeki Plaza",
+        "x": 0.68,
+        "y": 0.28
+      }
+    },
+    {
+      "id": "Cyberpunk: Night City Map->Cyberpunk: Mission Journal",
+      "kind": "event",
+      "payload": "{ questId: string /* id of the quest entry matching the clicked marker */ }",
+      "example": {
+        "questId": "m1"
+      }
+    },
+    {
+      "id": "Cyberpunk: Inventory & Resources Ledger->Cyberpunk: Weapon Loadout Rack",
+      "kind": "event",
+      "payload": "{ slot: 'p1' | 'p2' | 'p3' | 'grenade'; item: { id: string; label: string; icon: string; rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'; subLabel: string /* e.g. 'Tech · Smart-Link' */; dps: number /* 0 for throwables */ } }",
+      "example": {
+        "slot": "p3",
+        "item": {
+          "id": "w1",
+          "label": "Yinglong Smart SMG",
+          "icon": "⌖",
+          "rarity": "legendary",
+          "subLabel": "Tech · Smart-Link",
+          "dps": 842
+        }
+      }
+    },
+    {
+      "id": "Cyberpunk: Inventory & Resources Ledger->Cyberpunk: Cyberware Slot Grid",
+      "kind": "event",
+      "payload": "{ slotId: 'cortex' | 'ocular' | 'nervous' | 'circ' | 'integ' | 'arms' | 'skel' | 'legs'; item: { id: string; label: string; icon: string; rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'; subLabel: string }; stats: { label: string /* e.g. 'ARMOR', 'MAX HEALTH', 'RAM', 'QH SLOTS', 'CRIT CHANCE' */; value: string; delta: number }[] }",
+      "example": {
+        "slotId": "integ",
+        "item": {
+          "id": "c3",
+          "label": "Subdermal Armor",
+          "icon": "▤",
+          "rarity": "rare",
+          "subLabel": "Integumentary"
+        },
+        "stats": [
+          {
+            "label": "ARMOR",
+            "value": "+412",
+            "delta": 412
+          },
+          {
+            "label": "MAX HEALTH",
+            "value": "+120",
+            "delta": 120
+          }
+        ]
+      }
+    }
+  ],
+  "channelList": [
+    {
+      "id": "Cyberpunk: Attributes & Skills Panel->Cyberpunk: Character Vitals HUD",
+      "from": "Cyberpunk: Attributes & Skills Panel",
+      "to": "Cyberpunk: Character Vitals HUD",
+      "description": "When the player increases Body or Reflexes via the upgrade controls, emit the new max-health/max-stamina values so the Vitals HUD raises its Health and Stamina bar maximums."
+    },
+    {
+      "id": "Cyberpunk: Attributes & Skills Panel->Cyberpunk: Quickhack Deck",
+      "from": "Cyberpunk: Attributes & Skills Panel",
+      "to": "Cyberpunk: Quickhack Deck",
+      "description": "When Intelligence is increased, emit the new RAM capacity and quickhack-effectiveness multiplier so the Quickhack Deck raises its total RAM units and updates per-hack damage/duration displays."
+    },
+    {
+      "id": "Cyberpunk: Cyberware Slot Grid->Cyberpunk: Character Vitals HUD",
+      "from": "Cyberpunk: Cyberware Slot Grid",
+      "to": "Cyberpunk: Character Vitals HUD",
+      "description": "When armor- or health-granting cyberware is equipped/unequipped, emit the aggregate armor rating and bonus max-health so the Vitals HUD updates its Armor bar and Health bar maximum."
+    },
+    {
+      "id": "Cyberpunk: Cyberware Slot Grid->Cyberpunk: Quickhack Deck",
+      "from": "Cyberpunk: Cyberware Slot Grid",
+      "to": "Cyberpunk: Quickhack Deck",
+      "description": "When a cyberdeck is installed or swapped in the frontal-cortex slot, emit its RAM capacity and equippable quickhack slot count so the Quickhack Deck reconfigures its RAM pool and available program slots."
+    },
+    {
+      "id": "Cyberpunk: Mission Journal->Cyberpunk: Night City Map",
+      "from": "Cyberpunk: Mission Journal",
+      "to": "Cyberpunk: Night City Map",
+      "description": "When the player toggles 'Track' on a quest, emit the quest id, objective location, and marker type so the map pins the active waypoint, draws the route, and centers on it."
+    },
+    {
+      "id": "Cyberpunk: Night City Map->Cyberpunk: Mission Journal",
+      "from": "Cyberpunk: Night City Map",
+      "to": "Cyberpunk: Mission Journal",
+      "description": "When the player clicks a quest marker on the map, emit that quest's id so the journal highlights and selects the matching entry."
+    },
+    {
+      "id": "Cyberpunk: Inventory & Resources Ledger->Cyberpunk: Weapon Loadout Rack",
+      "from": "Cyberpunk: Inventory & Resources Ledger",
+      "to": "Cyberpunk: Weapon Loadout Rack",
+      "description": "When the player selects Equip on a weapon or throwable, emit the item and chosen slot so the loadout rack fills that slot; the previously equipped item is returned to this ledger."
+    },
+    {
+      "id": "Cyberpunk: Inventory & Resources Ledger->Cyberpunk: Cyberware Slot Grid",
+      "from": "Cyberpunk: Inventory & Resources Ledger",
+      "to": "Cyberpunk: Cyberware Slot Grid",
+      "description": "When the player selects Install on a cyberware item, emit the item and its target slot type so the cyberware grid places it into the matching body slot."
+    }
+  ]
+}

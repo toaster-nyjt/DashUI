@@ -1,0 +1,115 @@
+{
+  "summary": {
+    "renderErrors": {
+      "original": 0,
+      "wired": 0
+    },
+    "channels": 10,
+    "subscribed": 10,
+    "stateEmittedOnMount": "6/6",
+    "payloadShapeOk": "6/6",
+    "reacts": 7,
+    "animated": 2,
+    "noReaction": [
+      "DJ Table: Central Mixer Console->DJ Table: Master Output & VU Meters"
+    ],
+    "handlerErrors": 0
+  },
+  "results": {
+    "original": {
+      "errors": []
+    },
+    "wired": {
+      "errors": [],
+      "channels": [
+        {
+          "id": "DJ Table: Left Deck (Deck A)->DJ Table: Dual Waveform Display",
+          "kind": "state",
+          "subscribed": true,
+          "emittedOnMount": true,
+          "payloadShapeOk": true,
+          "handlers": 1,
+          "reacts": true
+        },
+        {
+          "id": "DJ Table: Left Deck (Deck A)->DJ Table: Central Mixer Console",
+          "kind": "state",
+          "subscribed": true,
+          "emittedOnMount": true,
+          "payloadShapeOk": true,
+          "handlers": 1,
+          "reacts": true
+        },
+        {
+          "id": "DJ Table: Right Deck (Deck B)->DJ Table: Dual Waveform Display",
+          "kind": "state",
+          "subscribed": true,
+          "emittedOnMount": true,
+          "payloadShapeOk": true,
+          "handlers": 1,
+          "reacts": true
+        },
+        {
+          "id": "DJ Table: Right Deck (Deck B)->DJ Table: Central Mixer Console",
+          "kind": "state",
+          "subscribed": true,
+          "emittedOnMount": true,
+          "payloadShapeOk": true,
+          "handlers": 1,
+          "reacts": "animated (can't tell)"
+        },
+        {
+          "id": "DJ Table: Dual Waveform Display->DJ Table: Left Deck (Deck A)",
+          "kind": "event",
+          "subscribed": true,
+          "emittedOnMount": "n/a (event)",
+          "handlers": 1,
+          "reacts": true
+        },
+        {
+          "id": "DJ Table: Dual Waveform Display->DJ Table: Right Deck (Deck B)",
+          "kind": "event",
+          "subscribed": true,
+          "emittedOnMount": "n/a (event)",
+          "handlers": 1,
+          "reacts": true
+        },
+        {
+          "id": "DJ Table: Central Mixer Console->DJ Table: Master Output & VU Meters",
+          "kind": "state",
+          "subscribed": true,
+          "emittedOnMount": true,
+          "payloadShapeOk": true,
+          "handlers": 1,
+          "reacts": false
+        },
+        {
+          "id": "DJ Table: Effects Rack->DJ Table: Central Mixer Console",
+          "kind": "state",
+          "subscribed": true,
+          "emittedOnMount": true,
+          "payloadShapeOk": true,
+          "handlers": 1,
+          "reacts": "animated (can't tell)"
+        },
+        {
+          "id": "DJ Table: Track Library Browser->DJ Table: Left Deck (Deck A)",
+          "kind": "event",
+          "subscribed": true,
+          "emittedOnMount": "n/a (event)",
+          "handlers": 1,
+          "reacts": true
+        },
+        {
+          "id": "DJ Table: Track Library Browser->DJ Table: Right Deck (Deck B)",
+          "kind": "event",
+          "subscribed": true,
+          "emittedOnMount": "n/a (event)",
+          "handlers": 1,
+          "reacts": true
+        }
+      ],
+      "handlerErrors": []
+    }
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "task": "1790357285132",
+  "name": "aerospace dashboard",
+  "cfg": "o48off",
+  "sample": 1,
+  "channels": 8,
+  "totalSecs": 12.207,
+  "attempts": [
+    {
+      "secs": 12.207,
+      "model": "claude-opus-4-8",
+      "stop": "end_turn",
+      "inTok": 18126,
+      "outTok": 1134
+    }
+  ],
+  "ok": true,
+  "contracts": [
+    {
+      "id": "Aerospace: Navigation Map->Aerospace: Primary Flight Display",
+      "kind": "state",
+      "payload": "{ waypointId: string; desiredTrack: number /* bearing in degrees, 0-359 */; distance: number /* NM to waypoint */ }",
+      "example": {
+        "waypointId": "MOVDD",
+        "desiredTrack": 301,
+        "distance": 38.9
+      }
+    },
+    {
+      "id": "Aerospace: Navigation Map->Aerospace: Autopilot Control Panel",
+      "kind": "state",
+      "payload": "{ waypointId: string; label: string; desiredTrack: number /* bearing in degrees, 0-359 */; distance: number /* NM to waypoint */ }",
+      "example": {
+        "waypointId": "MOVDD",
+        "label": "MOVDD",
+        "desiredTrack": 301,
+        "distance": 38.9
+      }
+    },
+    {
+      "id": "Aerospace: Autopilot Control Panel->Aerospace: Primary Flight Display",
+      "kind": "state",
+      "payload": "{ selHeading: number /* commanded heading in degrees, 0-359 */; headingHold: boolean; commandedBank: number /* degrees, negative=left */; bankHold: boolean }",
+      "example": {
+        "selHeading": 274,
+        "headingHold": true,
+        "commandedBank": 0,
+        "bankHold": false
+      }
+    },
+    {
+      "id": "Aerospace: Autopilot Control Panel->Aerospace: Altitude Tape Readout",
+      "kind": "state",
+      "payload": "{ selAltitude: number /* commanded altitude in feet */; altHold: boolean; selVerticalSpeed: number /* commanded VS in FPM, negative=descent */; vsHold: boolean }",
+      "example": {
+        "selAltitude": 31000,
+        "altHold": true,
+        "selVerticalSpeed": -1200,
+        "vsHold": false
+      }
+    },
+    {
+      "id": "Aerospace: Autopilot Control Panel->Aerospace: Airspeed Tape Readout",
+      "kind": "state",
+      "payload": "{ selSpeed: number /* commanded airspeed in knots */; spdHold: boolean }",
+      "example": {
+        "selSpeed": 282,
+        "spdHold": true
+      }
+    },
+    {
+      "id": "Aerospace: Autopilot Control Panel->Aerospace: Navigation Map",
+      "kind": "state",
+      "payload": "{ engaged: boolean /* NAV/LNAV active */; activeWaypointId: string | null }",
+      "example": {
+        "engaged": true,
+        "activeWaypointId": "MOVDD"
+      }
+    },
+    {
+      "id": "Aerospace: Engine & Fuel Systems Panel->Aerospace: Airspeed Tape Readout",
+      "kind": "state",
+      "payload": "{ accelState: 'ACCEL' | 'STEADY' | 'DECEL'; thrustAvg: number /* average throttle percent, 0-100 */ }",
+      "example": {
+        "accelState": "ACCEL",
+        "thrustAvg": 84
+      }
+    },
+    {
+      "id": "Aerospace: Engine & Fuel Systems Panel->Aerospace: Warning & System Status Panel",
+      "kind": "event",
+      "payload": "{ id: string; text: string; severity: 'warning' | 'caution'; source: 'ENG' | 'FUEL' }",
+      "example": {
+        "id": "ENG 2n1",
+        "text": "ENG 2 N1 EXCEED",
+        "severity": "warning",
+        "source": "ENG"
+      }
+    }
+  ],
+  "channelList": [
+    {
+      "id": "Aerospace: Navigation Map->Aerospace: Primary Flight Display",
+      "from": "Aerospace: Navigation Map",
+      "to": "Aerospace: Primary Flight Display",
+      "description": "When the pilot selects a course/waypoint leg on the map, it emits the desired track bearing; the PFD renders the corresponding heading bug and course-deviation bar on its compass strip."
+    },
+    {
+      "id": "Aerospace: Navigation Map->Aerospace: Autopilot Control Panel",
+      "from": "Aerospace: Navigation Map",
+      "to": "Aerospace: Autopilot Control Panel",
+      "description": "When the pilot selects a waypoint or leg on the map, it emits the target waypoint/desired track; the autopilot loads it as the active NAV target and can arm/engage lateral navigation toward it."
+    },
+    {
+      "id": "Aerospace: Autopilot Control Panel->Aerospace: Primary Flight Display",
+      "from": "Aerospace: Autopilot Control Panel",
+      "to": "Aerospace: Primary Flight Display",
+      "description": "When the pilot dials a target heading or engages bank/attitude hold, the panel emits the commanded heading and bank; the PFD moves its heading bug and drives the horizon toward the command."
+    },
+    {
+      "id": "Aerospace: Autopilot Control Panel->Aerospace: Altitude Tape Readout",
+      "from": "Aerospace: Autopilot Control Panel",
+      "to": "Aerospace: Altitude Tape Readout",
+      "description": "When the pilot sets target altitude and engages ALT/VS hold, the panel emits the commanded altitude and vertical speed; the altitude tape positions its selected-altitude bug and vertical-speed target."
+    },
+    {
+      "id": "Aerospace: Autopilot Control Panel->Aerospace: Airspeed Tape Readout",
+      "from": "Aerospace: Autopilot Control Panel",
+      "to": "Aerospace: Airspeed Tape Readout",
+      "description": "When the pilot sets target speed and engages SPD hold, the panel emits the commanded airspeed; the airspeed tape positions its selected-speed bug and trend."
+    },
+    {
+      "id": "Aerospace: Autopilot Control Panel->Aerospace: Navigation Map",
+      "from": "Aerospace: Autopilot Control Panel",
+      "to": "Aerospace: Navigation Map",
+      "description": "When NAV/LNAV is engaged and the active waypoint sequences, the panel emits the active leg; the map highlights the active leg and advances the route."
+    },
+    {
+      "id": "Aerospace: Engine & Fuel Systems Panel->Aerospace: Airspeed Tape Readout",
+      "from": "Aerospace: Engine & Fuel Systems Panel",
+      "to": "Aerospace: Airspeed Tape Readout",
+      "description": "As thrust/throttle changes, the panel emits the resulting acceleration state; the airspeed tape updates its speed-trend vector to reflect the thrust-driven rate of speed change."
+    },
+    {
+      "id": "Aerospace: Engine & Fuel Systems Panel->Aerospace: Warning & System Status Panel",
+      "from": "Aerospace: Engine & Fuel Systems Panel",
+      "to": "Aerospace: Warning & System Status Panel",
+      "description": "When an engine parameter (N1/N2/EGT) exceeds limits or fuel drops below a threshold, the panel emits a caution/warning event with source and severity; the status panel logs and displays it as an active alert."
+    }
+  ]
+}

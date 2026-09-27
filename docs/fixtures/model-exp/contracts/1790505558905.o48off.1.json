@@ -1,0 +1,397 @@
+{
+  "task": "1790505558905",
+  "name": "Synthesizer",
+  "cfg": "o48off",
+  "sample": 1,
+  "channels": 19,
+  "totalSecs": 29.198,
+  "attempts": [
+    {
+      "secs": 29.198,
+      "model": "claude-opus-4-8",
+      "stop": "end_turn",
+      "inTok": 34919,
+      "outTok": 3167
+    }
+  ],
+  "ok": true,
+  "contracts": [
+    {
+      "id": "Synthesizer: Performance Keyboard->Synthesizer: Oscillator Bank",
+      "kind": "state",
+      "payload": "{ voices: { note: number /* MIDI pitch 0-127 */; bend: number /* pitch-bend offset in semitones, -2 to +2 */ }[] /* currently held voices; empty when none */ }",
+      "example": {
+        "voices": [
+          {
+            "note": 60,
+            "bend": 0
+          },
+          {
+            "note": 67,
+            "bend": -0.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "Synthesizer: Performance Keyboard->Synthesizer: ADSR Envelope",
+      "kind": "event",
+      "payload": "{ type: 'gate-on'; note: number /* MIDI pitch 0-127 */; velocity: number /* 0-1 */ } | { type: 'gate-off'; note: number /* MIDI pitch 0-127 */ }",
+      "example": {
+        "type": "gate-on",
+        "note": 60,
+        "velocity": 0.53
+      }
+    },
+    {
+      "id": "Synthesizer: Performance Keyboard->Synthesizer: LFO & Modulation",
+      "kind": "state",
+      "payload": "{ modWheel: number /* mod wheel position 0-127 */ }",
+      "example": {
+        "modWheel": 42
+      }
+    },
+    {
+      "id": "Synthesizer: Oscillator Bank->Synthesizer: Filter Section",
+      "kind": "state",
+      "payload": "{ signal: number /* summed oscillator audio sample, normalized -1 to 1 */ }",
+      "example": {
+        "signal": 0.31
+      }
+    },
+    {
+      "id": "Synthesizer: Filter Section->Synthesizer: Effects Rack",
+      "kind": "state",
+      "payload": "{ signal: number /* filtered audio sample, normalized -1 to 1 */ }",
+      "example": {
+        "signal": 0.18
+      }
+    },
+    {
+      "id": "Synthesizer: ADSR Envelope->Synthesizer: Filter Section",
+      "kind": "state",
+      "payload": "{ env: number /* current envelope value, 0-1 */ }",
+      "example": {
+        "env": 0.62
+      }
+    },
+    {
+      "id": "Synthesizer: ADSR Envelope->Synthesizer: Master Output & Meter",
+      "kind": "state",
+      "payload": "{ env: number /* current envelope value used as amplitude multiplier, 0-1 */ }",
+      "example": {
+        "env": 0.62
+      }
+    },
+    {
+      "id": "Synthesizer: LFO & Modulation->Synthesizer: Oscillator Bank",
+      "kind": "state",
+      "payload": "{ active: boolean /* true only when destination is 'pitch' */; value: number /* bipolar LFO signal scaled by depth and mod wheel, -1 to 1 */ }",
+      "example": {
+        "active": false,
+        "value": 0
+      }
+    },
+    {
+      "id": "Synthesizer: LFO & Modulation->Synthesizer: Filter Section",
+      "kind": "state",
+      "payload": "{ active: boolean /* true only when destination is 'cutoff' */; value: number /* bipolar LFO signal scaled by depth and mod wheel, -1 to 1 */ }",
+      "example": {
+        "active": true,
+        "value": -0.24
+      }
+    },
+    {
+      "id": "Synthesizer: LFO & Modulation->Synthesizer: Master Output & Meter",
+      "kind": "state",
+      "payload": "{ active: boolean /* true only when destination is 'amp' */; value: number /* bipolar LFO signal scaled by depth and mod wheel, -1 to 1 */ }",
+      "example": {
+        "active": false,
+        "value": 0
+      }
+    },
+    {
+      "id": "Synthesizer: Effects Rack->Synthesizer: Master Output & Meter",
+      "kind": "state",
+      "payload": "{ signal: number /* fully processed wet/dry mixed audio sample, normalized -1 to 1 */ }",
+      "example": {
+        "signal": 0.27
+      }
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: Oscillator Bank",
+      "kind": "state",
+      "payload": "{ mix: number /* oscillator balance, -50 to 50 */; osc1: { wave: 'saw' | 'sqr' | 'tri' | 'sin'; oct: '-2' | '-1' | '0' | '1'; coarse: number /* semitones -24 to 24 */; fine: number /* cents -50 to 50 */; pw: number /* pulse width %, 5-95 */ }; osc2: { wave: 'saw' | 'sqr' | 'tri' | 'sin'; oct: '-2' | '-1' | '0' | '1'; coarse: number /* semitones -24 to 24 */; fine: number /* cents -50 to 50 */; pw: number /* pulse width %, 5-95 */ }; sub: { wave: 'sqr' | 'sin' | 'pls'; level: number /* 0-100 */ }; noise: { wave: 'wht' | 'pnk' | 'bwn'; level: number /* 0-100 */ } }",
+      "example": {
+        "mix": -12,
+        "osc1": {
+          "wave": "saw",
+          "oct": "0",
+          "coarse": 0,
+          "fine": 0,
+          "pw": 50
+        },
+        "osc2": {
+          "wave": "sqr",
+          "oct": "-1",
+          "coarse": 7,
+          "fine": -4,
+          "pw": 35
+        },
+        "sub": {
+          "wave": "sqr",
+          "level": 62
+        },
+        "noise": {
+          "wave": "pnk",
+          "level": 18
+        }
+      }
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: Filter Section",
+      "kind": "state",
+      "payload": "{ type: 'lp' | 'hp' | 'bp'; slope: '12' | '24' /* dB/oct */; cutoff: number /* Hz, 30-18000 */; res: number /* resonance %, 0-100 */; env: number /* envelope amount %, -100 to 100 */; key: number /* keytrack %, 0-100 */ }",
+      "example": {
+        "type": "lp",
+        "slope": "24",
+        "cutoff": 2400,
+        "res": 38,
+        "env": 24,
+        "key": 50
+      }
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: ADSR Envelope",
+      "kind": "state",
+      "payload": "{ attack: number /* seconds, 0-2 */; decay: number /* seconds, 0-2 */; sustain: number /* level 0-1 */; release: number /* seconds, 0-3 */; vel: number /* velocity amount %, 0-100 */ }",
+      "example": {
+        "attack": 0.12,
+        "decay": 0.35,
+        "sustain": 0.62,
+        "release": 0.5,
+        "vel": 68
+      }
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: LFO & Modulation",
+      "kind": "state",
+      "payload": "{ rate: number /* Hz when free, or sync-step value when synced */; depth: number /* 0-100 */; wave: 'sine' | 'tri' | 'saw' | 'sqr' | 'rnd'; sync: boolean; fade: number /* fade-in ms, 0-4000 */; dest: 'pitch' | 'cutoff' | 'amp' }",
+      "example": {
+        "rate": 4.5,
+        "depth": 42,
+        "wave": "sine",
+        "sync": false,
+        "fade": 320,
+        "dest": "cutoff"
+      }
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: Effects Rack",
+      "kind": "state",
+      "payload": "{ order: string[] /* effect ids in chain order, from 'dist'|'chor'|'dely'|'revb'|'eq' */; enabled: { [effectId: string]: boolean }; params: { [effectId: string]: number[] /* per-effect parameter values in module order */ }; mix: number /* wet/dry %, 0-100 */ }",
+      "example": {
+        "order": [
+          "dist",
+          "chor",
+          "dely",
+          "revb",
+          "eq"
+        ],
+        "enabled": {
+          "dist": true,
+          "chor": false,
+          "dely": true,
+          "revb": true,
+          "eq": false
+        },
+        "params": {
+          "dist": [
+            18,
+            62
+          ],
+          "chor": [
+            2.4,
+            45
+          ],
+          "dely": [
+            280,
+            38
+          ],
+          "revb": [
+            64,
+            30
+          ],
+          "eq": [
+            3,
+            -2
+          ]
+        },
+        "mix": 42
+      }
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: Master Output & Meter",
+      "kind": "state",
+      "payload": "{ vol: number /* master volume %, 0-100 */; pan: number /* -50 (L) to 50 (R) */; limiter: boolean; mute: boolean }",
+      "example": {
+        "vol": 78,
+        "pan": 0,
+        "limiter": true,
+        "mute": false
+      }
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: Arpeggiator & Sequencer",
+      "kind": "state",
+      "payload": "{ on: boolean; hold: boolean; mode: 'up' | 'down' | 'rand' | 'order'; rate: '1-4' | '1-8' | '1-16' | '1-32'; oct: '1' | '2' | '3' | '4'; gate: number /* gate length %, 1-100 */; swing: number /* 0-75 */; steps: { id: string; on: boolean; gate: number /* 0-1 */ }[] /* 16 steps */ }",
+      "example": {
+        "on": true,
+        "hold": false,
+        "mode": "up",
+        "rate": "1-16",
+        "oct": "2",
+        "gate": 62,
+        "swing": 18,
+        "steps": [
+          {
+            "id": "s0",
+            "on": true,
+            "gate": 0.35
+          },
+          {
+            "id": "s1",
+            "on": false,
+            "gate": 0.48
+          }
+        ]
+      }
+    },
+    {
+      "id": "Synthesizer: Arpeggiator & Sequencer->Synthesizer: Performance Keyboard",
+      "kind": "event",
+      "payload": "{ type: 'note-on'; note: number /* MIDI pitch 0-127 */; velocity: number /* 0-1 */ } | { type: 'note-off'; note: number /* MIDI pitch 0-127 */ }",
+      "example": {
+        "type": "note-on",
+        "note": 72,
+        "velocity": 0.7
+      }
+    }
+  ],
+  "channelList": [
+    {
+      "id": "Synthesizer: Performance Keyboard->Synthesizer: Oscillator Bank",
+      "from": "Synthesizer: Performance Keyboard",
+      "to": "Synthesizer: Oscillator Bank",
+      "description": "On each key press the keyboard emits the note's MIDI pitch (plus continuous pitch-bend wheel offset in semitones) to the oscillators, which set/glide their base frequency accordingly; releasing the key clears that voice's pitch."
+    },
+    {
+      "id": "Synthesizer: Performance Keyboard->Synthesizer: ADSR Envelope",
+      "from": "Synthesizer: Performance Keyboard",
+      "to": "Synthesizer: ADSR Envelope",
+      "description": "Key-down emits a gate-on event with velocity and key-up emits a gate-off event; the envelope uses these to start its attack/decay/sustain phase and trigger its release phase."
+    },
+    {
+      "id": "Synthesizer: Performance Keyboard->Synthesizer: LFO & Modulation",
+      "from": "Synthesizer: Performance Keyboard",
+      "to": "Synthesizer: LFO & Modulation",
+      "description": "The mod wheel position (0-127) is streamed to the LFO section as a depth/amount scaler, increasing modulation intensity as the wheel is raised."
+    },
+    {
+      "id": "Synthesizer: Oscillator Bank->Synthesizer: Filter Section",
+      "from": "Synthesizer: Oscillator Bank",
+      "to": "Synthesizer: Filter Section",
+      "description": "Continuously outputs the summed/mixed oscillator audio signal into the filter's input for spectral shaping."
+    },
+    {
+      "id": "Synthesizer: Filter Section->Synthesizer: Effects Rack",
+      "from": "Synthesizer: Filter Section",
+      "to": "Synthesizer: Effects Rack",
+      "description": "Outputs the filtered audio signal into the effects chain input."
+    },
+    {
+      "id": "Synthesizer: ADSR Envelope->Synthesizer: Filter Section",
+      "from": "Synthesizer: ADSR Envelope",
+      "to": "Synthesizer: Filter Section",
+      "description": "Streams the current envelope value to the filter, where it is scaled by the filter's Envelope Amount and added to cutoff for envelope-controlled filter sweeps."
+    },
+    {
+      "id": "Synthesizer: ADSR Envelope->Synthesizer: Master Output & Meter",
+      "from": "Synthesizer: ADSR Envelope",
+      "to": "Synthesizer: Master Output & Meter",
+      "description": "Streams the current envelope value as the voice amplitude multiplier so notes fade in/out according to the ADSR shape, driving the output level and meter."
+    },
+    {
+      "id": "Synthesizer: LFO & Modulation->Synthesizer: Oscillator Bank",
+      "from": "Synthesizer: LFO & Modulation",
+      "to": "Synthesizer: Oscillator Bank",
+      "description": "When destination is 'pitch', sends a bipolar LFO signal added to oscillator frequency for vibrato, scaled by depth and mod wheel."
+    },
+    {
+      "id": "Synthesizer: LFO & Modulation->Synthesizer: Filter Section",
+      "from": "Synthesizer: LFO & Modulation",
+      "to": "Synthesizer: Filter Section",
+      "description": "When destination is 'cutoff', sends a bipolar LFO signal added to filter cutoff for filter movement, scaled by depth and mod wheel."
+    },
+    {
+      "id": "Synthesizer: LFO & Modulation->Synthesizer: Master Output & Meter",
+      "from": "Synthesizer: LFO & Modulation",
+      "to": "Synthesizer: Master Output & Meter",
+      "description": "When destination is 'amplitude', sends a bipolar LFO signal that modulates the master gain for tremolo, scaled by depth and mod wheel."
+    },
+    {
+      "id": "Synthesizer: Effects Rack->Synthesizer: Master Output & Meter",
+      "from": "Synthesizer: Effects Rack",
+      "to": "Synthesizer: Master Output & Meter",
+      "description": "Outputs the fully processed (wet/dry mixed) audio signal into the master output stage for final gain and metering."
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: Oscillator Bank",
+      "from": "Synthesizer: Preset Browser",
+      "to": "Synthesizer: Oscillator Bank",
+      "description": "On selecting/loading a preset, pushes the stored oscillator parameter set (waveforms, tuning, mix, sub, noise) to the oscillator bank, which applies them immediately."
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: Filter Section",
+      "from": "Synthesizer: Preset Browser",
+      "to": "Synthesizer: Filter Section",
+      "description": "On preset load, pushes stored filter type, cutoff, resonance, envelope amount, keytrack, and slope values, which the filter applies."
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: ADSR Envelope",
+      "from": "Synthesizer: Preset Browser",
+      "to": "Synthesizer: ADSR Envelope",
+      "description": "On preset load, pushes stored attack, decay, sustain, release, and velocity-amount values, which the envelope applies and redraws."
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: LFO & Modulation",
+      "from": "Synthesizer: Preset Browser",
+      "to": "Synthesizer: LFO & Modulation",
+      "description": "On preset load, pushes stored LFO rate, depth, waveform, sync, fade-in, and destination routing, which the LFO applies."
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: Effects Rack",
+      "from": "Synthesizer: Preset Browser",
+      "to": "Synthesizer: Effects Rack",
+      "description": "On preset load, pushes stored effect enable states, parameters, chain order, and wet/dry mix, which the effects rack applies."
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: Master Output & Meter",
+      "from": "Synthesizer: Preset Browser",
+      "to": "Synthesizer: Master Output & Meter",
+      "description": "On preset load, pushes stored master volume, pan, limiter, and mute states, which the master section applies."
+    },
+    {
+      "id": "Synthesizer: Preset Browser->Synthesizer: Arpeggiator & Sequencer",
+      "from": "Synthesizer: Preset Browser",
+      "to": "Synthesizer: Arpeggiator & Sequencer",
+      "description": "On preset load, pushes stored arpeggiator on/off, mode, rate, octave range, step pattern, gate length, and swing settings, which the arpeggiator applies. Saving a preset captures the current state of all these components."
+    },
+    {
+      "id": "Synthesizer: Arpeggiator & Sequencer->Synthesizer: Performance Keyboard",
+      "from": "Synthesizer: Arpeggiator & Sequencer",
+      "to": "Synthesizer: Performance Keyboard",
+      "description": "When enabled, generates timed note-on/note-off events from held notes according to mode, rate, octave range, and step grid, and sends them to the keyboard which highlights the corresponding keys and re-emits them into the voice chain."
+    }
+  ]
+}

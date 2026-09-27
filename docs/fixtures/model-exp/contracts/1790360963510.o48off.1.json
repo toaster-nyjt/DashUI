@@ -1,0 +1,138 @@
+{
+  "task": "1790360963510",
+  "name": "Radio",
+  "cfg": "o48off",
+  "sample": 1,
+  "channels": 6,
+  "totalSecs": 9.688,
+  "attempts": [
+    {
+      "secs": 9.688,
+      "model": "claude-opus-4-8",
+      "stop": "end_turn",
+      "inTok": 14986,
+      "outTok": 888
+    }
+  ],
+  "ok": true,
+  "contracts": [
+    {
+      "id": "Radio: Now Playing Bar->Radio: Spectrum Visualizer",
+      "kind": "state",
+      "payload": "{ playing: boolean; /* true only when playing and not muted */ live: boolean; volume: number /* 0-100 */; bars: number[] /* frequency magnitudes, each 0-1 */; wave: number[] /* waveform samples, each -1 to 1 */ }",
+      "example": {
+        "playing": true,
+        "live": true,
+        "volume": 62,
+        "bars": [
+          0.42,
+          0.61,
+          0.55,
+          0.28,
+          0.73,
+          0.18,
+          0.66,
+          0.31
+        ],
+        "wave": [
+          0.12,
+          0.34,
+          -0.21,
+          0.55,
+          -0.4,
+          0.09,
+          0.28,
+          -0.15
+        ]
+      }
+    },
+    {
+      "id": "Radio: Now Playing Bar->Radio: Preset Buttons Panel",
+      "kind": "event",
+      "payload": "{ name: string; freq: number /* MHz for FM, kHz for AM */; band: string /* e.g. 'FM' | 'AM' */ }",
+      "example": {
+        "name": "NEON HORIZON FM",
+        "freq": 101.7,
+        "band": "FM"
+      }
+    },
+    {
+      "id": "Radio: Tuning Dial->Radio: Now Playing Bar",
+      "kind": "state",
+      "payload": "{ band: 'fm' | 'am'; freq: number /* MHz for fm, kHz for am */ }",
+      "example": {
+        "band": "fm",
+        "freq": 99.1
+      }
+    },
+    {
+      "id": "Radio: Station Browser List->Radio: Now Playing Bar",
+      "kind": "event",
+      "payload": "{ id: string; name: string; frequency: number /* MHz for FM/SW, kHz for AM */; band: 'FM' | 'AM' | 'SW'; streamRef: string }",
+      "example": {
+        "id": "s5",
+        "name": "Grid Runner 2049",
+        "frequency": 101.7,
+        "band": "FM",
+        "streamRef": "str/grid"
+      }
+    },
+    {
+      "id": "Radio: Preset Buttons Panel->Radio: Now Playing Bar",
+      "kind": "event",
+      "payload": "{ name: string; freq: number /* MHz for FM, kHz for AM */; band: string /* e.g. 'FM' | 'AM' */ }",
+      "example": {
+        "name": "NEON FM",
+        "freq": 101.7,
+        "band": "FM"
+      }
+    },
+    {
+      "id": "Radio: Preset Buttons Panel->Radio: Tuning Dial",
+      "kind": "event",
+      "payload": "{ band: 'fm' | 'am'; freq: number /* MHz for fm, kHz for am */ }",
+      "example": {
+        "band": "fm",
+        "freq": 101.7
+      }
+    }
+  ],
+  "channelList": [
+    {
+      "id": "Radio: Now Playing Bar->Radio: Spectrum Visualizer",
+      "from": "Radio: Now Playing Bar",
+      "to": "Radio: Spectrum Visualizer",
+      "description": "This bar streams live playback state (playing/paused, current audio amplitude/frequency data, and volume level) to the visualizer, which animates in sync and freezes/flatlines when playback is paused or muted."
+    },
+    {
+      "id": "Radio: Now Playing Bar->Radio: Preset Buttons Panel",
+      "from": "Radio: Now Playing Bar",
+      "to": "Radio: Preset Buttons Panel",
+      "description": "When the user clicks the 'save preset' action here, this bar emits the currently playing station's name and frequency to the panel, which stores it into the next empty or selected preset slot."
+    },
+    {
+      "id": "Radio: Tuning Dial->Radio: Now Playing Bar",
+      "from": "Radio: Tuning Dial",
+      "to": "Radio: Now Playing Bar",
+      "description": "As the user rotates the dial or toggles AM/FM, it emits the selected band and frequency; the now-playing bar resolves the matching station and starts playing it and updating its display."
+    },
+    {
+      "id": "Radio: Station Browser List->Radio: Now Playing Bar",
+      "from": "Radio: Station Browser List",
+      "to": "Radio: Now Playing Bar",
+      "description": "When the user clicks a station row, this list emits the station's id, name, frequency, and stream reference; the now-playing bar loads it, updates its display, and starts playback, and the clicked row shows the active indicator."
+    },
+    {
+      "id": "Radio: Preset Buttons Panel->Radio: Now Playing Bar",
+      "from": "Radio: Preset Buttons Panel",
+      "to": "Radio: Now Playing Bar",
+      "description": "When the user clicks a filled preset, this panel emits the stored station/frequency; the now-playing bar switches to that station, updates its display, and resumes playback."
+    },
+    {
+      "id": "Radio: Preset Buttons Panel->Radio: Tuning Dial",
+      "from": "Radio: Preset Buttons Panel",
+      "to": "Radio: Tuning Dial",
+      "description": "When a preset is recalled, this panel also emits its band and frequency to the dial, which moves its needle/scale and band toggle to reflect the recalled position."
+    }
+  ]
+}

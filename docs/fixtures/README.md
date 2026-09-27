@@ -30,8 +30,11 @@ All load app TypeScript through `lib/load.cjs` and read `CLAUDE_API_KEY` from `.
 | `fit-regress.mjs` | FitText test cases + edge cases, measuring every span (old vs new FitText) |
 | `map-probe.mjs` | A map trio (MapCanvas + held MapMarker/RouteOverlay) in real Chrome over CDP: zoom, real drag, real hover/click; each marker's distance from its district |
 | `build-replay.cjs` | Replays a logged run through the real build route with the model calls stubbed (logged code and timings, `--speed`): event order, per-leaf start, and byte-identical leaf prompts vs the client path. No API calls |
-| `prompt-qa-render.cjs` | Renders the full prompts (leaf, primitive, focal agent cases) for a prompt QA review; no API calls. Reviews and their decisions: `docs/PROMPT_QA.md` |
+| `prompt-qa-render.cjs` | Renders the full prompts (leaf, primitive, focal agent, contract agent and wiring cases; `--wire=` a saved wire run) for a prompt QA review; no API calls. Reviews and their decisions: `docs/PROMPT_QA.md` |
 | `focal-check.cjs` | The focal route's prompt + validator (`--variant=app`, default) or the earlier candidates (`A`–`D`) on every logged hoist; scores picks against labels, times each config; `--configs=`, `--samples=` |
+| `contract-run.cjs` | The wiring contract agent (`generateContracts`: `CONTRACT_SYSTEM_PROMPT` + `validateContracts` + retries) on logged UIs, as if Wire were pressed: latest run's channels + final leaf code; time per call, first-try validity, tokens, state/event split; `--configs=o5low,o48off`, `--samples=`, `--tasks=`, `--parallel=` |
+| `wire-run.cjs` | The whole Wire action (`runWire`: split contracts, then one wiring call per component, checked + retried) on one logged UI; saves each wired leaf, timings and a timeline; `--task=`, `--out=`, `--budget=N` (hard cap on model calls) |
+| `wire-probe.mjs` | Renders a `wire-run.cjs` result in headless Chrome with a recording in-page bus (relays like the app): render errors, subscriptions, state payloads on mount vs the contract example, whether each receiver reacts when fed the example; screenshots original vs wired. No API calls |
 | `leaf-map-probe.mjs` | A generated leaf with a held type (`--held=<Type>`, default MapMarker) at its box size: markers visible and on top, real click reaches `onSelect`, the leaf reacts |
 
 **Earlier, reference-file based** (written before the app merge; they import `docs/SKILLS.primitives.reference.ts`): `hoist-run.mjs`, `prim-run.mjs`, `leaf-run.mjs`, `style-run.mjs`, `build-e2e.mjs`, `fittest.mjs`, `prompt-audit.mjs`, plus `slot-scan.cjs` (static min-zero / face-child scan) and `sanitize-leaf.cjs` (the original post-processor, ported to `app/utils/leafSanitizer.ts`).
@@ -54,6 +57,8 @@ All load app TypeScript through `lib/load.cjs` and read `CLAUDE_API_KEY` from `.
 | `model-exp/placement` | Held placement + units: 2 re-hoists, 19 primitives, Cyberware/Map leaves × 2, probes |
 | `model-exp/focal` | Focal primitives: picks (`run1`, `variant-B/C/D`, `app`), `prims/` (types with the switch off vs on, galleries), `leaves/` (focal-using leaves off vs on, renders + size probes) |
 | `model-exp/brief` | Component brief for one-off primitives: 5 types × off/on × 2, galleries (no gain) |
+| `model-exp/wiring` | Whole Wire runs: `dj-7643/`, `cp-7400/` (wired leaves, `wire-run.json`, `wire-probe.json`, probe pages and screenshots; `cp-7400/journal-rewired.tsx` = the re-wire with the updated prompt) |
+| `model-exp/contracts` | Wiring contracts: 8 logged UIs × 2 configs × 2 samples, one JSON per call (`<task>.<cfg>.<n>.json`) + `results.json` |
 | `model-exp/held` | Held types: 4 hoists, map primitives × 2 on a patched hoist, Map leaf × 2, probe renders |
 
 ## Reports
@@ -66,3 +71,4 @@ All load app TypeScript through `lib/load.cjs` and read `CLAUDE_API_KEY` from `.
 - `model-exp/FOCAL_PRIMITIVES.md` — picking focal primitives with a small agent after the hoist — the picker, the focal primitive prompt, and focal leaves.
 - `model-exp/COMPONENT_BRIEF.md` — giving one-off primitives their component's genInstructions: no gain, since the details are contract data (not adopted).
 - `model-exp/HELD_PRIMITIVES_COMPARISON.md` — companion context (USED WITH) and held types (a surface's `children` naming the types it holds).
+- `model-exp/WIRING_CONTRACTS.md` — the wiring contract agent at Wire time: time per call vs the 20s limit (output-bound, ~1.3s per channel), first-try validity, Opus 4.8 thinking off vs Opus 5 `low`.

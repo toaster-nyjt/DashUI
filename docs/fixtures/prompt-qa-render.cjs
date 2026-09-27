@@ -1,8 +1,8 @@
 // Renders the full prompts (system + user message) the app sends, for a prompt QA review
 // (docs/PROMPT_QA.md). No API calls. Cases: 5 leaves (focal, no focal, holder surface, a
 // hand-built feature, manual box), 4 primitives (focal, plain, focal holder, held type), the
-// focal agent. Each file starts with a CASE line saying what is real and what was set by hand.
-// Usage: node prompt-qa-render.cjs --out=<dir> [--dj=<task jsonl>] [--cp=<task jsonl>]
+// focal agent, the contract agent and 2 wiring calls (from a saved wire-run.cjs result). Each file starts with a CASE line saying what is real and what was set by hand.
+// Usage: node prompt-qa-render.cjs --out=<dir> [--dj=<task jsonl>] [--cp=<task jsonl>] [--wire=<wire-run dir>]
 const fs = require("fs"), path = require("path");
 const { load, ROOT } = require("./lib/load.cjs");
 const { buildLeafSystem } = load(ROOT + "/app/utils/leafPrompt.ts");
@@ -64,4 +64,16 @@ if (holder) { prim(cp, holder.type); prim(cp, H.heldTypeNames(holder)[0]); }
 
 write("focal-agent", `The focal agent on ${dj.task} (real hoist and roles).`, SK.FOCAL_SYSTEM_PROMPT,
   SK.focalRequest(dj.task, dj.defs, dj.hoist.library, H.derivePrimitiveUsage(dj.hoist)));
+// Wiring: the contract agent's first split call and 2 components, from a saved Wire run.
+const W = JSON.parse(fs.readFileSync(path.join(arg("wire", ROOT + "/docs/fixtures/model-exp/wiring/dj-7643"), "wire-run.json"), "utf8"));
+const comps = W.inputs.map((x) => ({ name: x.name, code: x.original, role: dj.defs.find((d) => d.name === x.name)?.role }));
+const split = load(ROOT + "/app/utils/contractGen.ts").splitChannels(W.channelList)[0];
+write("contract-agent", `The contract agent on ${dj.task}: the first of its split calls (${split.length} channels; real channels and code).`, SK.CONTRACT_SYSTEM_PROMPT, SK.contractRequest(split, comps));
+const specs = W.channelList.map((c) => ({ channel: c, contract: W.contracts.find((k) => k.id === c.id) })).filter((x) => x.contract);
+const wire = (re, name) => {
+  const c = comps.find((x) => re.test(x.name));
+  const sends = specs.filter((x) => x.channel.from === c.name), receives = specs.filter((x) => x.channel.to === c.name);
+  write(name, `Wiring ${c.name} (real code and contracts; ${sends.length} sends, ${receives.length} receives).`, SK.WIRE_SYSTEM_PROMPT, SK.wireRequest(c, sends, receives));
+};
+wire(/Mixer/, "wire-1-mixer"); wire(/Waveform/, "wire-2-waveform");
 console.log("wrote", fs.readdirSync(OUT).length, "files to", OUT);

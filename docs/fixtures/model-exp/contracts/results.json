@@ -1,0 +1,636 @@
+{
+  "configs": {
+    "o5low": {
+      "model": "claude-opus-5",
+      "max_tokens": 16000,
+      "thinking": {
+        "type": "adaptive"
+      },
+      "output_config": {
+        "effort": "low"
+      }
+    },
+    "o48off": {
+      "model": "claude-opus-4-8",
+      "max_tokens": 16000,
+      "thinking": {
+        "type": "disabled"
+      },
+      "output_config": {
+        "effort": "max"
+      }
+    }
+  },
+  "tasks": [
+    "1790503859796",
+    "1790499847643",
+    "1790488443585",
+    "1790493337400",
+    "1790505558905",
+    "1790360963510",
+    "1790357285132",
+    "1790508636151"
+  ],
+  "rows": [
+    {
+      "task": "1790503859796",
+      "name": "DJ Table",
+      "cfg": "o5low",
+      "sample": 1,
+      "channels": 14,
+      "totalSecs": 25.913,
+      "attempts": [
+        {
+          "secs": 25.913,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 26820,
+          "outTok": 2483
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790503859796",
+      "name": "DJ Table",
+      "cfg": "o5low",
+      "sample": 2,
+      "channels": 14,
+      "totalSecs": 24.773,
+      "attempts": [
+        {
+          "secs": 24.773,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 26820,
+          "outTok": 2634
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790503859796",
+      "name": "DJ Table",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 14,
+      "totalSecs": 23.138,
+      "attempts": [
+        {
+          "secs": 23.138,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 26819,
+          "outTok": 2459
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790503859796",
+      "name": "DJ Table",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 14,
+      "totalSecs": 23.314,
+      "attempts": [
+        {
+          "secs": 23.314,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 26819,
+          "outTok": 2455
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790499847643",
+      "name": "DJ Table",
+      "cfg": "o5low",
+      "sample": 1,
+      "channels": 10,
+      "totalSecs": 15.931,
+      "attempts": [
+        {
+          "secs": 15.931,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 29841,
+          "outTok": 1502
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790499847643",
+      "name": "DJ Table",
+      "cfg": "o5low",
+      "sample": 2,
+      "channels": 10,
+      "totalSecs": 30.108,
+      "attempts": [
+        {
+          "secs": 16.275,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 29841,
+          "outTok": 1543,
+          "error": "Your output could not be parsed. Return ONLY the JSON object {\"contracts\": [...]}."
+        },
+        {
+          "secs": 13.833,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 29900,
+          "outTok": 1501
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790499847643",
+      "name": "DJ Table",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 10,
+      "totalSecs": 14.562,
+      "attempts": [
+        {
+          "secs": 14.562,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 29840,
+          "outTok": 1427
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790499847643",
+      "name": "DJ Table",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 10,
+      "totalSecs": 15.273,
+      "attempts": [
+        {
+          "secs": 15.273,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 29840,
+          "outTok": 1505
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790488443585",
+      "name": "Cyberpunk 2077 Dashboard",
+      "cfg": "o5low",
+      "sample": 1,
+      "channels": 8,
+      "totalSecs": 16.345,
+      "attempts": [
+        {
+          "secs": 16.345,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 39813,
+          "outTok": 1603
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790488443585",
+      "name": "Cyberpunk 2077 Dashboard",
+      "cfg": "o5low",
+      "sample": 2,
+      "channels": 8,
+      "totalSecs": 15.918,
+      "attempts": [
+        {
+          "secs": 15.918,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 39813,
+          "outTok": 1625
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790488443585",
+      "name": "Cyberpunk 2077 Dashboard",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 8,
+      "totalSecs": 13.889,
+      "attempts": [
+        {
+          "secs": 13.889,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 39812,
+          "outTok": 1345
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790488443585",
+      "name": "Cyberpunk 2077 Dashboard",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 8,
+      "totalSecs": 13.368,
+      "attempts": [
+        {
+          "secs": 13.368,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 39812,
+          "outTok": 1232
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790493337400",
+      "name": "Cyberpunk 2077 Dashboard",
+      "cfg": "o5low",
+      "sample": 1,
+      "channels": 7,
+      "totalSecs": 10.426,
+      "attempts": [
+        {
+          "secs": 10.426,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 28770,
+          "outTok": 1063
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790493337400",
+      "name": "Cyberpunk 2077 Dashboard",
+      "cfg": "o5low",
+      "sample": 2,
+      "channels": 7,
+      "totalSecs": 9.664,
+      "attempts": [
+        {
+          "secs": 9.664,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 28770,
+          "outTok": 995
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790493337400",
+      "name": "Cyberpunk 2077 Dashboard",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 7,
+      "totalSecs": 10.491,
+      "attempts": [
+        {
+          "secs": 10.491,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 28769,
+          "outTok": 941
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790493337400",
+      "name": "Cyberpunk 2077 Dashboard",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 7,
+      "totalSecs": 10.169,
+      "attempts": [
+        {
+          "secs": 10.169,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 28769,
+          "outTok": 918
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790505558905",
+      "name": "Synthesizer",
+      "cfg": "o5low",
+      "sample": 1,
+      "channels": 19,
+      "totalSecs": 35.004,
+      "attempts": [
+        {
+          "secs": 35.004,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 34920,
+          "outTok": 4169
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790505558905",
+      "name": "Synthesizer",
+      "cfg": "o5low",
+      "sample": 2,
+      "channels": 19,
+      "totalSecs": 32.456,
+      "attempts": [
+        {
+          "secs": 32.456,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 34920,
+          "outTok": 3915
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790505558905",
+      "name": "Synthesizer",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 19,
+      "totalSecs": 29.198,
+      "attempts": [
+        {
+          "secs": 29.198,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 34919,
+          "outTok": 3167
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790505558905",
+      "name": "Synthesizer",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 19,
+      "totalSecs": 28.144,
+      "attempts": [
+        {
+          "secs": 28.144,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 34919,
+          "outTok": 3042
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790360963510",
+      "name": "Radio",
+      "cfg": "o5low",
+      "sample": 1,
+      "channels": 6,
+      "totalSecs": 32.098,
+      "attempts": [
+        {
+          "secs": 16.502,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 14987,
+          "outTok": 1609,
+          "error": "Your output could not be parsed. Return ONLY the JSON object {\"contracts\": [...]}."
+        },
+        {
+          "secs": 15.596,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 15046,
+          "outTok": 1605
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790360963510",
+      "name": "Radio",
+      "cfg": "o5low",
+      "sample": 2,
+      "channels": 6,
+      "totalSecs": 30.935,
+      "attempts": [
+        {
+          "secs": 16.026,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 14987,
+          "outTok": 1594,
+          "error": "Your output could not be parsed. Return ONLY the JSON object {\"contracts\": [...]}."
+        },
+        {
+          "secs": 14.909,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 15046,
+          "outTok": 1549
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790360963510",
+      "name": "Radio",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 6,
+      "totalSecs": 9.688,
+      "attempts": [
+        {
+          "secs": 9.688,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 14986,
+          "outTok": 888
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790360963510",
+      "name": "Radio",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 6,
+      "totalSecs": 9.295,
+      "attempts": [
+        {
+          "secs": 9.295,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 14986,
+          "outTok": 904
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790357285132",
+      "name": "aerospace dashboard",
+      "cfg": "o5low",
+      "sample": 1,
+      "channels": 8,
+      "totalSecs": 12.693,
+      "attempts": [
+        {
+          "secs": 12.693,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 18127,
+          "outTok": 1304
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790357285132",
+      "name": "aerospace dashboard",
+      "cfg": "o5low",
+      "sample": 2,
+      "channels": 8,
+      "totalSecs": 12.359,
+      "attempts": [
+        {
+          "secs": 12.359,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 18127,
+          "outTok": 1286
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790357285132",
+      "name": "aerospace dashboard",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 8,
+      "totalSecs": 12.207,
+      "attempts": [
+        {
+          "secs": 12.207,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 18126,
+          "outTok": 1134
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790357285132",
+      "name": "aerospace dashboard",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 8,
+      "totalSecs": 12.92,
+      "attempts": [
+        {
+          "secs": 12.92,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 18126,
+          "outTok": 1252
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790508636151",
+      "name": "Red Newspaper",
+      "cfg": "o5low",
+      "sample": 1,
+      "channels": 6,
+      "totalSecs": 16.897,
+      "attempts": [
+        {
+          "secs": 16.897,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 15026,
+          "outTok": 1734
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790508636151",
+      "name": "Red Newspaper",
+      "cfg": "o5low",
+      "sample": 2,
+      "channels": 6,
+      "totalSecs": 17.46,
+      "attempts": [
+        {
+          "secs": 17.46,
+          "model": "claude-opus-5",
+          "stop": "end_turn",
+          "inTok": 15026,
+          "outTok": 1778
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790508636151",
+      "name": "Red Newspaper",
+      "cfg": "o48off",
+      "sample": 1,
+      "channels": 6,
+      "totalSecs": 12.651,
+      "attempts": [
+        {
+          "secs": 12.651,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 15025,
+          "outTok": 1095
+        }
+      ],
+      "ok": true
+    },
+    {
+      "task": "1790508636151",
+      "name": "Red Newspaper",
+      "cfg": "o48off",
+      "sample": 2,
+      "channels": 6,
+      "totalSecs": 21.096,
+      "attempts": [
+        {
+          "secs": 21.096,
+          "model": "claude-opus-4-8",
+          "stop": "end_turn",
+          "inTok": 15025,
+          "outTok": 1708
+        }
+      ],
+      "ok": true
+    }
+  ]
+}

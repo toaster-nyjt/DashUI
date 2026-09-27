@@ -1,0 +1,140 @@
+{
+  "task": "1790493337400",
+  "name": "Cyberpunk 2077 Dashboard",
+  "cfg": "o5low",
+  "sample": 2,
+  "channels": 7,
+  "totalSecs": 9.664,
+  "attempts": [
+    {
+      "secs": 9.664,
+      "model": "claude-opus-5",
+      "stop": "end_turn",
+      "inTok": 28770,
+      "outTok": 995
+    }
+  ],
+  "ok": true,
+  "contracts": [
+    {
+      "id": "Cyberpunk 2077: Attributes & Perks Panel->Cyberpunk 2077: V Vitals Status HUD",
+      "kind": "state",
+      "payload": "{ body: number /* 3-20 */; reflexes: number /* 3-20 */; technical: number /* 3-20 */; intelligence: number /* 3-20 */; cool: number /* 3-20 */ }",
+      "example": {
+        "body": 12,
+        "reflexes": 9,
+        "technical": 14,
+        "intelligence": 7,
+        "cool": 10
+      }
+    },
+    {
+      "id": "Cyberpunk 2077: Attributes & Perks Panel->Cyberpunk 2077: Cyberware Ripperdoc Loadout",
+      "kind": "state",
+      "payload": "{ technical: number /* Technical Ability attribute, 3-20 */ }",
+      "example": {
+        "technical": 14
+      }
+    },
+    {
+      "id": "Cyberpunk 2077: Cyberware Ripperdoc Loadout->Cyberpunk 2077: V Vitals Status HUD",
+      "kind": "state",
+      "payload": "{ armor: number /* bonus armor points (AP) from implants */; health: number /* bonus max health from implants */; healthRegen: number /* HP per second */; statusEffects: { id: string; label: string; icon: string; tone: 'buff' | 'debuff' }[] /* implant-granted status entries */ }",
+      "example": {
+        "armor": 218,
+        "health": 120,
+        "healthRegen": 6,
+        "statusEffects": [
+          {
+            "id": "b1",
+            "label": "Blood Pump",
+            "icon": "❤",
+            "tone": "buff"
+          }
+        ]
+      }
+    },
+    {
+      "id": "Cyberpunk 2077: Weapons & Inventory Loadout->Cyberpunk 2077: V Vitals Status HUD",
+      "kind": "state",
+      "payload": "{ armorTotal: number /* summed armor rating (AP) of all equipped apparel */ }",
+      "example": {
+        "armorTotal": 577
+      }
+    },
+    {
+      "id": "Cyberpunk 2077: Night City Map->Cyberpunk 2077: Quest Journal",
+      "kind": "event",
+      "payload": "{ questId: string /* quest/gig id, e.g. 'q-gig' */ }",
+      "example": {
+        "questId": "q-gig"
+      }
+    },
+    {
+      "id": "Cyberpunk 2077: Quest Journal->Cyberpunk 2077: Night City Map",
+      "kind": "state",
+      "payload": "{ questId: string; title: string; district: string; tracked: boolean /* false when tracking was toggled off */ } | null",
+      "example": {
+        "questId": "q1",
+        "title": "The Heist",
+        "district": "Westbrook",
+        "tracked": true
+      }
+    },
+    {
+      "id": "Cyberpunk 2077: Quest Journal->Cyberpunk 2077: V Vitals Status HUD",
+      "kind": "event",
+      "payload": "{ questId: string; title: string; rewardEddies: number /* €$ added */; rewardStreetCred: number /* Street Cred points added */ }",
+      "example": {
+        "questId": "q1",
+        "title": "The Heist",
+        "rewardEddies": 7500,
+        "rewardStreetCred": 320
+      }
+    }
+  ],
+  "channelList": [
+    {
+      "id": "Cyberpunk 2077: Attributes & Perks Panel->Cyberpunk 2077: V Vitals Status HUD",
+      "from": "Cyberpunk 2077: Attributes & Perks Panel",
+      "to": "Cyberpunk 2077: V Vitals Status HUD",
+      "description": "When the user allocates a point (via the +/- attribute controls), emit the updated attribute values so the Vitals HUD recomputes max Health from Body and stamina/crit status from Reflexes and Cool, re-rendering the affected bars."
+    },
+    {
+      "id": "Cyberpunk 2077: Attributes & Perks Panel->Cyberpunk 2077: Cyberware Ripperdoc Loadout",
+      "from": "Cyberpunk 2077: Attributes & Perks Panel",
+      "to": "Cyberpunk 2077: Cyberware Ripperdoc Loadout",
+      "description": "When the Technical Ability attribute changes, emit its new value so the cyberware loadout recalculates and re-renders the available Cyberware Capacity, unlocking or locking installable implant slots accordingly."
+    },
+    {
+      "id": "Cyberpunk 2077: Cyberware Ripperdoc Loadout->Cyberpunk 2077: V Vitals Status HUD",
+      "from": "Cyberpunk 2077: Cyberware Ripperdoc Loadout",
+      "to": "Cyberpunk 2077: V Vitals Status HUD",
+      "description": "When an implant is equipped or removed, emit the aggregate stat bonuses (armor, extra/regen health, status resistances) so the Vitals HUD updates its health/armor bars and status-effect display."
+    },
+    {
+      "id": "Cyberpunk 2077: Weapons & Inventory Loadout->Cyberpunk 2077: V Vitals Status HUD",
+      "from": "Cyberpunk 2077: Weapons & Inventory Loadout",
+      "to": "Cyberpunk 2077: V Vitals Status HUD",
+      "description": "When clothing/armor items are equipped or swapped, emit the summed armor rating of all equipped apparel so the Vitals HUD updates its Armor value display."
+    },
+    {
+      "id": "Cyberpunk 2077: Night City Map->Cyberpunk 2077: Quest Journal",
+      "from": "Cyberpunk 2077: Night City Map",
+      "to": "Cyberpunk 2077: Quest Journal",
+      "description": "When the user clicks a quest/gig marker on the map, emit that quest's id so the journal scrolls to and highlights the matching entry and marks it as the tracked job."
+    },
+    {
+      "id": "Cyberpunk 2077: Quest Journal->Cyberpunk 2077: Night City Map",
+      "from": "Cyberpunk 2077: Quest Journal",
+      "to": "Cyberpunk 2077: Night City Map",
+      "description": "When the user toggles tracking on a journal entry, emit the quest's location and id so the map plots and highlights its marker and route."
+    },
+    {
+      "id": "Cyberpunk 2077: Quest Journal->Cyberpunk 2077: V Vitals Status HUD",
+      "from": "Cyberpunk 2077: Quest Journal",
+      "to": "Cyberpunk 2077: V Vitals Status HUD",
+      "description": "When the user marks a job/gig complete, emit its eddies and Street Cred reward so the Vitals HUD increments the eddies counter and advances the Street Cred bar."
+    }
+  ]
+}

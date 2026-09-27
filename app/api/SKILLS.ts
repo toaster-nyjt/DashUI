@@ -1,4 +1,7 @@
-import { PrimitiveType, PrimitiveUse, PrimitiveCompanions, PrimitiveFloor, LeafFeatures } from "@/app/utils/spec";
+import { PrimitiveType, PrimitiveUse, PrimitiveCompanions, PrimitiveFloor, LeafFeatures, ChannelContract } from "@/app/utils/spec";
+
+// One channel end as a wiring call sees it: the channel and its contract.
+export type WireSpec = { channel: { id: string; from: string; to: string; description: string }; contract: ChannelContract };
 
 // The fixed high-level design direction injected into both the STYLE prompt (as
 // creative brief for the art director) and the GENERATE prompt (as key directive
@@ -321,46 +324,76 @@ Be exhaustive and specific within that scope. Separately generated components ha
 
 OUTPUT: ONLY the token sheet as labelled bullet points (no markdown code fences, no JSON, no component code, no prose preamble). It is injected verbatim into every component generator's system prompt as the VISUAL GUIDELINES section.`;
 
-// System prompt for the PATH route: takes the already-generated components of ONE
-// UI plus a deterministic list of channels (functional links derived app-side from
-// the planner's connectivity) and injects the runtime bus wiring so the components
-// actually talk to each other — WITHOUT redesigning them (thin wiring layer). The
-// bus (bus.emit / bus.on) is injected in scope by the host; channel ids are given,
-// never invented, so both endpoints always agree on the key.
-export const PATH_SYSTEM_PROMPT = `You are wiring the components of ONE already-built UI so they work together at runtime. Each component already exists and renders correctly on its own; your ONLY job is to add the message wiring described by the CHANNELS, changing as little else as possible.
+// System prompt for WIRING one component (the Wire action, after the contract agent): its code
+// plus the contracts of the channels it sends and receives. Each end of a channel is wired by a
+// separate call against the same contract. Checked by checkLeafWiring (wireChecks.ts).
+export const WIRE_SYSTEM_PROMPT = `You are wiring ONE component of an already-built UI so it talks to its sibling components at runtime. The component already renders correctly on its own; your ONLY job is to add the message wiring for its channels, changing as little else as possible. The other end of every channel is wired separately against the same contract, so follow each contract exactly.
 
 You are given:
-- CHANNELS TO WIRE: a list of one-way links. Each is: Channel "<id>": FROM "<A>" TO "<B>". <description>. The description states exactly what data flows and what B does with it. "<id>" is the exact channel key — use it verbatim; never rename or invent one.
-- COMPONENTS: for each component, its exact name, its role, and its CURRENT code, inside <<<COMPONENT name="...">>> ... <<<END>>> blocks.
+- COMPONENT: its name, role and current code.
+- SENDS (channels this component publishes) and RECEIVES (channels it subscribes to). Each is: Channel "<id>" (state | event) FROM "<A>" TO "<B>". <description> — then its PAYLOAD (a TypeScript type, with units and ranges in comments) and an EXAMPLE value. "<id>" is the exact channel key: use it verbatim.
 
-THE BUS (already in scope in every component — do NOT import or define it):
+THE BUS (already in scope — do NOT import or define it):
 - bus.emit(channelId, payload) — publish a value on a channel.
 - bus.on(channelId, handler) — subscribe; returns an unsubscribe function. handler receives the payload.
 
-FOR EACH CHANNEL "<id>": FROM "<A>" TO "<B>":
-- In component A (the source), publish the data the description specifies on that channel. Use ONE effect keyed on the state being shared, which fires on mount (seeding B with the initial value) AND on every change:
-    useEffect(() => { bus.emit("<id>", theValueToShare); }, [theValueToShare]);
-  If the value is produced by an event rather than stored state, also emit inside that handler.
-- In component B (the receiver), subscribe once on mount and APPLY the payload to B's own state so B visibly reacts (filters, selects, highlights, navigates, updates — whatever the description says):
-    useEffect(() => bus.on("<id>", (data) => { /* setState from data */ }), []);
-  If B has no state to hold the incoming value yet, add a useState for it and actually use it in B's render. Receiving a value but not reflecting it in the UI is a failure.
-- payload must be plain JSON-serializable data (objects/arrays/strings/numbers/booleans) — never functions, class instances, or DOM nodes.
+SENDING on channel "<id>":
+- A "state" channel: ONE effect keyed on the values it sends, so it fires on mount AND on every change — also when its description says it is sent on a user action: the handler sets the state, and the effect sends it. Call bus.emit directly in the effect's body, not in a timer or callback inside it:
+    useEffect(() => { bus.emit("<id>", { progress, label }); }, [progress, label]);
+- An "event" channel: emit inside the handler of the action that triggers it, never in an effect:
+    const handleSelect = (item) => { /* existing logic */ bus.emit("<id>", { id: item.id }); };
+- The payload is EXACTLY the PAYLOAD type: every field, no extra fields, in the stated units. Build it from the state the component already holds; add state only for a value nothing holds yet.
+
+RECEIVING on channel "<id>":
+- Subscribe once on mount and APPLY the payload to state the render uses, so the component visibly reacts as the description says:
+    useEffect(() => bus.on("<id>", (data) => { setRemoteProgress(data.progress); }), []);
+- If nothing holds the incoming value yet, add a useState for it and use it in the render. Receiving a value without showing its effect is a failure.
+- A "state" payload can arrive at any time, including right after mount; an "event" payload arrives once per action.
 
 RULES:
-- Change ONLY what the wiring needs. Preserve each component's structure, styling, layout, text, and behavior. Do not restructure, re-theme, or "improve" anything.
+- Call bus.emit and bus.on only inside effects or event handlers — NEVER directly in a component's body.
+- Wire EVERY channel in SENDS and RECEIVES, with its exact id, and use no other channel id.
+- Change ONLY what the wiring needs. Preserve the component's structure, styling, layout, text and behavior. Do not restructure, re-theme or "improve" anything.
 - Keep every existing sizing/structural rule intact: the outermost element stays className="h-full w-full flex flex-col overflow-hidden" with no padding/margin/border and rounded-none; no new imports (React hooks, bus, and every primitive component the code already uses — e.g. <Knob />, <Fader /> — are in scope; never import, define, inline or modify a primitive, wire through the props the component already passes it); the default export stays "GeneratedComponent".
-- Call bus.emit only inside effects or event handlers — NEVER during render.
-- A component can be a source for some channels and a receiver for others — wire ALL of its channels.
-- Only edit components that appear in at least one channel. Any component with no channel is left as-is and must NOT be output.
 
-OUTPUT FORMAT — this is strict and mechanical; the response is parsed by matching the exact delimiter lines. <important>Output ONLY blocks, nothing else: no markdown, no code fences, no prose, no commentary before, between, or after them.</important> For EACH component you edited, emit EXACTLY ONE block, and emit the delimiter lines LITERALLY and verbatim — the opening line starting with <<<COMPONENT name=" and the closing line <<<END>>>:
-<<<COMPONENT name="EXACT NAME">>>
-<the full updated component code — the ENTIRE component, not a diff or a snippet>
-<<<END>>>
-- The opening <<<COMPONENT name="...">>> line and the closing <<<END>>> line are REQUIRED around every block. Without both exact delimiter lines the block cannot be parsed and is thrown away, so never omit, rename, or reformat them.
-- Emit exactly ONE block per edited component — never two blocks for the same component, and never more than one component inside a single block.
-- Emit a block for EVERY component that appears in a channel, and for NO other component (leave untouched components out of the output entirely).
-- Use each component's name EXACTLY as given in its input block, inside the name="..." of its opening delimiter.`;
+OUTPUT: ONLY the full updated component code — the ENTIRE file, not a diff or a snippet — with no prose and no markdown fences.`;
+
+// User message for wiring one component: its channels with their contracts, then its code.
+export const wireRequest = (component: { name: string; code: string; role?: string }, sends: WireSpec[], receives: WireSpec[]): string => {
+  const line = (s: WireSpec) => `Channel "${s.channel.id}" (${s.contract.kind}) FROM "${s.channel.from}" TO "${s.channel.to}". ${s.channel.description}\n  PAYLOAD: ${s.contract.payload}\n  EXAMPLE: ${JSON.stringify(s.contract.example)}`;
+  return `SENDS:\n${sends.length ? sends.map(line).join("\n") : "(none)"}\n\nRECEIVES:\n${receives.length ? receives.map(line).join("\n") : "(none)"}\n\nCOMPONENT "${component.name}"\nROLE: ${component.role ?? "(none)"}\nCODE:\n${component.code}`;
+};
+
+// CONTRACT agent (made when Wire is pressed): one typed data contract per channel, read from
+// both endpoints' current code, so each component can then be wired on its own.
+// Validated by validateContracts (contractChecks.ts), retried with previousError.
+export const CONTRACT_SYSTEM_PROMPT = `You define the data contract for each CHANNEL of ONE already-built UI. Afterwards, a separate agent wires each component on its own, seeing only that component and the contracts — so a contract is the only thing a channel's sender and receiver share, and it must say exactly what flows.
+
+You are given:
+- CHANNELS: one-way links, each: Channel "<id>": FROM "<A>" TO "<B>". <description>
+- COMPONENTS: each component's name, role and current code, inside <<<COMPONENT name="...">>> ... <<<END>>> blocks.
+
+For EACH channel, decide:
+- kind: "state" or "event".
+  - "state": a current value B always reflects (a selected filter, a slider value, the chosen item). It is sent when A mounts and every time it changes, and a B that mounts later receives the last value.
+  - "event": a one-off action B performs once per trigger (submit, reset, jump to an item). It is sent only when the action happens and is never replayed.
+  - Data only flows FROM A TO B; B can never ask A for anything. When the description has B requesting data from A (e.g. "when B presses Refresh, A sends its value"), make it "state": A always publishes the value, and B uses the latest one when its own control is pressed.
+- payload: a TypeScript type expression for the data, e.g. "{ progress: number /* 0-1 */; label: string }". State every unit or range as a comment inside the type. JSON data only: object types, arrays, string, number, boolean, null and string-literal unions ("'low' | 'mid' | 'high'") — never functions, any, unknown, Date, Map, Set or class instances. An "event" with nothing to carry has payload "null".
+- example: one realistic JSON value of exactly that type.
+
+FIT THE CODE: shape each payload from the state A already holds and the state B needs, using their existing names and units where they agree, so each side changes as little as possible. Carry everything the description needs and nothing more.
+
+OUTPUT: ONLY this JSON (no markdown, no prose):
+{"contracts": [{"id": "<channel id>", "kind": "state" | "event", "payload": "<type expression>", "example": <JSON value>}]}
+Exactly one entry per channel, its id copied verbatim, and no others.`;
+
+// User message for the contract agent: the channels, then each channel endpoint's code in the
+// <<<COMPONENT>>> block format.
+export const contractRequest = (channels: { id: string; from: string; to: string; description: string }[], components: { name: string; code: string; role?: string }[]): string => {
+  const onChannel = new Set(channels.flatMap((c) => [c.from, c.to]));
+  return `CHANNELS:\n${channels.map((c) => `Channel "${c.id}": FROM "${c.from}" TO "${c.to}". ${c.description}`).join("\n")}\n\nCOMPONENTS:\n`
+    + components.filter((c) => onChannel.has(c.name)).map((c) => `<<<COMPONENT name="${c.name}">>>\nROLE: ${c.role ?? "(none)"}\nCODE:\n${c.code}\n<<<END>>>`).join("\n\n");
+};
 
 /* ---------- SHARED PROTOCOL ---------- */
 

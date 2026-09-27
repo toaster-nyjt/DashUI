@@ -1,0 +1,121 @@
+{
+  "task": "1790508636151",
+  "name": "Red Newspaper",
+  "cfg": "o48off",
+  "sample": 1,
+  "channels": 6,
+  "totalSecs": 12.651,
+  "attempts": [
+    {
+      "secs": 12.651,
+      "model": "claude-opus-4-8",
+      "stop": "end_turn",
+      "inTok": 15025,
+      "outTok": 1095
+    }
+  ],
+  "ok": true,
+  "contracts": [
+    {
+      "id": "Red Newspaper: Masthead Header->Red Newspaper: Article Grid",
+      "kind": "state",
+      "payload": "{ query: string /* search keyword; empty string means no active search */ }",
+      "example": {
+        "query": "election"
+      }
+    },
+    {
+      "id": "Red Newspaper: Category Navigation Bar->Red Newspaper: Article Grid",
+      "kind": "state",
+      "payload": "{ categoryId: string /* section id, e.g. 'world', 'politics', 'business' */ }",
+      "example": {
+        "categoryId": "world"
+      }
+    },
+    {
+      "id": "Red Newspaper: Category Navigation Bar->Red Newspaper: Sidebar Most Read Panel",
+      "kind": "state",
+      "payload": "{ categoryId: string /* section id, e.g. 'world', 'politics', 'business' */ }",
+      "example": {
+        "categoryId": "business"
+      }
+    },
+    {
+      "id": "Red Newspaper: Breaking News Ticker->Red Newspaper: Lead Story Feature",
+      "kind": "event",
+      "payload": "{ id: string; headline: string; timestamp: string /* HH:MM when filed */; imageSrc: string /* image URL */; imageAlt: string; body: string /* full article text */ }",
+      "example": {
+        "id": "brk-01",
+        "headline": "Senate passes emergency infrastructure package after all-night session",
+        "timestamp": "02:14",
+        "imageSrc": "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1400&q=70",
+        "imageAlt": "Senators file out of the chamber at dawn",
+        "body": "After more than nine hours of debate, the Senate approved the package by a narrow margin, sending it to the lower chamber for final consideration."
+      }
+    },
+    {
+      "id": "Red Newspaper: Article Grid->Red Newspaper: Lead Story Feature",
+      "kind": "event",
+      "payload": "{ id: string; tag: string /* section label, e.g. 'WORLD' */; headline: string; dek: string; byline: string; imageSrc: string /* image URL */; imageAlt: string; body: string /* full article text */ }",
+      "example": {
+        "id": "s1",
+        "tag": "WORLD",
+        "headline": "Coalition Talks Collapse After Midnight Vote",
+        "dek": "Negotiators walked out of the chamber as the third draft failed to clear the floor.",
+        "byline": "By M. Halloran",
+        "imageSrc": "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=1400&q=70",
+        "imageAlt": "Empty negotiating chamber after walkout",
+        "body": "The collapse came shortly after midnight when the third draft failed to secure enough votes on the floor, leaving the coalition without a working majority."
+      }
+    },
+    {
+      "id": "Red Newspaper: Sidebar Most Read Panel->Red Newspaper: Lead Story Feature",
+      "kind": "event",
+      "payload": "{ id: string; rank: number /* 1-based position in the ranked list */; headline: string; metric: string /* readership figure, e.g. '298K views' */ }",
+      "example": {
+        "id": "a3",
+        "rank": 3,
+        "headline": "Inside the Harbor Deal That Redrew a Coastline",
+        "metric": "298K views"
+      }
+    }
+  ],
+  "channelList": [
+    {
+      "id": "Red Newspaper: Masthead Header->Red Newspaper: Article Grid",
+      "from": "Red Newspaper: Masthead Header",
+      "to": "Red Newspaper: Article Grid",
+      "description": "When the reader types a keyword into the masthead search field and submits, emit the query string; the Article Grid re-queries its story list and re-renders only articles whose headline, dek, or body matches the term, showing a 'results for X' state."
+    },
+    {
+      "id": "Red Newspaper: Category Navigation Bar->Red Newspaper: Article Grid",
+      "from": "Red Newspaper: Category Navigation Bar",
+      "to": "Red Newspaper: Article Grid",
+      "description": "When the reader clicks a section tab, emit the selected category id; the Article Grid filters and re-renders to show only stories tagged with that section and marks the tab as active."
+    },
+    {
+      "id": "Red Newspaper: Category Navigation Bar->Red Newspaper: Sidebar Most Read Panel",
+      "from": "Red Newspaper: Category Navigation Bar",
+      "to": "Red Newspaper: Sidebar Most Read Panel",
+      "description": "When the reader clicks a section tab, emit the selected category id; the Most Read panel refreshes its ranked list to the most-read stories within that section."
+    },
+    {
+      "id": "Red Newspaper: Breaking News Ticker->Red Newspaper: Lead Story Feature",
+      "from": "Red Newspaper: Breaking News Ticker",
+      "to": "Red Newspaper: Lead Story Feature",
+      "description": "When the reader clicks a scrolling breaking headline, emit that article's id and payload; the Lead Story Feature replaces its current content with the selected breaking story's headline, image, and body."
+    },
+    {
+      "id": "Red Newspaper: Article Grid->Red Newspaper: Lead Story Feature",
+      "from": "Red Newspaper: Article Grid",
+      "to": "Red Newspaper: Lead Story Feature",
+      "description": "When the reader clicks a story card, emit that article's id and full payload; the Lead Story Feature loads and displays the selected article."
+    },
+    {
+      "id": "Red Newspaper: Sidebar Most Read Panel->Red Newspaper: Lead Story Feature",
+      "from": "Red Newspaper: Sidebar Most Read Panel",
+      "to": "Red Newspaper: Lead Story Feature",
+      "description": "When the reader clicks a ranked headline, emit that article's id and payload; the Lead Story Feature loads and displays the selected story."
+    }
+  ]
+}
