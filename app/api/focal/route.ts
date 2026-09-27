@@ -1,5 +1,5 @@
 /**
- * API Route: FOCAL. After the hoist, picks the 1 or 2 library types the whole UI is recognized
+ * API Route: FOCAL. After the hoist, picks the ONE library type the whole UI is recognized
  * by ({ focal }). The caller (fetchValidFocal) validates and repairs the picks (validateFocal)
  * and re-calls with `previousError` on failure. Evidence: docs/fixtures/model-exp/FOCAL_PRIMITIVES.md.
  */
@@ -29,8 +29,8 @@ export async function POST(req: Request) {
     messages: [{ role: "user" as const, content: focalRequest(task, components, hoist.library, derivePrimitiveUsage(hoist)) + retryNote }],
   };
 
-  // Opus 5, adaptive thinking, effort low: ~1.5s here (the output is a few tokens).
-  let msg = await anthropic.messages.create({ model: "claude-opus-5", max_tokens: 8000, thinking: { type: "adaptive" }, output_config: { effort: "low" }, ...request });
+  // Opus 5, adaptive thinking, effort high (the output is a few tokens; the room is for thinking).
+  let msg = await anthropic.messages.create({ model: "claude-opus-5", max_tokens: 16000, thinking: { type: "adaptive" }, output_config: { effort: "high" }, ...request });
   if (msg.stop_reason === "refusal") {
     console.error("[focal] refusal; regenerating on claude-opus-4-8", msg.stop_details ?? "");
     msg = await anthropic.messages.create({ model: "claude-opus-4-8", max_tokens: 8000, thinking: { type: "adaptive" }, output_config: { effort: "low" }, ...request });

@@ -1,7 +1,7 @@
 'use client'
 import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
-import { XY, defaultXY, GeneratedBoxProps, ComponentDef, Placement, numGridBlocksWide, numVHTall, HoistResult, PrimitiveSet, PrimitiveFloor } from '../utils/spec';
+import { XY, defaultXY, GeneratedBoxProps, ComponentDef, Placement, numGridBlocksWide, numVHTall, HoistResult, PrimitiveSet } from '../utils/spec';
 import { COMPONENT_REGISTRY } from '../utils/componentRegistry';
 import { validateLayout, validateConnectivity, logRegistry, resolveComponent, buildChannels, validateWiring, validateStyleSheet, validateHoist, validateFocal } from '../utils/helpers';
 
@@ -15,7 +15,7 @@ const PATH_RETRIES = 3;
 const STYLE_RETRIES = 3;
 // How many times to re-ask the hoist route for a library that covers every feature
 const HOIST_RETRIES = 3;
-// How many times to re-ask the focal route for 1–2 valid focal type names
+// How many times to re-ask the focal route for a valid focal type name
 const FOCAL_RETRIES = 3;
 
 export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning, setHasEmptyTarget, canvasWidth, setCanvasWidth }
@@ -75,6 +75,10 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
   // Wiring result: leafKey -> Path-route code with the runtime bus (emit/subscribe)
   // injected. A leaf with an entry renders this in place of its generated code.
   const [wiredCode, setWiredCode] = useState<Record<string, string>>({});
+
+  // Build result: leafKey -> the code the build route generated for that leaf on the server
+  // (null = its build failed, so the box generates itself). Read by serverGen boxes.
+  const [builtCode, setBuiltCode] = useState<Record<string, string | null>>({});
 
   // Leaf keys currently being (re)wired by the Path route: they show the generation
   // shimmer while it runs (non-participant leaves stay live). Cleared when wireUI ends.
@@ -274,7 +278,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
     return null;
   };
 
-  // Calls the focal route and re-asks (feeding back the validation error) until it names 1–2 library
+  // Calls the focal route and re-asks (feeding back the validation error) until it names 1 library
   // types (a held type is repaired to its holder). [] = no focal types: every prompt stays as without them.
   const fetchValidFocal = async (task: string, components: { name: string; role?: string }[], hoist: HoistResult): Promise<string[]> => {
     let previousError: string | undefined;
@@ -303,26 +307,58 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
     return [];
   };
 
-  // Generates every library type through ONE request to the primitives route, which runs
-  // them in parallel on the server, each with its own validate-and-retry loop (one request,
-  // so the browser's per-host connection limit can't queue them). A type that never passes
-  // is left out of `code`; resolveComponent then hands its features to the leaf as null
-  // (build it yourself), so one bad primitive never costs the whole library. A failed
-  // request means no primitives at all: the UI is built by hand.
-  const fetchValidPrimitives = async (task: string, hoist: HoistResult, style: string, focal: string[]): Promise<PrimitiveSet> => {
+  // Generates the UI's primitives AND its leaves through ONE request to the build route, which
+  // runs every type in parallel on the server and starts each leaf as soon as its own types have
+  // passed or been dropped (one request, so the browser's per-host connection limit can't queue
+  // them). Primitives land in primitiveSpec and leaves in builtCode as they finish. A leaf whose
+  // build failed, or that never arrived, gets null: its box generates itself. A UI that ends with
+  // no usable primitive has its primitive set removed, as before.
+  const runBuild = async (taskID: number, task: string, hoist: HoistResult, style: string, focal: string[], leaves: { leafKey: string; prompt: string; boxSize: XY }[]) => {
+    const t0 = Date.now();
+    const got = new Set<string>();
     try {
-      const res = await fetch("/api/primitives", {
+      const res = await fetch("/api/build", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task, hoist, style, focal, taskID: taskRequest!.id }),
+        body: JSON.stringify({ task, hoist, style, focal, leaves, taskID }),
       });
-      if (!res.ok) throw new Error(`request failed (${res.status})`);
-      const { code, floors } = await res.json() as { code: Record<string, string>; floors: Record<string, PrimitiveFloor> };
-      return { hoist, code, floors, focal: focal.filter((t) => t in code) };
+      if (!res.ok || !res.body) throw new Error(`request failed (${res.status})`);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let nl;
+        while ((nl = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          const e = JSON.parse(line);
+          if (e.type === "primitive") setPrimitiveSpec((prev) => {
+            const cur = prev[taskID];
+            return cur ? { ...prev, [taskID]: { ...cur, code: { ...cur.code, [e.name]: e.code }, floors: { ...cur.floors, [e.name]: e.floor } } } : prev;
+          });
+          else if (e.type === "leaf" || e.type === "leaf-failed") {
+            got.add(e.leafKey);
+            setBuiltCode((prev) => ({ ...prev, [e.leafKey]: e.type === "leaf" ? e.code : null }));
+          }
+        }
+      }
     } catch (e) {
-      console.error("Primitive stage failed; building this UI without primitives:", e);
-      logRun(taskRequest!.id, "primitives:failed", `building this UI without primitives: ${e instanceof Error ? e.message : String(e)}`);
-      return { hoist, code: {}, floors: {}, focal: [] };
+      console.error("Build stage failed; the remaining leaves generate themselves:", e);
+      logRun(taskID, "build:failed", `the remaining leaves generate themselves: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      const missing = leaves.map((l) => l.leafKey).filter((k) => !got.has(k));
+      if (missing.length) setBuiltCode((prev) => ({ ...prev, ...Object.fromEntries(missing.map((k) => [k, null])) }));
+      setPrimitiveSpec((prev) => {
+        if (!prev[taskID] || Object.keys(prev[taskID].code).length) return prev;
+        const rest = { ...prev };
+        delete rest[taskID];
+        return rest;
+      });
+      logRun(taskID, "run:build", `build stream ended after ${((Date.now() - t0) / 1000).toFixed(1)}s${missing.length ? "; " + missing.length + " leaf box(es) generate themselves" : ""}`, { missing });
     }
   };
 
@@ -402,7 +438,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       //      Only manual boxes (no taskID) skip it and get the generate route's fallback.
       //    - HOIST: the UI's shared primitive types + each feature's types. null -> this
       //      UI is built without primitives (hand-built leaves), never aborted. FOCAL runs as
-      //      soon as the hoist returns: the 1–2 types the UI is recognized by.
+      //      soon as the hoist returns: the ONE type the UI is recognized by.
       //    - LAYOUT: tile the box interior (w x h); a single component fills it.
       const resolvedDefs = defs.map((s) =>
         JSON.parse(resolveComponent({ name: s.name, activeIdx: s.defaultActiveIdx }, defs)));
@@ -416,24 +452,18 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       if (!placements) return null; // exhausted retries; already logged
       logRun(taskRequest!.id, "run:style|hoist|layout", `done at ${secs()}${hoist ? "" : " (no hoist: hand-built UI)"}`, { resolvedDefs, placements });
 
-      // 3. Register the new presets + this UI's style. The awaited primitive step below
-      //    lets this state commit before any boxes are created, so each box mounts with a
-      //    componentRegistry prop that already contains its definition (no /api/spec
+      // 3. Register the new presets + this UI's style (+ its primitive set, empty until the build
+      //    fills it). They commit in the same batch as the parent box below, so each box mounts
+      //    with a componentRegistry prop that already contains its definition (no /api/spec
       //    re-fetch) and a styleSpec that already holds its style.
+      const taskID = taskRequest!.id;
       setComponentRegistry((prev) => [...prev, ...defs]);
-      setStyleSpec((prev) => ({ ...prev, [taskRequest!.id]: style }));
+      setStyleSpec((prev) => ({ ...prev, [taskID]: style }));
+      if (hoist) setPrimitiveSpec((prev) => ({ ...prev, [taskID]: { hoist, code: {}, floors: {}, focal } }));
 
-      // 4. PRIMITIVES: generate every hoisted type once, in this UI's style (needs both).
-      //    Stored per taskID beside the style; a UI with no usable primitive stores none,
-      //    so its leaves generate exactly as manual boxes do.
-      if (hoist) {
-        const prims = await fetchValidPrimitives(task, hoist, style, focal);
-        logRun(taskRequest!.id, "run:primitives", `done at ${secs()}`);
-        if (Object.keys(prims.code).length) setPrimitiveSpec((prev) => ({ ...prev, [taskRequest!.id]: prims }));
-      }
-
-      // 5. Wrap the placements as CHILDREN of ONE parent (group) box. Each child
-      //    keeps its local coords + autoName and self-generates on mount.
+      // 4. Wrap the placements as CHILDREN of ONE parent (group) box. Each child keeps its
+      //    local coords + autoName. With a hoist, the build route generates its code on the
+      //    server (serverGen); without one, it self-generates on mount.
       const parentKey = `group-${taskRequest!.id}`;
       const children: GeneratedBoxProps[] = placements.map((p, i) => ({
         colStart: p.colStart,
@@ -444,12 +474,23 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
         autoName: p.name, // Lets the leaf box know to self-generate
         isChild: true,
         taskID: taskRequest!.id, // Groups this UI: styleSpec lookup + bus routing + wiring
+        serverGen: !!hoist,
       }));
+
+      // 5. BUILD (with a hoist): primitives + leaves on the server, streamed in; not awaited, so
+      //    the boxes appear now and fill in as their leaves finish. Each leaf gets the component
+      //    JSON its box would send (plain features; the route maps them to types) and the box's
+      //    pixel size (block count × block size, as GeneratedBox computes it).
+      if (hoist) void runBuild(taskID, task, hoist, style, focal, children.map((c) => ({
+        leafKey: c.key,
+        prompt: resolveComponent({ name: c.autoName!, activeIdx: defs.find((d) => d.name === c.autoName)!.defaultActiveIdx }, defs),
+        boxSize: { x: (c.colEnd - c.colStart + 1) * gridBlockSize, y: (c.rowEnd - c.rowStart + 1) * gridBlockSize },
+      })));
 
       // The parent occupies the target bounds (drawn box or full window); the
       // effect appends it to elementArr (replacing the targeted empty box). It also
       // carries the taskID so the Wire action can find this UI's leaves + style.
-      logRun(taskRequest!.id, "run:boxes", `${children.length} leaf box(es) created at ${secs()}; leaves generate now`, { leaves: children.map((c) => ({ key: c.key, name: c.autoName })) });
+      logRun(taskRequest!.id, "run:boxes", `${children.length} leaf box(es) created at ${secs()}; ${hoist ? "primitives and leaves build on the server now" : "leaves generate now"}`, { leaves: children.map((c) => ({ key: c.key, name: c.autoName })) });
       return { colStart, colEnd, rowStart, rowEnd, key: parentKey, children, taskID: taskRequest!.id };
     } catch (e) {
       console.error('UI generation error:', e);
@@ -834,6 +875,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
             syncBounds={syncBounds}
             reportCode={reportCode}
             wiredCode={wiredCode}
+            builtCode={builtCode}
             wiringLeaves={wiringLeaves}
           >
 

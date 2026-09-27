@@ -1,12 +1,14 @@
 // Primitive-stage model comparison. Runs every hoisted type through the REAL app code —
 // buildPrimitiveSystemPrompt + primitiveRequest (app/api/SKILLS.ts), extractPrimitiveCode +
 // checkPrimitive (app/utils/primitiveChecks.ts), derivePrimitiveUsage/Companions (helpers.ts) — with
-// the same validate-and-retry loop as fetchValidPrimitives (3 attempts, first error fed back).
+// the same validate-and-retry loop as the build route's generatePrimitive (3 attempts, first error fed back).
 // Usage: node prim-compare.cjs --out=<dir> --model=<id> --thinking=adaptive|disabled --effort=<e> --max-tokens=<n>
 //   [--log=<task jsonl> [--run=<n>]: task, hoist and style from one logged run instead of the DJ fixtures]
 //   [--hoist=<json>: use this hoist instead (e.g. a patched one)]
 //   [--companions=1: USED WITH + prompt switches, as the route sends them; 0 = the old request]
 //   [--focal=Type,Type: these types get the FOCAL switch (needs --companions=1)]
+//   [--brief=1: CANDIDATE (not in the app) — a type used by exactly one component gets that component's
+//    genInstructions appended to its request (needs --log for the resolved defs)]
 const fs = require("fs"), path = require("path");
 const { load, ROOT } = require("./lib/load.cjs");
 const SK = load(ROOT + "/app/api/SKILLS.ts");
@@ -22,6 +24,7 @@ const MAX_TOKENS = +arg("max-tokens", "16000");
 const RETRIES = 3;
 const PRICE = { in: 5 / 1e6, out: 25 / 1e6 }; // Opus 4.8 and Opus 5: $5 / $25 per MTok
 
+const BRIEF = arg("brief", "0") === "1";
 const LOG = arg("log"), COMPANIONS = arg("companions", "0") === "1", FOCAL = arg("focal", "").split(",").filter(Boolean);
 // One log can hold several runs of a taskID; --run=<n> (1-based, default last) picks one.
 const runs = LOG ? fs.readFileSync(LOG, "utf8").trim().split("\n").map(JSON.parse)
@@ -33,6 +36,17 @@ const hoist = arg("hoist") ? JSON.parse(fs.readFileSync(arg("hoist"), "utf8")) :
 const style = logged ? logged.find((e) => e.stage === "style").style
   : fs.readFileSync(ROOT + "/docs/fixtures/dj-table.style.appearance-only.txt", "utf8");
 const usage = derivePrimitiveUsage(hoist);
+// Candidate: the using component's own description, for types used by exactly one component.
+const defs = logged ? logged.find((e) => e.stage === "run:style|hoist|layout").resolvedDefs.map((d) => (typeof d === "string" ? JSON.parse(d) : d)) : [];
+const briefFor = (t) => {
+  const comps = [...new Set((usage[t] ?? []).map((u) => u.component))];
+  const def = comps.length === 1 && defs.find((d) => d.name === comps[0]);
+  return BRIEF && def ? `
+
+COMPONENT DESCRIPTION — "${def.name}" is the only component that uses this primitive; this is how its designer described it. Use it for what THIS element shows (its other features are separate primitives):
+${def.genInstructions}` : "";
+};
+if (BRIEF) console.log("brief types:", hoist.library.map((t) => t.type).filter((t) => briefFor(t)).join(", "));
 const companions = COMPANIONS ? derivePrimitiveCompanions(hoist) : {};
 // Same system prompt the primitive route builds.
 const systemFor = (prim) => SK.buildPrimitiveSystemPrompt(COMPANIONS ? primitivePromptSwitches(prim, companions[prim.type] ?? [], hoist.library, FOCAL) : { companions: false, holds: false, heldBy: [], places: [], selfPlaced: false })
@@ -58,7 +72,7 @@ const client = new Anthropic({ apiKey: env.match(/^\s*CLAUDE_API_KEY\s*=\s*["']?
           model: MODEL, max_tokens: MAX_TOKENS,
           thinking: { type: THINKING }, output_config: { effort: EFFORT },
           system: systemFor(prim),
-          messages: [{ role: "user", content: SK.primitiveRequest(task, prim, usage[prim.type], companions[prim.type] ?? []) + retryNote }],
+          messages: [{ role: "user", content: SK.primitiveRequest(task, prim, usage[prim.type], companions[prim.type] ?? []) + briefFor(prim.type) + retryNote }],
         }).finalMessage();
         r.inTok += msg.usage.input_tokens; r.outTok += msg.usage.output_tokens;
         // Code only from text blocks; thinking blocks are counted, never read.
@@ -87,7 +101,7 @@ const client = new Anthropic({ apiKey: env.match(/^\s*CLAUDE_API_KEY\s*=\s*["']?
   const wall = (Date.now() - t0) / 1000;
   const cost = results.reduce((a, r) => a + r.inTok * PRICE.in + r.outTok * PRICE.out, 0);
   const summary = {
-    config: { MODEL, THINKING, EFFORT, MAX_TOKENS, COMPANIONS, FOCAL, LOG }, wall,
+    config: { MODEL, THINKING, EFFORT, MAX_TOKENS, COMPANIONS, FOCAL, BRIEF, LOG }, wall,
     passedFirstTry: results.filter((r) => r.firstTry).length, passed: results.filter((r) => r.passed).length,
     types: results.length, totalAttempts: results.reduce((a, r) => a + r.attempts.length, 0),
     outTokens: results.reduce((a, r) => a + r.outTok, 0), cost: +cost.toFixed(3),

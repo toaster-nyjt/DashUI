@@ -1,0 +1,32 @@
+{
+  "CharacterPortrait": {
+    "base": [
+      4,
+      4.5
+    ]
+  },
+  "Stepper": {
+    "base": [
+      7,
+      2
+    ]
+  },
+  "BodyDiagram": {
+    "base": [
+      10,
+      14
+    ]
+  },
+  "MapCanvas": {
+    "base": [
+      12,
+      9
+    ]
+  },
+  "QuestList": {
+    "base": [
+      13,
+      6
+    ]
+  }
+}

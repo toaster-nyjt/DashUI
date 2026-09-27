@@ -24,3 +24,5 @@ Findings from coherence reviews of the rendered prompts, with the decision on ea
 | 9 | "It fills a large space on screen" may inflate a focal primitive's FLOOR; every primitive already gets "detail fit for a large, standalone item". | **Kept.** Watch focal floors in runs. The focal JogWheel floor was 7×7rem; earlier runs gave 5–6rem. |
 | 10 | The focal agent might return a feature name, since USED BY prints feature names. | **Dismissed.** `validateFocal` rejects non-type names with feedback; 0 invalid in 57 calls (variant D + app prompt, `focal-check.cjs`). |
 | 11 | VISUAL GUIDELINES' spinning platter vs USE AS-IS "no wrappers". | **Kept.** Predates this review; comes from the style sheet. |
+
+**Update 2026-09-27:** the focal agent now picks exactly 1 type. The plural focal wording in leaves (review 1, rows 1 and 8) can no longer trigger.

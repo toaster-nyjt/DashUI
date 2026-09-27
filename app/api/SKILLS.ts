@@ -407,6 +407,19 @@ const floorText = (f: PrimitiveFloor): string =>
   `${f.base[0]} × ${f.base[1]}` + Object.entries(f).filter(([k]) => k !== "base")
     .map(([k, [w, h]]) => ` (${k.replace(":", " ")}: ${w} × ${h})`).join("");
 
+// A focal type's minimum size for the SIZE BUDGET, FOCAL_SHARE of the box: along its length for a
+// linear type (an orientation variant, or a floor at least 2:1), else across the box's short side.
+const FOCAL_SHARE = 0.6;
+const focalTarget = (f: PrimitiveFloor | undefined, box: { x: number; y: number }): string => {
+  if (!f) return "";
+  const pct = Math.round(FOCAL_SHARE * 100), W = (FOCAL_SHARE * box.x / 16).toFixed(1), H = (FOCAL_SHARE * box.y / 16).toFixed(1);
+  const [w, h] = f.base;
+  if (Object.keys(f).some((k) => k.startsWith("orientation:"))) return `, at least ${W}rem long if horizontal, ${H}rem if vertical (${pct}% of the box side it runs along)`;
+  if (w >= 2 * h) return `, at least ${W}rem wide (${pct}% of the box width)`;
+  if (h >= 2 * w) return `, at least ${H}rem tall (${pct}% of the box height)`;
+  return `, at least ${(FOCAL_SHARE * Math.min(box.x, box.y) / 16).toFixed(1)}rem across (${pct}% of the box's short side)`;
+};
+
 // The LAST block of a primitive leaf's prompt: every number the PRIMITIVE FLOORS check needs,
 // in one place and one unit, plus the sum to write out as a comment. `used` = the types this
 // leaf's features use; chrome = the style sheet's fixed header/footer heights in rem, when it
@@ -418,8 +431,8 @@ export const sizeBudgetBlock = (box: { x: number; y: number }, used: [string, Pr
     : "";
   return `\n\nSIZE BUDGET — every number for the PRIMITIVE FLOORS check, in rem (16px):
 - Box: ${W}rem wide × ${H}rem tall.${chromeLine}
-${used.length ? "- Floors [width × height] of the primitives your features use:\n" + used.map(([t, f]) => `    ${t}: ${floorText(f)}`).join("\n") : "- No primitive your features use has a floor to budget."}${focal.length ? `
-- Focal: ${focalNames(focal)} — budget everything else first; ${focal.length > 1 ? "they take" : "it takes"} what remains.` : ""}
+${used.length ? "- Floors [width × height] of the primitives your features use:\n" + used.map(([t, f]) => `    ${t}: ${floorText(f)}`).join("\n") : "- No primitive your features use has a floor to budget."}${focal.map((t) => `
+- Focal: ${t} — budget everything else first; it takes what remains${focalTarget(used.find(([u]) => u === t)?.[1], box)}.`).join("")}
 Write the sum FIRST, as the opening lines inside GeneratedComponent, for the main stack in each direction — every stacked part in rem (a repeated primitive as count × floor), plus gaps, padding and chrome:
     // BUDGET height: <part> + <part> + ... = <total> ≤ ${H}
     // BUDGET width: <part> + <part> + ... = <total> ≤ ${W}
@@ -610,19 +623,18 @@ export const primitiveRequest = (task: string, prim: PrimitiveType, uses: Primit
 
 /* ---------- FOCAL ---------- */
 
-// System prompt for the FOCAL route: after the hoist, picks the 1 or 2 library types the whole UI is
-// recognized by. Validated by validateFocal (1–2 exact type names; a held type is repaired to its
+// System prompt for the FOCAL route: after the hoist, picks the ONE library type the whole UI is
+// recognized by. Validated by validateFocal (exactly 1 exact type name; a held type is repaired to its
 // holder), retried with previousError. The picks switch PRIM_INTRO_FOCAL and the leaf's focal lines on.
-export const FOCAL_SYSTEM_PROMPT = `You pick the FOCAL primitives of ONE multi-component UI: the 1 or 2 elements a person looking at the whole UI sees first and recognizes it by.
+export const FOCAL_SYSTEM_PROMPT = `You pick the FOCAL primitive of ONE multi-component UI: the ONE element a person looking at the whole UI sees first and recognizes it by.
 
 You are given the task, each component's role, and the UI's primitive library: each type's name, description, and the component features built from it (USED BY).
 
-Pick a type only if it passes BOTH tests:
-- PURPOSE: the UI's main job is done through it or shown on it; without it, the UI could not do what the task asks.
-- IDENTITY: it is visually central to the UI's entire core identity — draw a small icon for this UI, and this element is in it.
-Pick 1 or 2.
+Pick a type only if it passes this test:
+- IDENTITY: it is visually central to the UI's entire core identity. When it's ambiguous, think of what takes up the most space or is used or looked at the most. It is NEVER a minor control like a button or knob.
+Pick exactly 1.
 
-OUTPUT: ONLY this JSON (no markdown, no prose): {"focal": ["<exact type name>", ...]}`;
+OUTPUT: ONLY this JSON (no markdown, no prose): {"focal": ["<exact type name>"]}`;
 
 // User message for the focal route: task, each component's role, the library with its derived usage.
 export const focalRequest = (task: string, components: { name: string; role?: string }[], library: PrimitiveType[], usage: Record<string, PrimitiveUse[]>): string =>
@@ -688,7 +700,8 @@ export function FitText(props: FitTextProps) {
       const mid = (lo + hi) / 2;
       if (fits(mid)) { best = mid; lo = mid; } else hi = mid;
     }
-    best = Math.floor(best * 4) / 4;
+    // Down to a 4px step from 12px (fewer, consistent sizes); quarter pixels below, for legibility.
+    best = best >= 12 ? Math.floor(best / 4) * 4 : Math.floor(best * 4) / 4;
     text.style.fontSize = best + "px";
     setSize(best);
   }, []);

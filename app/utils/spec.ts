@@ -35,6 +35,9 @@ export type GeneratedBoxProps = {
   // style), the completion barrier (when have all this UI's leaves generated?),
   // and the runtime bus (relay messages only between leaves of the same UI).
   taskID?: number;
+  // Set by the UI generator on a leaf whose code the build route generates on the server: the
+  // box waits for builtCode[key] instead of generating itself (null there = generate yourself).
+  serverGen?: boolean;
 }
 
 // One component's placement on the block grid (inclusive coords), returned by
@@ -109,8 +112,8 @@ export type PrimitiveCompanions = { component: string; types: PrimitiveType[] };
 export type PrimitiveFloor = Record<string, [number, number]>;
 
 // Everything the primitive stage produced for one generated UI, stored per taskID beside
-// its style. code = each type's generated source; floors = its parsed FLOOR; focal = the 1–2
-// types the UI is recognized by (focal route; [] when it failed).
+// its style. code = each type's generated source; floors = its parsed FLOOR; focal = the ONE
+// type the UI is recognized by (focal route; [] when it failed).
 export type PrimitiveSet = {
   hoist: HoistResult;
   code: Record<string, string>;

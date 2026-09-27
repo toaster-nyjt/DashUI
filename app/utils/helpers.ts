@@ -87,6 +87,15 @@ export function leafFeatures(prims: PrimitiveSet, component: string, active: str
 export const leafLibrary = (prims: PrimitiveSet): PrimitiveType[] =>
   prims.hoist.library.filter((t) => t.type in prims.code);
 
+// A component's own primitive types: the types its features map to (only the given features, if
+// any), plus the types those surfaces hold. The same set buildLeafSystem gives the leaf.
+export function ownTypes(hoist: HoistResult, component: string, features?: string[]): string[] {
+  const fmap = hoist.components.find((c) => c.name === component)?.features ?? {};
+  const own = new Set((features ?? Object.keys(fmap)).flatMap((f) => fmap[f] ?? []));
+  for (const t of hoist.library) if (own.has(t.type)) heldTypeNames(t).forEach((h) => own.add(h));
+  return [...own];
+}
+
 // Validates the connectivity wiring in a planner result: every effector/target
 // connection must reference a sibling component by EXACT name (and never itself).
 // Connection names are the join key used by layout (adjacency) and the future
@@ -281,9 +290,9 @@ export const primitivePromptSwitches = (prim: PrimitiveType, companions: Primiti
   };
 };
 
-export const FOCAL_MAX = 2;
+export const FOCAL_MAX = 1;
 
-// Validates a focal-route result: 1 to FOCAL_MAX distinct library type names. A held type is
+// Validates a focal-route result: 1 to FOCAL_MAX (now exactly 1) distinct library type names. A held type is
 // repaired to its holder (the surface is the focal element). Returns the repaired picks, or the
 // first violation to feed back on retry (see fetchValidFocal).
 export function validateFocal(result: unknown, library: PrimitiveType[]): { focal?: string[]; repairs?: string[]; error?: string } {
@@ -298,7 +307,7 @@ export function validateFocal(result: unknown, library: PrimitiveType[]): { foca
   }))];
   for (const n of focal)
     if (!library.some((t) => t.type === n)) return { error: `"${n}" is not a library type name; use exact type names from the PRIMITIVE LIBRARY.` };
-  if (focal.length < 1 || focal.length > FOCAL_MAX) return { error: `Pick 1 or ${FOCAL_MAX} types; got ${focal.length}.` };
+  if (focal.length < 1 || focal.length > FOCAL_MAX) return { error: FOCAL_MAX === 1 ? `Pick exactly 1 type; got ${focal.length}.` : `Pick 1 to ${FOCAL_MAX} types; got ${focal.length}.` };
   return { focal, repairs };
 }
 

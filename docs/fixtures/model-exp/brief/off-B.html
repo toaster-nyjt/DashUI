@@ -1,0 +1,518 @@
+<title>off-B</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { color-scheme: dark; }
+  body { background: #070707; color: #d4d4d4; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; }
+  .wrap { padding: 20px 16px 60px; max-width: 1400px; margin: 0 auto; }
+  h1 { font-size: 18px; margin: 0 0 4px; color: #fbbf24; }
+  .sub { font-size: 12px; color: #737373; margin-bottom: 20px; }
+  section { border-top: 1px solid #262626; padding: 18px 0; }
+  h2 { font-size: 15px; margin: 0 0 2px; color: #f5f5f5; }
+  .desc { font-size: 12px; color: #737373; margin: 0 0 4px; }
+  .contract { font: 11px ui-monospace, monospace; color: #a3a3a3; margin: 0 0 12px; overflow-x: auto; white-space: pre; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
+  .vlabel { font: 11px ui-monospace, monospace; color: #fbbf24; width: 100%; margin: 4px 0 -6px; }
+  .cell { display: flex; flex-direction: column; gap: 4px; }
+  .cap { font-size: 10px; color: #525252; }
+  .slot { position: relative; overflow: hidden; border-radius: 10px; outline: 1px dashed #3f3f46;
+          background: linear-gradient(to bottom, rgba(38,38,38,.7), rgba(23,23,23,.9)); }
+  .err { color: #fb7185; font: 11px ui-monospace, monospace; padding: 6px; white-space: pre-wrap; }
+  .log { position: fixed; right: 12px; bottom: 12px; background: #171717; border: 1px solid #333; border-radius: 8px;
+         padding: 6px 10px; font: 11px ui-monospace, monospace; color: #fbbf24; max-width: 60vw; }
+  .ctrls { font-size: 12px; margin-bottom: 16px; }
+</style>
+<div id="root"></div>
+<script>
+const { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } = React;
+function FitText(props) {
+    const { children, className, wrap = true, align = "center" } = props;
+    const boxRef = useRef(null);
+    const layerRef = useRef(null);
+    const textRef = useRef(null);
+    const [size, setSize] = useState(0);
+    // unsized: the parent gives the box no definite size, so there is nothing to fit to.
+    const [unsized, setUnsized] = useState(false);
+    const lastKey = useRef("");
+    const fit = useCallback(() => {
+        const box = boxRef.current, layer = layerRef.current, text = textRef.current;
+        if (!box || !layer || !text)
+            return;
+        // Hidden (display:none or detached): no layout to measure yet; try again when shown.
+        if (!box.getClientRects().length)
+            return;
+        // Measure with the text out of flow, so the box's size is the parent's, never the text's.
+        layer.style.position = "absolute";
+        const W = box.clientWidth, H = box.clientHeight;
+        if (!W || !H) {
+            // No definite size: show the text at its inherited size instead of shrinking it away.
+            layer.style.position = "static";
+            text.style.fontSize = "";
+            lastKey.current = "";
+            setSize(0);
+            setUnsized(true);
+            return;
+        }
+        setUnsized(false);
+        // Parents may re-render every frame (meters, playheads): skip when nothing changed.
+        const key = W + "x" + H + "|" + text.textContent;
+        if (key === lastKey.current)
+            return;
+        lastKey.current = key;
+        const fits = (px) => {
+            text.style.fontSize = px + "px";
+            return text.scrollWidth <= W - 1 && text.offsetHeight <= H - 1;
+        };
+        const cur = parseFloat(text.style.fontSize) || 0;
+        // Fast path: the current size still fits and one step larger doesn't.
+        if (cur > 0 && fits(cur) && !fits(cur + 0.25)) {
+            text.style.fontSize = cur + "px";
+            return;
+        }
+        let lo = 1, hi = Math.max(2, H), best = 1;
+        for (let i = 0; i < 14; i++) {
+            const mid = (lo + hi) / 2;
+            if (fits(mid)) {
+                best = mid;
+                lo = mid;
+            }
+            else
+                hi = mid;
+        }
+        // Down to a 4px step from 12px (fewer, consistent sizes); quarter pixels below, for legibility.
+        best = best >= 12 ? Math.floor(best / 4) * 4 : Math.floor(best * 4) / 4;
+        text.style.fontSize = best + "px";
+        setSize(best);
+    }, []);
+    useLayoutEffect(fit);
+    useEffect(() => {
+        const box = boxRef.current;
+        if (!box || typeof ResizeObserver === "undefined")
+            return;
+        const ro = new ResizeObserver(() => fit());
+        ro.observe(box);
+        return () => ro.disconnect();
+    }, [fit]);
+    const justify = align === "start" ? "justify-start" : align === "end" ? "justify-end" : "justify-center";
+    return (React.createElement("div", { ref: boxRef, className: "relative h-full w-full min-w-0 min-h-0 overflow-hidden " + (className || "") },
+        React.createElement("div", { ref: layerRef, className: "inset-0 flex items-center " + justify, style: { position: unsized ? "static" : "absolute" } },
+            React.createElement("span", { ref: textRef, style: {
+                    fontSize: size ? size + "px" : undefined,
+                    lineHeight: 1.1,
+                    display: "inline-block",
+                    whiteSpace: wrap ? "normal" : "nowrap",
+                    maxWidth: wrap ? "calc(100% - 2px)" : undefined,
+                    wordBreak: "keep-all",
+                    overflowWrap: "normal",
+                    textAlign: align === "start" ? "left" : align === "end" ? "right" : "center",
+                } }, children))));
+}
+
+function CharacterPortrait(props) {
+    const uid = useRef("cportrait-" + Math.random().toString(36).slice(2)).current;
+    const [loaded, setLoaded] = useState(false);
+    const [failed, setFailed] = useState(false);
+    const floor = CharacterPortrait_MIN.base;
+    useEffect(() => {
+        setLoaded(false);
+        setFailed(false);
+    }, [props.src]);
+    const corner = (pos) => (React.createElement("div", { className: "absolute " + pos + " w-[18%] h-[18%] pointer-events-none", style: { minWidth: 0, minHeight: 0 } },
+        React.createElement("svg", { viewBox: "0 0 24 24", className: "w-full h-full overflow-visible", preserveAspectRatio: "none" },
+            React.createElement("path", { d: "M1 9 L1 1 L9 1", fill: "none", stroke: "rgb(253,224,71)", strokeWidth: "2.5", strokeLinecap: "square", opacity: "0.85" }))));
+    return (React.createElement("div", { className: "relative h-full w-full overflow-hidden", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" } },
+        React.createElement("div", { className: "absolute inset-0 rounded-md overflow-hidden bg-black/60 border border-cyan-400/20 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)]" },
+            React.createElement("div", { className: "absolute inset-0" },
+                !failed && (React.createElement("img", { src: props.src, alt: props.alt || "", draggable: false, onLoad: () => setLoaded(true), onError: () => setFailed(true), className: "absolute inset-0 h-full w-full object-cover select-none transition-all duration-700 ease-out " +
+                        (loaded ? "opacity-100 scale-100 blur-0" : "opacity-0 scale-105 blur-sm"), style: { filter: "saturate(1.15) contrast(1.08)" } })),
+                React.createElement("div", { className: "absolute inset-0 pointer-events-none mix-blend-screen opacity-30", style: {
+                        background: "radial-gradient(120% 90% at 50% 0%, rgba(34,211,238,0.35), rgba(0,0,0,0) 60%)"
+                    } }),
+                React.createElement("div", { className: "absolute inset-0 pointer-events-none", style: {
+                        background: "radial-gradient(100% 100% at 50% 45%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.75) 100%)"
+                    } })),
+            (failed || !props.src) && (React.createElement("div", { className: "absolute inset-0 flex items-center justify-center" },
+                React.createElement("svg", { viewBox: "0 0 48 48", preserveAspectRatio: "xMidYMid meet", className: "h-[62%] w-[62%] opacity-60" },
+                    React.createElement("defs", null,
+                        React.createElement("linearGradient", { id: uid + "-ghost", x1: "0", y1: "0", x2: "0", y2: "1" },
+                            React.createElement("stop", { offset: "0%", stopColor: "rgb(34,211,238)", stopOpacity: "0.55" }),
+                            React.createElement("stop", { offset: "100%", stopColor: "rgb(217,70,239)", stopOpacity: "0.25" }))),
+                    React.createElement("circle", { cx: "24", cy: "17", r: "8", fill: "none", stroke: "url(#" + uid + "-ghost)", strokeWidth: "2" }),
+                    React.createElement("path", { d: "M8 42 C10 30 17 27 24 27 C31 27 38 30 40 42", fill: "none", stroke: "url(#" + uid + "-ghost)", strokeWidth: "2", strokeLinecap: "round" })))),
+            React.createElement("div", { className: "absolute inset-0 pointer-events-none opacity-[0.35]", style: {
+                    backgroundImage: "repeating-linear-gradient(to bottom, rgba(0,0,0,0.55) 0px, rgba(0,0,0,0.55) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 3px)"
+                } }),
+            React.createElement("div", { className: "absolute inset-0 pointer-events-none overflow-hidden" },
+                React.createElement("div", { className: "absolute left-0 w-full h-[22%] opacity-40", style: {
+                        background: "linear-gradient(to bottom, rgba(34,211,238,0) 0%, rgba(34,211,238,0.5) 50%, rgba(34,211,238,0) 100%)",
+                        animation: uid + "-sweep 4.2s linear infinite"
+                    } })),
+            React.createElement("div", { className: "absolute inset-0 pointer-events-none mix-blend-screen" },
+                React.createElement("div", { className: "absolute left-0 w-full h-[3%] top-[32%] bg-fuchsia-500/50", style: { animation: uid + "-glitch 5.1s steps(1,end) infinite" } }),
+                React.createElement("div", { className: "absolute left-0 w-full h-[2%] top-[64%] bg-cyan-400/50", style: { animation: uid + "-glitch 3.7s steps(1,end) infinite 1.3s" } })),
+            React.createElement("div", { className: "absolute inset-[3%] border border-cyan-400/20 rounded-sm pointer-events-none" })),
+        corner("top-0 left-0"),
+        React.createElement("div", { className: "absolute top-0 right-0 w-[18%] h-[18%] pointer-events-none rotate-90" },
+            React.createElement("svg", { viewBox: "0 0 24 24", className: "w-full h-full", preserveAspectRatio: "none" },
+                React.createElement("path", { d: "M1 9 L1 1 L9 1", fill: "none", stroke: "rgb(253,224,71)", strokeWidth: "2.5", opacity: "0.85" }))),
+        React.createElement("div", { className: "absolute bottom-0 right-0 w-[18%] h-[18%] pointer-events-none rotate-180" },
+            React.createElement("svg", { viewBox: "0 0 24 24", className: "w-full h-full", preserveAspectRatio: "none" },
+                React.createElement("path", { d: "M1 9 L1 1 L9 1", fill: "none", stroke: "rgb(253,224,71)", strokeWidth: "2.5", opacity: "0.85" }))),
+        React.createElement("div", { className: "absolute bottom-0 left-0 w-[18%] h-[18%] pointer-events-none -rotate-90" },
+            React.createElement("svg", { viewBox: "0 0 24 24", className: "w-full h-full", preserveAspectRatio: "none" },
+                React.createElement("path", { d: "M1 9 L1 1 L9 1", fill: "none", stroke: "rgb(253,224,71)", strokeWidth: "2.5", opacity: "0.85" }))),
+        React.createElement("div", { className: "absolute top-[6%] right-[7%] h-[6%] w-[6%] rounded-full bg-fuchsia-500 shadow-[0_0_10px_rgba(217,70,239,0.8)] animate-pulse pointer-events-none" }),
+        React.createElement("style", null, "@keyframes " + uid + "-sweep{0%{top:-25%}100%{top:105%}}" +
+            "@keyframes " + uid + "-glitch{0%,92%{opacity:0;transform:translateX(0)}93%{opacity:1;transform:translateX(-4%)}95%{opacity:1;transform:translateX(5%)}97%{opacity:0;transform:translateX(0)}100%{opacity:0}}")));
+}
+const CharacterPortrait_MIN = { "base": [4, 4.5] };
+
+const BodyDiagram_MIN = { "base": [10, 14] };
+function BodyDiagram(props) {
+    const uid = useRef("bodydiagram-" + Math.random().toString(36).slice(2)).current;
+    const pts = props.points || [];
+    const [t, setT] = useState(0);
+    useEffect(() => {
+        let raf = 0;
+        let start = 0;
+        const loop = (ts) => {
+            if (!start)
+                start = ts;
+            setT(((ts - start) / 3200) % 1);
+            raf = requestAnimationFrame(loop);
+        };
+        raf = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(raf);
+    }, []);
+    const SILHOUETTE = "M50 4 C56 4 60 9 60 15 C60 19.5 58.2 22.6 55.6 24.4 L55.6 27.5 " +
+        "C64 29 72 32 76 36 C80 40 82 48 83 58 L85 74 C85.6 78 82 80 80.4 76.4 L77 66 " +
+        "L76 86 C76 94 74.6 101 74 110 L72.6 140 C72.4 145 73 152 73.6 160 L74.4 176 " +
+        "C74.8 181 68 182 67.2 177 L64 158 L60 132 L56 132 L52 158 L48.8 177 " +
+        "C48 182 41.2 181 41.6 176 L42.4 160 C43 152 43.6 145 43.4 140 L42 110 " +
+        "C41.4 101 40 94 40 86 L39 66 L35.6 76.4 C34 80 30.4 78 31 74 L33 58 " +
+        "C34 48 36 40 40 36 C44 32 52 29 60.4 27.5 L60.4 24.4 Z";
+    return (React.createElement("div", { className: "relative h-full w-full overflow-hidden", style: { minWidth: BodyDiagram_MIN.base[0] + "rem", minHeight: BodyDiagram_MIN.base[1] + "rem" } },
+        React.createElement("svg", { className: "absolute inset-0 h-full w-full", viewBox: "0 0 100 190", preserveAspectRatio: "xMidYMid meet" },
+            React.createElement("defs", null,
+                React.createElement("linearGradient", { id: uid + "-body", x1: "0", y1: "0", x2: "0", y2: "1" },
+                    React.createElement("stop", { offset: "0%", stopColor: "rgba(34,211,238,0.30)" }),
+                    React.createElement("stop", { offset: "55%", stopColor: "rgba(34,211,238,0.10)" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "rgba(217,70,239,0.18)" })),
+                React.createElement("linearGradient", { id: uid + "-scan", x1: "0", y1: "0", x2: "0", y2: "1" },
+                    React.createElement("stop", { offset: "0%", stopColor: "rgba(253,224,71,0)" }),
+                    React.createElement("stop", { offset: "45%", stopColor: "rgba(253,224,71,0.85)" }),
+                    React.createElement("stop", { offset: "55%", stopColor: "rgba(34,211,238,0.85)" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "rgba(34,211,238,0)" })),
+                React.createElement("pattern", { id: uid + "-grid", width: "6", height: "6", patternUnits: "userSpaceOnUse" },
+                    React.createElement("path", { d: "M6 0 L0 0 L0 6", fill: "none", stroke: "rgba(34,211,238,0.16)", strokeWidth: "0.3" })),
+                React.createElement("clipPath", { id: uid + "-clip" },
+                    React.createElement("path", { d: SILHOUETTE })),
+                React.createElement("filter", { id: uid + "-glow", x: "-60%", y: "-60%", width: "220%", height: "220%" },
+                    React.createElement("feGaussianBlur", { stdDeviation: "1.6", result: "b" }),
+                    React.createElement("feMerge", null,
+                        React.createElement("feMergeNode", { in: "b" }),
+                        React.createElement("feMergeNode", { in: "SourceGraphic" })))),
+            React.createElement("rect", { x: "0", y: "0", width: "100", height: "190", fill: "url(#" + uid + "-grid)", opacity: "0.35" }),
+            React.createElement("path", { d: SILHOUETTE, fill: "url(#" + uid + "-body)" }),
+            React.createElement("g", { clipPath: "url(#" + uid + "-clip)" },
+                React.createElement("rect", { x: "0", y: "0", width: "100", height: "190", fill: "url(#" + uid + "-grid)", opacity: "0.9" }),
+                [36, 52, 70, 90, 110, 132, 152].map((y, i) => (React.createElement("line", { key: "c-" + i, x1: "0", x2: "100", y1: y, y2: y, stroke: "rgba(34,211,238,0.22)", strokeWidth: "0.4" }))),
+                React.createElement("line", { x1: "50", x2: "50", y1: "0", y2: "190", stroke: "rgba(217,70,239,0.3)", strokeWidth: "0.4" }),
+                React.createElement("rect", { x: "0", width: "100", height: "26", y: -26 + t * 216, fill: "url(#" + uid + "-scan)", opacity: "0.35" })),
+            React.createElement("path", { d: SILHOUETTE, fill: "none", stroke: "rgba(34,211,238,0.85)", strokeWidth: "0.9", strokeLinejoin: "round", filter: "url(#" + uid + "-glow)" }),
+            React.createElement("path", { d: "M50 26 L50 110", fill: "none", stroke: "rgba(253,224,71,0.55)", strokeWidth: "0.6", strokeDasharray: "3 3" },
+                React.createElement("animate", { attributeName: "stroke-dashoffset", from: "0", to: "-12", dur: "1.2s", repeatCount: "indefinite" }))),
+        pts.length > 0 && (React.createElement("svg", { className: "absolute inset-0 h-full w-full", viewBox: "0 0 100 100", preserveAspectRatio: "none" }, pts.map((p, i) => {
+            const x = Math.max(0, Math.min(1, p.x)) * 100;
+            const y = Math.max(0, Math.min(1, p.y)) * 100;
+            const mx = x < 50 ? x + (50 - x) * 0.55 : x - (x - 50) * 0.55;
+            return (React.createElement("g", { key: "ln-" + p.id + "-" + i },
+                React.createElement("path", { d: "M" + x + " " + y + " L" + mx + " " + y + " L50 " + y, fill: "none", stroke: "rgba(34,211,238,0.45)", strokeWidth: "0.4", vectorEffect: "non-scaling-stroke", strokeDasharray: "2 2" },
+                    React.createElement("animate", { attributeName: "stroke-dashoffset", from: "8", to: "0", dur: "1.6s", repeatCount: "indefinite" }))));
+        }))),
+        pts.map((p, i) => (React.createElement("div", { key: "nd-" + p.id + "-" + i, className: "absolute", style: {
+                left: Math.max(0, Math.min(1, p.x)) * 100 + "%",
+                top: Math.max(0, Math.min(1, p.y)) * 100 + "%",
+                transform: "translate(-50%,-50%)",
+            } },
+            React.createElement("span", { className: "block h-1.5 w-1.5 rounded-full bg-fuchsia-500 shadow-[0_0_10px_rgba(217,70,239,0.9)] animate-pulse" })))),
+        React.createElement("div", { className: "absolute inset-0 grid grid-rows-[100%] grid-cols-[100%] [&>*]:[grid-area:1/1]" }, props.children)));
+}
+
+const MapCanvas_MIN = { "base": [12, 9] };
+function MapCanvas(props) {
+    const uid = useRef("mapcanvas-" + Math.random().toString(36).slice(2)).current;
+    const minZ = props.minZoom ?? 1;
+    const maxZ = props.maxZoom ?? 6;
+    const z = Math.min(maxZ, Math.max(minZ, props.zoom));
+    const surfRef = useRef(null);
+    const ptrs = useRef(new Map()).current;
+    const gesture = useRef(null);
+    const [dragging, setDragging] = useState(false);
+    const clamp01 = (v) => Math.min(1, Math.max(0, v));
+    const emit = (nz, cx, cy) => {
+        props.onViewportChange({
+            zoom: Math.min(maxZ, Math.max(minZ, nz)),
+            center: { x: clamp01(cx), y: clamp01(cy) },
+        });
+    };
+    const rect = () => surfRef.current ? surfRef.current.getBoundingClientRect() : null;
+    const onDown = (e) => {
+        const el = e.currentTarget;
+        el.setPointerCapture(e.pointerId);
+        ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        const r = rect();
+        if (!r)
+            return;
+        if (ptrs.size === 1) {
+            gesture.current = { mode: "pan", sx: e.clientX, sy: e.clientY, cx: props.center.x, cy: props.center.y, w: r.width, h: r.height };
+            setDragging(true);
+        }
+        else if (ptrs.size === 2) {
+            const pts = Array.from(ptrs.values());
+            const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+            gesture.current = { mode: "pinch", d0: d, z0: z };
+        }
+    };
+    const onMove = (e) => {
+        if (!ptrs.has(e.pointerId))
+            return;
+        ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        const g = gesture.current;
+        if (!g)
+            return;
+        if (g.mode === "pan" && ptrs.size === 1) {
+            const dx = (e.clientX - g.sx) / g.w / z;
+            const dy = (e.clientY - g.sy) / g.h / z;
+            emit(z, g.cx - dx, g.cy - dy);
+        }
+        else if (g.mode === "pinch" && ptrs.size >= 2) {
+            const pts = Array.from(ptrs.values());
+            const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+            emit(g.z0 * (d / g.d0), props.center.x, props.center.y);
+        }
+    };
+    const onUp = (e) => {
+        ptrs.delete(e.pointerId);
+        try {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+        catch (err) { }
+        if (ptrs.size === 0) {
+            gesture.current = null;
+            setDragging(false);
+        }
+        else if (ptrs.size === 1) {
+            const r = rect();
+            const p = Array.from(ptrs.values())[0];
+            if (r)
+                gesture.current = { mode: "pan", sx: p.x, sy: p.y, cx: props.center.x, cy: props.center.y, w: r.width, h: r.height };
+        }
+    };
+    const tf = "translate(50%,50%) scale(" + z + ") translate(" +
+        (-props.center.x * 100) + "%," + (-props.center.y * 100) + "%)";
+    const grid = [];
+    for (let i = 1; i < 12; i++)
+        grid.push(i / 12);
+    return (React.createElement("div", { className: "relative h-full w-full overflow-hidden rounded-md border border-cyan-400/15 bg-black/60 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)]", style: { minWidth: MapCanvas_MIN.base[0] + "rem", minHeight: MapCanvas_MIN.base[1] + "rem" } },
+        React.createElement("div", { ref: surfRef, onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp, className: "absolute inset-0 touch-none " + (dragging ? "cursor-grabbing" : "cursor-grab") },
+            React.createElement("div", { className: "absolute inset-0 " + (dragging ? "" : "transition-transform duration-300 ease-out"), style: { transform: tf, transformOrigin: "0 0" } },
+                React.createElement("svg", { className: "absolute inset-0 h-full w-full", viewBox: "0 0 100 100", preserveAspectRatio: "none" },
+                    React.createElement("defs", null,
+                        React.createElement("linearGradient", { id: uid + "-bg", x1: "0", y1: "0", x2: "1", y2: "1" },
+                            React.createElement("stop", { offset: "0%", stopColor: "#0b1418" }),
+                            React.createElement("stop", { offset: "50%", stopColor: "#05080a" }),
+                            React.createElement("stop", { offset: "100%", stopColor: "#0d0a14" })),
+                        React.createElement("radialGradient", { id: uid + "-core", cx: "0.5", cy: "0.5", r: "0.5" },
+                            React.createElement("stop", { offset: "0%", stopColor: "rgba(34,211,238,0.22)" }),
+                            React.createElement("stop", { offset: "100%", stopColor: "rgba(34,211,238,0)" }))),
+                    React.createElement("rect", { x: "0", y: "0", width: "100", height: "100", fill: "url(#" + uid + "-bg)" }),
+                    React.createElement("circle", { cx: "50", cy: "48", r: "34", fill: "url(#" + uid + "-core)" }),
+                    React.createElement("path", { d: "M0 62 L22 55 L38 66 L60 58 L80 70 L100 63 L100 100 L0 100 Z", fill: "rgba(217,70,239,0.07)", stroke: "rgba(217,70,239,0.3)", strokeWidth: "0.3", vectorEffect: "non-scaling-stroke" }),
+                    React.createElement("path", { d: "M8 8 L40 12 L46 34 L20 40 Z", fill: "rgba(34,211,238,0.05)", stroke: "rgba(34,211,238,0.28)", strokeWidth: "0.3", vectorEffect: "non-scaling-stroke" }),
+                    React.createElement("path", { d: "M58 14 L92 20 L88 44 L62 40 Z", fill: "rgba(253,224,71,0.04)", stroke: "rgba(253,224,71,0.25)", strokeWidth: "0.3", vectorEffect: "non-scaling-stroke" }),
+                    React.createElement("g", { stroke: "rgba(34,211,238,0.10)", strokeWidth: "0.25", vectorEffect: "non-scaling-stroke" },
+                        grid.map((g, i) => (React.createElement("line", { key: "v" + i, x1: g * 100, y1: "0", x2: g * 100, y2: "100" }))),
+                        grid.map((g, i) => (React.createElement("line", { key: "h" + i, x1: "0", y1: g * 100, x2: "100", y2: g * 100 })))),
+                    React.createElement("g", { stroke: "rgba(34,211,238,0.35)", strokeWidth: "1", vectorEffect: "non-scaling-stroke", fill: "none" },
+                        React.createElement("path", { d: "M0 47 L34 47 L46 58 L100 58" }),
+                        React.createElement("path", { d: "M52 0 L52 36 L64 48 L64 100" }),
+                        React.createElement("path", { d: "M0 22 L28 22 L40 12" }),
+                        React.createElement("path", { d: "M18 100 L18 66 L44 66" })),
+                    React.createElement("g", { stroke: "rgba(253,224,71,0.25)", strokeWidth: "0.5", vectorEffect: "non-scaling-stroke", fill: "none" },
+                        React.createElement("path", { d: "M0 80 L100 80" }),
+                        React.createElement("path", { d: "M82 0 L82 100" }))),
+                (props.regions ?? []).map((r) => (React.createElement("div", { key: r.id, className: "absolute -translate-x-1/2 -translate-y-1/2", style: { left: r.x * 100 + "%", top: r.y * 100 + "%" } },
+                    React.createElement("div", { className: "whitespace-nowrap text-[0.6rem] font-normal uppercase tracking-[0.15em] leading-none text-cyan-300/60", style: { transform: "scale(" + (1 / z) + ")" } }, r.label)))),
+                React.createElement("div", { className: "absolute inset-0 grid grid-rows-[100%] grid-cols-[100%] [&>*]:[grid-area:1/1]" }, props.children))),
+        React.createElement("div", { className: "pointer-events-none absolute inset-0" },
+            React.createElement("div", { className: "absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_3px] opacity-40" }),
+            React.createElement("div", { className: "absolute left-0 top-0 h-3 w-3 border-l border-t border-yellow-300/60" }),
+            React.createElement("div", { className: "absolute right-0 top-0 h-3 w-3 border-r border-t border-yellow-300/60" }),
+            React.createElement("div", { className: "absolute bottom-0 left-0 h-3 w-3 border-b border-l border-yellow-300/60" }),
+            React.createElement("div", { className: "absolute bottom-0 right-0 h-3 w-3 border-b border-r border-yellow-300/60" }),
+            React.createElement("div", { className: "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" },
+                React.createElement("div", { className: "h-4 w-4 rounded-full border border-fuchsia-400/50 shadow-[0_0_10px_rgba(217,70,239,0.5)]" })),
+            React.createElement("div", { className: "absolute bottom-1 right-1 rounded-full border border-fuchsia-400/40 bg-black/70 px-2 py-0.5 text-[0.6rem] uppercase tracking-[0.15em] leading-none text-cyan-300/70" }, "x" + z.toFixed(2)))));
+}
+
+
+const h = React.createElement;
+const LIB = [{"type":"CharacterPortrait","description":"Displays a character's portrait image in a framed viewport; purely visual readout, no interaction.","props":{"src":"string","alt?":"string"}},{"type":"BodyDiagram","description":"Anatomical silhouette surface on which slot elements are placed in normalized 0-1 coordinates of the diagram's own box.","props":{"children?":"EquipmentSlot","points?":"{ id: string; x: number; y: number }[]"}},{"type":"MapCanvas","description":"Pannable/zoomable stylized map surface; child markers and routes are placed in normalized 0-1 map coordinates. Emits viewport changes on pan/zoom.","props":{"zoom":"number","minZoom?":"number","maxZoom?":"number","center":"{ x: number; y: number }","onViewportChange":"(v: { zoom: number; center: { x: number; y: number } }) => void","regions?":"{ id: string; label: string; x: number; y: number }[]","children?":"MapMarker | RoutePath"}}];
+let logSet = null;
+const log = (m) => logSet && logSet(m + "  @" + new Date().toLocaleTimeString());
+
+/* ---- sample data ---- */
+const wave = Array.from({ length: 600 }, (_, i) => {
+  const beat = Math.pow(Math.max(0, Math.sin(i / 600 * Math.PI * 64)), 6);
+  const env = 0.35 + 0.35 * Math.sin(i / 600 * Math.PI * 3) ** 2;
+  return Math.min(1, env * (0.5 + 0.5 * Math.random()) + beat * 0.5) * (i % 2 ? 1 : -1);
+});
+const grid = Array.from({ length: 33 }, (_, i) => i / 32);
+const TREE = [
+  { id: "lib", label: "Library", children: [
+    { id: "house", label: "House", children: [{ id: "deep", label: "Deep House" }, { id: "tech", label: "Tech House" }] },
+    { id: "techno", label: "Techno" }, { id: "dnb", label: "Drum & Bass" } ] },
+  { id: "crates", label: "Crates", children: [{ id: "warmup", label: "Warm-up Set" }, { id: "peak", label: "Peak Time" }] },
+  { id: "hist", label: "History" } ];
+const flatTree = (ns, p) => ns.flatMap((n) => [{ id: n.id, label: n.label, parentId: p }, ...flatTree(n.children || [], n.id)]);
+const TRACK = [
+  { title: "One More Time", artist: "Daft Punk", bpm: 123, key: "8B", duration: "5:20" },
+  { title: "Strobe", artist: "deadmau5", bpm: 128, key: "4A", duration: "10:37" },
+  { title: "Innerbloom", artist: "RÜFÜS DU SOL", bpm: 122, key: "11A", duration: "9:38" },
+  { title: "Opus", artist: "Eric Prydz", bpm: 126, key: "6A", duration: "9:03" },
+  { title: "Cola", artist: "CamelPhat & Elderbrook", bpm: 122, key: "5A", duration: "3:46" },
+  { title: "Losing It", artist: "FISHER", bpm: 125, key: "10A", duration: "4:08" },
+  { title: "Pjanoo", artist: "Eric Prydz", bpm: 126, key: "7A", duration: "7:02" },
+  { title: "Gecko", artist: "Oliver Heldens", bpm: 124, key: "9B", duration: "3:31" } ];
+const COLUMNS = ["Title", "Artist", "BPM", "Key", "Time"].map((l) => ({ id: l.toLowerCase(), label: l }));
+const FX = ["Echo", "Reverb", "Filter", "Flanger", "Phaser", "Bitcrush"].map((l) => ({ id: l.toLowerCase(), label: l }));
+
+/* ---- contract parsing ---- */
+const isFn = (t) => t.includes("=>");
+const members = (t) => { const m = [...t.matchAll(/'([^']*)'/g)].map((x) => x[1]); return m.length > 1 && !t.includes("{") ? m : null; };
+const fieldsOf = (t) => [...t.matchAll(/(\w+)\??\s*:/g)].map((x) => x[1]);
+function sampleArray(name, t) {
+  if (name === "data") return wave;
+  if (name === "beatGrid") return grid;
+  if (name === "steps") return [0, 25, 50, 75, 100];
+  if (/^string\[\]$/.test(t.trim())) return ["title", "artist", "bpm", "key", "duration"];
+  const f = fieldsOf(t);
+  if (f.includes("children")) return TREE;
+  if (f.includes("parentId")) return flatTree(TREE);
+  if (f.includes("cells")) return TRACK.map((r, i) => ({ id: "t" + i, cells: Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v)])) }));
+  const extra = f.filter((k) => k !== "id" && k !== "label");
+  if (extra.length) return TRACK.map((r, i) => ({ id: "t" + i, label: r.title, ...Object.fromEntries(extra.map((k) => [k, r[k] ?? "—"])) }));
+  return FX;
+}
+function sample(name, t, c) {
+  const u = members(t);
+  if (u) return u[0];
+  if (/\[\]\s*$/.test(t.trim())) return sampleArray(name, t);
+  if (t.includes("ReactNode")) return "PLAY";
+  if (t.trim().startsWith("{")) { const o = {}; for (const k of fieldsOf(t)) { const m = t.match(new RegExp(k + "\\??\\s*:\\s*([^;}]+)")); o[k] = m && members(m[1]) ? members(m[1])[0] : (k === "field" ? "bpm" : ""); } return o; }
+  if (t === "boolean") return false;
+  if (t.includes("number") && t.includes("string")) return "128.00";
+  if (t === "number") {
+    if (name === "min") return 0; if (name === "max") return 100;
+    if (name === "value") return has(c, "min") ? 35 : 0.4;
+    if (name === "zoom") return 1; if (name === "playhead") return 0.3;
+    return 0.6;
+  }
+  if (t === "string") {
+    if (name === "placeholder") return "Search tracks…";
+    if (name === "field") return "bpm";
+    if (name === "value") return has(c, "options") ? null : (has(c, "onChange") ? "" : "128.00");
+    return "text";
+  }
+  return null;
+}
+const has = (c, k) => k in c || (k + "?") in c;
+const bare = (k) => k.replace(/\?$/, "");
+
+function buildVariations(t) {
+  const c = t.props, base = {}, vars = [{}];
+  for (const [k0, ty] of Object.entries(c)) {
+    const k = bare(k0), opt = k0.endsWith("?");
+    if (isFn(ty)) { if (opt) vars.push({ ["__cb_" + k]: true }); continue; }
+    const v = sample(k, ty, c);
+    if (!opt || (k === "children" && !has(c, "value")) || (k === "value" && has(c, "children"))) base[k] = v;
+    else vars.push({ [k]: v });
+    const u = members(ty); if (u) u.slice(opt ? 0 : 1).forEach((m) => vars.push({ [k]: m }));
+    if (ty === "boolean") vars.push({ [k]: true });
+    if (Array.isArray(v) && !opt && ["data", "options", "nodes", "rows", "items"].includes(k)) vars.push({ [k]: [] });
+    if (k === "steps") vars.push({ steps: [0.5, 1, 2, 4], min: 0.5, max: 4, value: 1 });
+    if (k === "children") { if (has(c, "value")) vars.push({ children: v }); vars.push({ children: "HEADPHONE CUE" }, { children: undefined }); }
+    if (k === "value" && typeof v === "string" && v === "128.00") vars.push({ value: "-03:42" }, { value: "One More Time — Daft Punk (Extended Mix)" });
+    if (k === "value" && ty.includes("number") && ty.includes("string")) vars.push({ value: "-03:42" }, { value: "One More Time — Daft Punk (Extended Mix)" });
+  }
+  if (has(c, "options") && base.value === null) base.value = (base.options[0] || {}).id ?? "";
+  if (base.options && base.options === TREE) base.value = "deep";
+  if (base.options && base.value && typeof base.value === "object" && "field" in base.value) base.options = COLUMNS;
+  if (has(c, "level")) base.__animate = "level"; else if (has(c, "playhead")) base.__animate = "playhead";
+  const seen = new Set();
+  return { base, vars: vars.filter((v) => { const s = JSON.stringify(v); if (seen.has(s)) return false; seen.add(s); return true; }) };
+}
+
+const SLOTS = [["small", 72, 72], ["large", 240, 240], ["wide", 320, 64], ["tall", 64, 240]];
+
+class Boundary extends React.Component {
+  constructor(p) { super(p); this.state = { e: null }; }
+  static getDerivedStateFromError(e) { return { e }; }
+  render() { return this.state.e ? h("div", { className: "err" }, String(this.state.e.message || this.state.e)) : this.props.children; }
+}
+
+function Harness({ t, init }) {
+  const [s, set] = useState(init);
+  useEffect(() => {
+    if (!init.__animate) return;
+    const id = setInterval(() => set((p) => init.__animate === "level"
+      ? { ...p, level: Math.max(0, Math.min(1, 0.55 + 0.35 * Math.sin(Date.now() / 180) + 0.1 * Math.random())) }
+      : { ...p, playhead: (p.playhead + 0.002) % 1 }), 60);
+    return () => clearInterval(id);
+  }, []);
+  const props = {};
+  for (const [k, v] of Object.entries(s)) if (!k.startsWith("__") && v !== undefined) props[k] = v;
+  for (const [k0, ty] of Object.entries(t.props)) {
+    const k = bare(k0);
+    if (!isFn(ty)) continue;
+    if (k0.endsWith("?") && !s["__cb_" + k]) continue;
+    props[k] = (...a) => {
+      log(t.type + "." + k + "(" + a.map((x) => JSON.stringify(x)).join(", ") + ")");
+      if (k === "onChange") set((p) => ("on" in p ? { ...p, on: a[0] } : { ...p, value: a[0] }));
+      if (k === "onScrub" && "playhead" in s && a[0] >= 0 && a[0] <= 1) set((p) => ({ ...p, playhead: a[0] }));
+      if (k === "onPress" && "active" in s) set((p) => ({ ...p, active: !p.active }));
+    };
+  }
+  const C = window[t.type];
+  return C ? h(C, props) : h("div", { className: "err" }, "missing " + t.type);
+}
+
+function App() {
+  const [msg, setMsg] = useState("interact with any primitive — callbacks log here");
+  const [scale, setScale] = useState(1);
+  logSet = setMsg;
+  const only = location.hash.slice(1).split(",").filter(Boolean);
+  const label = (v) => { const e = Object.entries(v).map(([k, x]) => k.startsWith("__cb_") ? k.slice(5) + ": fn" : k + ": " + (Array.isArray(x) ? "[" + x.length + "]" : JSON.stringify(x))); return e.length ? e.join(", ") : "base"; };
+  return h("div", { className: "wrap" },
+    h("h1", null, "off-B"),
+    h("div", { className: "sub" }, "Samples and variations derived from each contract. Dashed outline = the slot a leaf would give it."),
+    h("div", { className: "ctrls" }, "slot scale ",
+      h("input", { type: "range", min: 0.5, max: 2, step: 0.1, value: scale, onChange: (e) => setScale(+e.target.value) }), " " + scale.toFixed(1) + "×"),
+    LIB.filter((t) => !only.length || only.includes(t.type)).map((t) => {
+      const { base, vars } = buildVariations(t);
+      return h("section", { key: t.type },
+        h("h2", null, t.type), h("p", { className: "desc" }, t.description),
+        h("div", { className: "contract" }, JSON.stringify(t.props)),
+        vars.map((v, vi) => h("div", { className: "row", key: vi },
+          h("div", { className: "vlabel" }, label(v)),
+          SLOTS.map(([n, w, hh]) => h("div", { className: "cell", key: n },
+            h("div", { className: "slot", style: { width: w * scale, height: hh * scale } },
+              h(Boundary, null, h(Harness, { t, init: { ...base, ...v } }))),
+            h("div", { className: "cap" }, n + " " + Math.round(w * scale) + "×" + Math.round(hh * scale)))))));
+    }),
+    h("div", { className: "log" }, msg));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>

@@ -35,7 +35,7 @@ Both flows converge on the same endpoint: a box's component is resolved to JSON 
   | layout | `claude-opus-4-8` | default | 16000 | — |
   | style | `claude-opus-4-8` | default | 4000 | — |
   | hoist | `claude-opus-5` | adaptive / `low` | 64000 | once on Opus 4.8, adaptive / `low` |
-  | focal | `claude-opus-5` | adaptive / `low` | 8000 | once on Opus 4.8, adaptive / `low` |
+  | focal | `claude-opus-5` | adaptive / `high` | 16000 | once on Opus 4.8, adaptive / `low` |
   | primitives | `claude-opus-5` | adaptive / `low` | 64000 | once on Opus 4.8, thinking off / `max` |
   | generate (leaves) | `claude-opus-5` | adaptive / `low` | 64000 | once on Opus 4.8, thinking off / `max` |
   | path | `claude-opus-4-8` | thinking off / `max` | 32000 | — |
@@ -85,26 +85,34 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
      primitive library plus each feature's primitive types (§14). Validated by
      `validateHoist` and retried. `null` after the retries → this UI is built without
      primitives (hand-built leaves); the UI is never aborted. As soon as the hoist returns,
-     **FOCAL** (`fetchValidFocal` → `POST /api/focal`) picks the 1 or 2 library types the whole UI
+     **FOCAL** (`fetchValidFocal` → `POST /api/focal`) picks the ONE library type the whole UI
      is recognized by (§14), still inside this parallel stage.
    - **LAYOUT** — tile the region interior `w × h`. A single component skips the route and
      fills the box; multiple components go through `fetchValidLayout` → `POST /api/layout`
      → `Placement[]` (LOCAL coords), validated and retried.
 3. **REGISTER** — `setComponentRegistry(prev => [...prev, ...defs])` and
-   `setStyleSpec(prev => ({ ...prev, [taskRequest.id]: style }))`. The await in step 4 lets
-   both commit *before* any box is created.
-4. **PRIMITIVES** — `fetchValidPrimitives` → ONE `POST /api/primitives {task, hoist, style, focal}`,
-   which generates every library type in parallel on the server, each checked and retried
-   (§14). Result stored as `primitiveSpec[taskID]` (`PrimitiveSet`: hoist, code, floors, focal). A
-   type that never passes is left out, and its features are hand-built.
-5. **PLACE** — `runUIGeneration` *returns* ONE parent group box (placements become its
-   `children`, carrying local coords + `autoName`); the effect appends it to `elementArr`,
-   replacing the targeted empty box if any. (§8)
-6. **SELF-GENERATE** — each leaf `GeneratedBox` with `props.autoName` runs a mount effect →
-   `handleUpdateNameAndSend(autoName)` → `resolveComponent(instance, registry,
-   primitiveSpec[taskID])` (features come out type-mapped) → `handleSend` with the usable
-   library + floors → `/api/generate` stream → post-processor → `Preview` renders it with
-   the UI's `/primitives.tsx`.
+   `setStyleSpec(prev => ({ ...prev, [taskRequest.id]: style }))`, plus an empty
+   `primitiveSpec[taskID]` when there is a hoist. They commit in the same batch as the parent box.
+4. **PLACE** — `runUIGeneration` *returns* ONE parent group box (placements become its
+   `children`, carrying local coords + `autoName`, and `serverGen` when there is a hoist); the
+   effect appends it to `elementArr`, replacing the targeted empty box if any. (§8) The boxes
+   appear now and show the shimmer until their code arrives.
+5. **BUILD** (with a hoist) — `runBuild` → ONE `POST /api/build {task, hoist, style, focal, leaves}`
+   (not awaited). `leaves` holds each leaf's plain `resolveComponent` JSON and its box size in px.
+   The route streams events (NDJSON) as things finish:
+   - it generates every library type in parallel, each checked and retried (§14), and sends each
+     one as it passes into `primitiveSpec[taskID]`. A type that never passes is dropped, and its
+     features are hand-built;
+   - it starts each leaf as soon as all of that leaf's own types have passed or been dropped, with
+     the prompt the client path would build (type-mapped features, a dropped type → `null`);
+   - it sends each finished leaf into `builtCode[leafKey]`, which the `serverGen` box renders.
+   A leaf whose build fails, or never arrives, gets `null` and its box generates itself (step 6).
+   A UI that ends with no usable primitive has its primitive set removed.
+6. **SELF-GENERATE** (no hoist, a failed build, or any later regeneration) — the leaf
+   `GeneratedBox` runs `handleUpdateNameAndSend(autoName)` → `resolveComponent(instance, registry,
+   primitiveSpec[taskID])` → `handleSend` → `/api/generate` stream. `Preview` renders every
+   leaf with only its own primitives in `/primitives.tsx` (`ownTypes`), so a type that finishes
+   later never reloads it.
 
 ### Validation, retries and fallbacks (every stage)
 | Stage | Deterministic check | Attempts | When it never passes |
@@ -112,14 +120,16 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
 | plan | `validateConnectivity` (every connection names a real sibling, never itself) | 3 (`PLAN_RETRIES`) | UI aborted (no boxes) |
 | style | `validateStyleSheet` (appearance only; chrome height is the only size) | 3 (`STYLE_RETRIES`) | last sheet used anyway |
 | hoist | `validateHoist` (every component/feature covered verbatim, types valid/unique/used, JSX-safe names, held names real, holder states its unit, every held type has a placer) | 3 (`HOIST_RETRIES`); refusal → once on Opus 4.8 | UI built by hand (no primitives) |
-| focal | `validateFocal` (1 or 2 distinct library type names); a held type is repaired to its holder | 3 (`FOCAL_RETRIES`); refusal → once on Opus 4.8 | no focal types; every prompt as without them |
+| focal | `validateFocal` (exactly 1 library type name); a held type is repaired to its holder | 3 (`FOCAL_RETRIES`); refusal → once on Opus 4.8 | no focal types; every prompt as without them |
 | layout | `validateLayout` (exact tiling: no gaps, overlaps, out-of-bounds) | 3 (`LAYOUT_RETRIES`) | UI aborted |
-| primitives (each type) | `repairSyntax` first, then `checkPrimitive`: compiles, one `export function <Type>`, no imports/default export, prefixed names, no hard-coded SVG ids / ResizeObserver / redefined FitText / unanchored cq units / % padding, valid floor (`parsePrimitiveFloor`), and `checkPlacement` for holders and held types | 3 (`PRIMITIVE_RETRIES`); refusal → once on Opus 4.8 | type dropped; its features become `null` (hand-built) |
-| leaves | `repairSyntax` (compile guarantee), then `sanitizeLeaf` (post-processor) | 1 + one regeneration if repair can't make it compile; refusal → once on Opus 4.8 | logged `syntaxStillBroken` |
+| build: primitives (each type) | `repairSyntax` first, then `checkPrimitive`: compiles, one `export function <Type>`, no imports/default export, prefixed names, no hard-coded SVG ids / ResizeObserver / redefined FitText / unanchored cq units / % padding, valid floor (`parsePrimitiveFloor`), and `checkPlacement` for holders and held types | 3 (`PRIMITIVE_RETRIES`); refusal → once on Opus 4.8 | type dropped; its features become `null` (hand-built) |
+| leaves (build or generate route, shared `leafGen.ts`) | `repairSyntax` (compile guarantee), then `sanitizeLeaf` (post-processor) | 1 + one regeneration if repair can't make it compile; refusal → once on Opus 4.8 | logged `syntaxStillBroken`; a leaf whose build throws generates itself |
 | path (wiring) | `validateWiring` (every channel id in both endpoints' code) | 3 (`PATH_RETRIES`) | no wiring applied |
 
 Measured on a DJ Table run (2026-09-25): about 222s end to end (plan 64s, style/hoist/layout 44s,
-primitives 46s, leaves 68s).
+primitives 46s, leaves 68s). Since the build route (2026-09-27), primitives and leaves overlap. Replays of logged runs (`build-replay.cjs`) end 0–42s sooner:
+- a leaf starts when its own types finish;
+- no browser connection queue.
 
 ---
 
@@ -197,9 +207,12 @@ which must **never render in any form**. This is what enforces `GENERATE_SYSTEM_
 
 **Primitive pipeline (most recent work, §14)**
 - `app/api/hoist/route.ts` — `POST /api/hoist`: resolved components → `HoistResult`.
-- `app/api/focal/route.ts` — `POST /api/focal`: task + component roles + hoist → `{ focal }`, the 1–2 types the UI is recognized by.
-- `app/api/primitives/route.ts` — `POST /api/primitives`: every library type generated in
-  parallel on the server; returns `{ code, floors }` for the types that passed.
+- `app/api/focal/route.ts` — `POST /api/focal`: task + component roles + hoist → `{ focal }`, the ONE type the UI is recognized by.
+- `app/api/build/route.ts` — `POST /api/build`: one UI's primitives (all in parallel) and leaves
+  (each as its own types finish), streamed back as NDJSON events. Replaced `/api/primitives`.
+- `app/utils/leafGen.ts` (server-only) — one leaf's pipeline (`prepareLeaf`, `finishLeaf`,
+  `generateLeaf`): prompt + logs, refusal fallback, compile guarantee, post-processor. Shared by
+  the generate and build routes.
 - `app/api/log/route.ts` — `POST /api/log` (dev only): client verdicts into the run log (§13).
 - `app/utils/primitiveGen.ts` (server-only) — `generatePrimitive`: one type, model call +
   refusal fallback + checks + 3-attempt retry.
@@ -219,8 +232,8 @@ which must **never render in any form**. This is what enforces `GENERATE_SYSTEM_
   `primitiveRequest`, `FIT_TEXT_SOURCE`, `primitiveLibraryBlock`, `sizeBudgetBlock`, the
   `buildGenerateSystemPrompt` / `buildComponentProtocol` builders (with `_BASE`/`_PRIM`
   rule variants), and the appearance-only `STYLE_SYSTEM_PROMPT`.
-- `app/components/SpatialGrid.tsx` — `fetchValidStyle`, `fetchValidHoist`,
-  `fetchValidPrimitives`, `primitiveSpec` state, `logRun`, stage timings.
+- `app/components/SpatialGrid.tsx` — `fetchValidStyle`, `fetchValidHoist`, `fetchValidFocal`,
+  `runBuild` (the build stream), `primitiveSpec` and `builtCode` state, `logRun`, stage timings.
 - `app/components/GeneratedBox.tsx` / `app/utils/useGetCode.ts` — pass the UI's primitives
   and run-log identity to `/api/generate`; `useGetCode` swaps in code after the replace marker.
 - `app/components/Preview.tsx` — injects `/primitives.tsx` (FitText + the UI's primitives).
@@ -321,9 +334,9 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
 
 ## 5. Design decisions & reasoning (the "6 risks")
 
-1. **Async commit before self-gen.** `setComponentRegistry` / `setStyleSpec` are queued before the
-   `await fetchValidPrimitives` (or, with no hoist, in the same batch as the parent box), so the
-   registry, style and primitives commit no later than the boxes mount, so each box's mount effect finds its definition (no
+1. **Async commit before self-gen.** `setComponentRegistry` / `setStyleSpec` (and the empty
+   `primitiveSpec` entry) are queued in the same batch as the parent box, so the registry and style
+   commit no later than the boxes mount, so each box's mount effect finds its definition (no
    `/api/spec` re-fetch). The box mount effect *is* the post-commit trigger.
 2. **Boxes self-trigger** via the `autoName` mount effect (manual boxes leave
    `autoName` undefined → no-op).
@@ -934,10 +947,11 @@ Every generated UI writes one file, `logs/task-<taskID>.jsonl` (gitignored), wit
 
 | Stage | What it records |
 |---|---|
-| `run:start` / `run:plan` / `run:style\|hoist\|layout` / `run:primitives` / `run:boxes` | Task, bounds, elapsed time per stage, resolved defs, placements, leaf keys |
+| `run:start` / `run:plan` / `run:style\|hoist\|layout` / `run:boxes` / `run:build` | Task, bounds, elapsed time per stage, resolved defs, placements, leaf keys |
 | `plan`, `layout`, `style`, `hoist` | Full model output (defs, placements, sheet, library + feature map); raw text when it didn't parse; tokens, time |
-| `primitive` | Per type per attempt (written by `/api/primitives`): contract, used-by, companions, `focal` (true for a focal type), `syntaxRepairs`, `holds` (types it holds) / `heldBy` (its holders), check errors, parsed floor, code, model (shows a refusal fallback), tokens, time |
+| `primitive` | Per type per attempt (written by `/api/build`): contract, used-by, companions, `focal` (true for a focal type), `syntaxRepairs`, `holds` (types it holds) / `heldBy` (its holders), check errors, parsed floor, code, model (shows a refusal fallback), tokens, time |
 | `focal` / `focal:valid|rejected|exhausted` | The picks (and held-type repairs), model, tokens, time |
+| `leaf:ready` / `leaf:failed` / `build:done` / `build:failed` | Build route: when a leaf's own types settled (and which), a leaf whose build threw, the build's total time, a failed stream |
 | `primitives:done` | Usable and dropped types, `focal`, `held` (holder → held types), attempts per type, all floors, stage time |
 | `leaf:start` | Resolved spec (mapped features, `[]` structural, `null` hand-built), prompt mode (primitives only / + hand-built / base), library types, `held` (its library's holders), `focal` (the UI's focal types this leaf uses), floors, box size, the full system prompt |
 | `leaf:done` | Raw output, final code, what the post-processor removed and added, syntax repairs / regeneration (`syntaxRepairs`, `syntaxRegenerated`, `syntaxStillBroken`), stop reason, refusal fallback, tokens, time |
@@ -957,7 +971,7 @@ Built 2026-09-24/25 from `docs/PRIMITIVE_HOIST_PLAN (1).md` (Feature 1). The pla
    - no layout, chrome or styling types.
 
    **`[]` = structural**: an arrangement of the component's other features, with nothing of its own. `validateHoist` checks every component and feature key verbatim, known types, no unused or duplicate types, and valid JSX identifiers that don't shadow React or globals.
-2. **Primitives** (`/api/primitives` → `generatePrimitive`, `PRIMITIVE_SYSTEM_PROMPT` + the UI's style sheet). One call per type, all in parallel on the server. There's one browser request for the whole stage, because Chrome's 6-connections-per-host limit queued them otherwise. Each call gets the type's contract plus `derivePrimitiveUsage` (every component/feature that uses it), which carries the domain context a generic name lacks. A primitive is:
+2. **Primitives** (`/api/build` → `generatePrimitive`, `PRIMITIVE_SYSTEM_PROMPT` + the UI's style sheet). One call per type, all in parallel on the server. There's one browser request for the whole stage, because Chrome's 6-connections-per-host limit queued them otherwise. Each call gets the type's contract plus `derivePrimitiveUsage` (every component/feature that uses it), which carries the domain context a generic name lacks. A primitive is:
    - controlled, label-free and content-free;
    - size-fluid (fills its slot, draws in relative units, SVG viewBox, no measured pixels);
    - built so every union value and optional prop is its own designed variant;
@@ -984,19 +998,17 @@ Built 2026-09-24/25 from `docs/PRIMITIVE_HOIST_PLAN (1).md` (Feature 1). The pla
 
    Why: in-flow `h-full w-full` roots stacked the map's markers out of view, and the map's pan handler captured their clicks. Without a holder, every prompt is unchanged. Evidence: `docs/fixtures/model-exp/HELD_PRIMITIVES_COMPARISON.md`.
 
-   **Focal types.** As soon as the hoist returns, the focal route picks the 1 or 2 library types that pass two tests:
-   - PURPOSE: the UI's main job is done through it or shown on it.
-   - IDENTITY: it is visually central to the UI's core identity, the element that would be in the UI's icon.
+   **Focal types.** As soon as the hoist returns, the focal route picks the ONE library type that passes the IDENTITY test: it is visually central to the UI's entire core identity. When that's ambiguous, the model is told to think of what takes up the most space or is used or looked at the most, and that it is "NEVER a minor control like a button or knob". (The first version also had a PURPOSE test and allowed 1 or 2 picks; see plan §0.1.)
 
-   The route uses `FOCAL_SYSTEM_PROMPT` on Opus 5 `low` and takes about 1.5s. `validateFocal` accepts 1–2 exact type names and repairs a held type to its holder. The picks are switches, so with none, every prompt is byte-identical:
+   The route uses `FOCAL_SYSTEM_PROMPT` on Opus 5, effort `high` since 2026-09-27; it took about 1.5s at `low`, and `high` hasn't been measured. `validateFocal` accepts exactly 1 exact type name and repairs a held type to its holder. The picks are switches, so with none, every prompt is byte-identical:
    - A focal primitive gets `PRIM_INTRO_FOCAL` at the end of the opening paragraph: it's a focal point, it fills a large space, build it at the highest detail.
    - A leaf that uses a focal type gets three lines:
      - at the end of its opening: "X is a FOCAL POINT of the whole UI: render the other parts smaller and make X the largest element in this component — its size dominates the layout, make it MASSIVE" (reworded 2026-09-27 from "X as big as possible"; not yet measured);
      - a PRIMITIVE FLOORS clause: X is never the one compacted, reduced or dropped;
-     - a SIZE BUDGET line: budget everything else first; X takes what remains.
+     - a SIZE BUDGET line per focal type: budget everything else first; X takes what remains, at least 60% of the box (`FOCAL_SHARE`): across the short side for a roughly square type, along its length for a linear one (an orientation variant, or a floor at least 2:1). Added 2026-09-27, not yet measured.
 
    What to expect:
-   - The model always uses both picks. It picks the JogWheel every time on DJ and the map on Cyberpunk, but the second pick is often a plain control (Fader, StatBar).
+   - Picks exactly 1 since 2026-09-27; "1 or 2" was always filled with a second, often a plain control such as Fader or StatBar. Measured on the current prompt, 2 samples per logged hoist: JogWheel 24/24 on DJ, AttitudeIndicator 2/2, the tuner 2/2 (RotaryDial or FrequencyScale), and the map 15/18 on Cyberpunk (StatBar 3/18). Measured at `low`, before the latest wording ("or is used or looked at the most", "like a button or knob").
    - Focal primitives write 12–54% more code and take 13–126% longer (a Fader, with one retry), so a focal type that was already slow lengthens the primitive stage: 44s → 92s on DJ, 44s → 62s on Cyberpunk. Leaves are unaffected (−29% to +4% code).
    - Focal JogWheels render at about 2× their area in the decks.
 
@@ -1035,6 +1047,7 @@ Hand-written, never generated. Primitives route all display text and face `child
 - **The text sits in an absolutely positioned layer**, so the box's size always comes from its parent, never from the text. Before this, a FitText in a box with no definite size shrank its own box to about 1px (SortHeaders labels were invisible). It also crashed with an infinite update loop in a definite `flex-1` column.
 - **With no definite size** (visible, measures zero), it shows the text at its inherited size instead of shrinking it away.
 - **A hidden box is skipped until shown**, and the fallback isn't sticky: fitting resumes when the box gets a size.
+- **Sizes snap down to a 4px step from 12px** (2026-09-27), and to quarter pixels below that, to keep small text legible. It rounds down because the search already found the largest size that fits. On a DJ render, Deck A went from 10 label sizes to 6 and Deck B from 7 to 4, with no new overflow. Labels of different lengths in same-size buttons can still differ by a step, since there's no grouping.
 
 Verified old vs new on every FitText span: `docs/fixtures/model-exp/PRIMITIVE_MODEL_COMPARISON.md`, "Follow-up fixes". `docs/SKILLS.primitives.reference.ts` keeps the old version as the comparison baseline.
 
@@ -1049,6 +1062,8 @@ Verified old vs new on every FitText span: `docs/fixtures/model-exp/PRIMITIVE_MO
   - `fill={"url(#" + uid + "-glow)"}` fixed the JogWheel syntax errors.
 - **Make every check stated as a rule in the prompt.** Percentage padding was checked everywhere but banned only around FitText, which cost a retry on most primitives.
 - **Keep changes general** (no rules about one specific primitive), keep additions short, and swap rule variants rather than adding exceptions.
+- **Simpler can be better:** the focal picker chose the map on Cyberpunk 2/18 times with two tests, and 15/18 with one test plus "think of what takes up the most space".
+- **Primitives take content as data, not prose:** giving a one-off primitive its component's `genInstructions` changed nothing (`COMPONENT_BRIEF.md`), because the hoist already routes those details into the contract (a map's `regions` with labels). To make a primitive show more, extend its contract.
 
 ### Latency (DJ Table, 2026-09-25)
 About 222s end to end: plan 64s, style/hoist/layout 44s (hoist-bound), primitives 46s (the slowest type), leaves 68s (the decks).

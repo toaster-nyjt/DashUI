@@ -1,6 +1,6 @@
 import { GeneratedBoxProps, XY, defaultXY, ComponentInstance, ComponentDef, PrimitiveSet, LeafPrimitives } from '../utils/spec';
 import { useGetCode } from '../utils/useGetCode';
-import { resolveComponent, leafLibrary } from '../utils/helpers';
+import { resolveComponent, leafLibrary, ownTypes } from '../utils/helpers';
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import ComponentSelector from './ComponentSelector';
 import CustomizationSelector from './CustomizationSelector';
@@ -28,7 +28,7 @@ let pendingDrillPath: string[] | null = null;
 // Created from drag interaction in Spacial Grid, 
 // Contains a bunch of low level visual layer transformations for the boxes,
 // and the main logic behind the prompt routing
-export default function GeneratedBox({ props, path, selectionPath, setSelectionPath, blockSize, gridRef, interactMode, componentRegistry, setComponentRegistry, styleSpec, primitiveSpec, isChild = false, markNonEmpty, syncBounds, reportCode, wiredCode, wiringLeaves }
+export default function GeneratedBox({ props, path, selectionPath, setSelectionPath, blockSize, gridRef, interactMode, componentRegistry, setComponentRegistry, styleSpec, primitiveSpec, isChild = false, markNonEmpty, syncBounds, reportCode, wiredCode, builtCode, wiringLeaves }
   : {
       props : GeneratedBoxProps,
       // This box's path from its top-level root, e.g. [rootKey] or [rootKey, childKey].
@@ -61,6 +61,9 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
       // leafKey -> wired code from the Path route. When this leaf has an entry, it
       // renders the wired code (bus.emit/on injected) in place of its generated code.
       wiredCode? : Record<string, string>
+      // leafKey -> the code the build route generated on the server for a serverGen leaf (null =
+      // its build failed: generate yourself). The box waits for its entry instead of generating.
+      builtCode? : Record<string, string | null>
       // Leaf keys currently being rewired by the Path route -> show the generation
       // shimmer while wiring runs (this leaf isn't running its own useGetCode stream).
       wiringLeaves? : Set<string>
@@ -145,7 +148,10 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   // Wired code (from the Path route) takes precedence over this leaf's own
   // generated code once its UI has been wired. undefined until then.
   const wired = wiredCode?.[props.key];
-  const codeToShow = wired ?? generatedCode;
+  // A serverGen leaf shows its built code until it regenerates itself (customization).
+  const built = builtCode?.[props.key];
+  const awaitingBuild = !!props.serverGen && built === undefined;
+  const codeToShow = wired ?? (generatedCode || built || "");
 
   // True while the Path route is rewiring this leaf (it isn't running its own gen
   // stream, so isGenerating stays false) — drives the shimmer for wiring feedback.
@@ -191,9 +197,17 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
     taskID !== undefined ? primitiveSpec[taskID] : undefined;
   const leafPrims = (prims? : PrimitiveSet) : LeafPrimitives | undefined =>
     prims && { library: leafLibrary(prims), floors: prims.floors, focal: prims.focal };
+  // Preview gets only this leaf's own primitives, so a type that finishes later (the build
+  // streams them in) never changes its files and reloads it.
+  const previewPrims = (prims? : PrimitiveSet) : Record<string, string> | undefined => {
+    const name = instance.name || props.autoName;
+    if (!prims || !name) return prims?.code;
+    return Object.fromEntries(ownTypes(prims.hoist, name).filter((t) => t in prims.code).map((t) => [t, prims.code[t]]));
+  };
 
   // Finds and generates existing component in the registry or generates the ComponentDef for a custom component, sets the instance
-  const handleUpdateNameAndSend = async (name : string, taskID? : number) => {
+  // send=false: set the instance only (a serverGen leaf, whose code the build route generates).
+  const handleUpdateNameAndSend = async (name : string, taskID? : number, send = true) => {
     let def = componentRegistry.find((d) => d.name === name) as ComponentDef;
     let registryList = componentRegistry; // To add in the new generated def immediately to use in handleSend without waiting for state setter
 
@@ -227,6 +241,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
     // Next instance state for this box
     const next : ComponentInstance = { name, activeIdx: def.defaultActiveIdx }; // Initial active features get set to the default idxs
     setInstance(next);
+    if (!send) return;
 
     // Calls code setter with rebuild instuction prompt, initiates new code gen stream
     // THIS IS WHERE ALL COMPONENT DEFINITIONS -> CODE. style (if any) keeps this box visually
@@ -287,10 +302,18 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
   // registry (the generator committed setComponentRegistry before creating boxes)
   useEffect(() => {
     if (props.autoName) {
-      handleUpdateNameAndSend(props.autoName, props.taskID);
+      handleUpdateNameAndSend(props.autoName, props.taskID, !props.serverGen);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // A serverGen leaf's build result: report the code for wiring, or (null) generate itself.
+  useEffect(() => {
+    if (!props.serverGen || built === undefined) return;
+    if (built === null) handleUpdateNameAndSend(props.autoName!, props.taskID);
+    else if (props.autoName) reportCode?.(props.key, built);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [built]);
 
   // Targeting groundwork: the first time this box generates it stops being an
   // empty drop-target. Only top-level boxes live in elementArr, so only they report.
@@ -627,11 +650,12 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
                 primitiveSpec={primitiveSpec}
                 reportCode={reportCode}
                 wiredCode={wiredCode}
+                builtCode={builtCode}
                 wiringLeaves={wiringLeaves}
               />
             ))}
           </div>
-        ) : (isGenerating || isWiring) ? (
+        ) : (isGenerating || isWiring || awaitingBuild) ? (
           <div className="flex justify-center items-center animate-vertical-shimmer size-full rounded-lg bg-neutral-900 border border-white/5">
             {/* Generating (own stream) | Wiring (Path route) | Empty | Preview */}
             <span>{isWiring && !isGenerating ? 'wiring...' : 'generating...'}</span>
@@ -647,7 +671,7 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
             boxSize={boxSize}
             isSideDragging={isSideDragging}
             taskID={props.taskID}
-            primitives={resolvePrims(props.taskID)?.code}
+            primitives={previewPrims(resolvePrims(props.taskID))}
           />
         )}
 

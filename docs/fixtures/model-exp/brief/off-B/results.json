@@ -1,0 +1,138 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000,
+      "COMPANIONS": true,
+      "FOCAL": [],
+      "BRIEF": false,
+      "LOG": "../../logs/task-1790493337400.jsonl"
+    },
+    "wall": 42.547,
+    "passedFirstTry": 5,
+    "passed": 5,
+    "types": 5,
+    "totalAttempts": 5,
+    "outTokens": 15680,
+    "cost": 0.584
+  },
+  "results": [
+    {
+      "type": "CharacterPortrait",
+      "attempts": [
+        {
+          "secs": 27.951,
+          "out": 2887,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 27.951,
+      "inTok": 7617,
+      "outTok": 2887,
+      "floor": {
+        "base": [
+          4,
+          4.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Stepper",
+      "attempts": [
+        {
+          "secs": 22.707,
+          "out": 2352,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 22.707,
+      "inTok": 7551,
+      "outTok": 2352,
+      "floor": {
+        "base": [
+          7,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "BodyDiagram",
+      "attempts": [
+        {
+          "secs": 31.647,
+          "out": 3088,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 31.648,
+      "inTok": 7800,
+      "outTok": 3088,
+      "floor": {
+        "base": [
+          10,
+          14
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "MapCanvas",
+      "attempts": [
+        {
+          "secs": 42.519,
+          "out": 4132,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 42.52,
+      "inTok": 7796,
+      "outTok": 4132,
+      "floor": {
+        "base": [
+          12,
+          9
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "QuestList",
+      "attempts": [
+        {
+          "secs": 34.247,
+          "out": 3221,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 34.248,
+      "inTok": 7648,
+      "outTok": 3221,
+      "floor": {
+        "base": [
+          13,
+          6
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

@@ -22,13 +22,14 @@ All load app TypeScript through `lib/load.cjs` and read `CLAUDE_API_KEY` from `.
 | Script | Tests |
 |---|---|
 | `hoist-check.cjs` | One hoist (`HOIST_SYSTEM_PROMPT` + `validateHoist`); `--in`, `--task`, `--model`, `--effort` |
-| `prim-compare.cjs` | Every hoisted type through the primitive prompt + `checkPrimitive`, with retries; `--only=Type,…`, `--log=` (+ `--run=`), `--hoist=`, `--companions=1`, `--focal=Type,…` (FOCAL switch) |
+| `prim-compare.cjs` | Every hoisted type through the primitive prompt + `checkPrimitive`, with retries; `--only=Type,…`, `--log=` (+ `--run=`), `--hoist=`, `--companions=1`, `--focal=Type,…` (FOCAL switch), `--brief=1` (candidate: one-off types get their component's genInstructions; not in the app) |
 | `plan-check.cjs` | One plan (`PLAN_SYSTEM_PROMPT`) + connectivity, mirroring and naming checks |
 | `leaf-compare.cjs` | A logged run's leaves through `buildLeafSystem` (`--budget=0/1`), post-processed like the route |
 | `leaf-render.mjs` | Renders a leaf set at its real box sizes with the run's primitives; measures overflow |
 | `build-gallery2.mjs` | Contract-driven gallery of a primitive set (every variant × 4 slot shapes); `--fit` picks the FitText source |
 | `fit-regress.mjs` | FitText test cases + edge cases, measuring every span (old vs new FitText) |
 | `map-probe.mjs` | A map trio (MapCanvas + held MapMarker/RouteOverlay) in real Chrome over CDP: zoom, real drag, real hover/click; each marker's distance from its district |
+| `build-replay.cjs` | Replays a logged run through the real build route with the model calls stubbed (logged code and timings, `--speed`): event order, per-leaf start, and byte-identical leaf prompts vs the client path. No API calls |
 | `prompt-qa-render.cjs` | Renders the full prompts (leaf, primitive, focal agent cases) for a prompt QA review; no API calls. Reviews and their decisions: `docs/PROMPT_QA.md` |
 | `focal-check.cjs` | The focal route's prompt + validator (`--variant=app`, default) or the earlier candidates (`A`–`D`) on every logged hoist; scores picks against labels, times each config; `--configs=`, `--samples=` |
 | `leaf-map-probe.mjs` | A generated leaf with a held type (`--held=<Type>`, default MapMarker) at its box size: markers visible and on top, real click reaches `onSelect`, the leaf reacts |
@@ -52,6 +53,7 @@ All load app TypeScript through `lib/load.cjs` and read `CLAUDE_API_KEY` from `.
 | `model-exp/syntax` | Syntax repair: `corpus.json` (every non-compiling leaf/primitive in the logs), the fallback regeneration sample |
 | `model-exp/placement` | Held placement + units: 2 re-hoists, 19 primitives, Cyberware/Map leaves × 2, probes |
 | `model-exp/focal` | Focal primitives: picks (`run1`, `variant-B/C/D`, `app`), `prims/` (types with the switch off vs on, galleries), `leaves/` (focal-using leaves off vs on, renders + size probes) |
+| `model-exp/brief` | Component brief for one-off primitives: 5 types × off/on × 2, galleries (no gain) |
 | `model-exp/held` | Held types: 4 hoists, map primitives × 2 on a patched hoist, Map leaf × 2, probe renders |
 
 ## Reports
@@ -62,4 +64,5 @@ All load app TypeScript through `lib/load.cjs` and read `CLAUDE_API_KEY` from `.
 - `model-exp/LEAF_BUDGET_COMPARISON.md` — the SIZE BUDGET leaf prompt, and why thinking-off isn't a shortcut.
 - `model-exp/SYNTAX_REPAIR.md` — deterministic syntax repair for leaves and primitives (corpus of every non-compiling output in the logs).
 - `model-exp/FOCAL_PRIMITIVES.md` — picking focal primitives with a small agent after the hoist — the picker, the focal primitive prompt, and focal leaves.
+- `model-exp/COMPONENT_BRIEF.md` — giving one-off primitives their component's genInstructions: no gain, since the details are contract data (not adopted).
 - `model-exp/HELD_PRIMITIVES_COMPARISON.md` — companion context (USED WITH) and held types (a surface's `children` naming the types it holds).

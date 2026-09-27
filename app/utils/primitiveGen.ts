@@ -1,8 +1,8 @@
 // SERVER-ONLY: generate one hoisted primitive type for one UI, with the same validate-and-
 // retry loop the other stages use (first failed check fed back, PRIMITIVE_RETRIES attempts).
-// Used by /api/primitives, which runs every type of a UI in parallel on the server — one
-// browser request instead of one per type, so the browser's per-host connection limit
-// never queues them.
+// Used by /api/build, which runs every type of a UI in parallel on the server (and starts
+// each leaf as its own types finish) — one browser request, so the browser's per-host
+// connection limit never queues them.
 import Anthropic from "@anthropic-ai/sdk";
 import { buildPrimitiveSystemPrompt, primitiveRequest } from "@/app/api/SKILLS";
 import { primitivePromptSwitches, heldTypeNames } from "./helpers";

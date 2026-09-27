@@ -1,0 +1,7 @@
+config: claude-opus-5 thinking=adaptive effort=low max_tokens=64000 companions=true focal=- -> C:\Users\realy\OneDrive\Documents\Work\DashUI\docs\fixtures\model-exp\brief\off-B
+wall 43s  first-try 5/5  passed 5/5  attempts 5  out 15680  $0.584
+  CharacterPortrait   28s  x1    2887 out  ok  
+  Stepper          23s  x1    2352 out  ok  
+  BodyDiagram      32s  x1    3088 out  ok  
+  MapCanvas        43s  x1    4132 out  ok  
+  QuestList        34s  x1    3221 out  ok  

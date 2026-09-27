@@ -123,3 +123,18 @@ Leaves now get only their own types. Rebuilding a logged Deck A prompt changes i
 - the AUTHOR rule wording;
 - 7 contracts removed from the library block;
 - the "Other library primitives" line removed.
+
+## Exactly one pick (2026-09-27)
+The user switched the picker to exactly one ("the ONE element", "Pick exactly 1.", `FOCAL_MAX = 1`). The count evidence is above: models always fill the cap. The variant D first picks (JogWheel 16/16 on DJ, AttitudeIndicator 2/2, map 16/18 on Cyberpunk) suggest one pick keeps the centrepiece and drops the filler. That hasn't been measured with the new wording yet (`focal-check.cjs --variant=app`).
+
+**Measured (`focal-check.cjs --variant=app`, Opus 5 `low`, 2 samples, output `focal/app-one`):** 46/46 valid, exactly 1 pick each, mean 1.7s.
+- DJ: JogWheel 24/24.
+- Aerospace: AttitudeIndicator 2/2.
+- Radio: RotaryDial 2/2.
+- **Cyberpunk: StatBar 16/18, MapCanvas 2/18.** With one slot, the health bar wins over the map. (One new log, task-1790505558905, has no label set and was skipped.)
+
+**User rewrite of the prompt (2026-09-27, output `focal/app-one-v2`):** the PURPOSE test is removed. IDENTITY gains "When it's ambiguous, think of what takes up the most space. It is NEVER a minor control." Results, 2 samples × 23 hoists (46/46 valid, mean 1.6s):
+- DJ: JogWheel 24/24.
+- Aerospace: AttitudeIndicator 2/2.
+- Radio: RotaryDial 1, FrequencyScale 1 (both are the tuner).
+- **Cyberpunk: MapCanvas/MapSurface 15/18**, StatBar 3/18. The StatBar picks came from task-1790475795579's second run (×2) and task-1790365640105 (×1).

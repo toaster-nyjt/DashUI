@@ -1,0 +1,8 @@
+brief types: CharacterPortrait, StatusEffectList, SystemClock, Stepper, PerkList, BodyDiagram, ItemBrowser, ToggleSwitch, TabSelector, MapCanvas, MapMarker, RoutePath, QuestList
+config: claude-opus-5 thinking=adaptive effort=low max_tokens=64000 companions=true focal=- -> C:\Users\realy\OneDrive\Documents\Work\DashUI\docs\fixtures\model-exp\brief\on-B
+wall 48s  first-try 5/5  passed 5/5  attempts 5  out 16132  $0.6
+  CharacterPortrait   25s  x1    2497 out  ok  
+  Stepper          25s  x1    2601 out  ok  
+  BodyDiagram      39s  x1    3587 out  ok  
+  MapCanvas        48s  x1    4672 out  ok  
+  QuestList        29s  x1    2775 out  ok  

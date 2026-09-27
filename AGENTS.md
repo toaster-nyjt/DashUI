@@ -9,7 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 Full context: `docs/UI_GENERATOR.md` (§1 gotchas, §2 validation table, §14 primitive pipeline). Decision log with evidence: `docs/PRIMITIVE_HOIST_PLAN (1).md` §0.1.
 
 ## Writing prompt rules (`app/api/SKILLS.ts`)
-- **Add as little as possible.** Every extra rule competes for attention in a long prompt. Extend an existing rule by a clause rather than adding a new rule.
+- **Add as little as possible.** Every extra rule competes for attention in a long prompt. Extend an existing rule by a clause rather than adding a new rule. Simpler often works better: the focal picker chose the map on Cyberpunk 2/18 times with two tests (PURPOSE + IDENTITY) and 15/18 with IDENTITY alone plus "think of what takes up the most space" (`docs/fixtures/model-exp/FOCAL_PRIMITIVES.md`).
 - **Keep fixes general.** Never tie a rule to the primitive or component that failed, and don't use the failing case as the rule's example.
 - **Never write a rule as an exception to another.** When a rule differs by case, swap in a variant chosen by a code switch (`*_BASE` / `*_PRIM`, `primitivePromptSwitches`), so each prompt reads as one consistent rule set.
 - **Fix the old rule** when a new one contradicts it; never leave two rules that disagree.

@@ -15,7 +15,7 @@ const env = fs.readFileSync(ROOT + "/.env.local", "utf8");
 const client = new Anthropic({ apiKey: env.match(/^\s*CLAUDE_API_KEY\s*=\s*["']?([^"'\r\n]+)/m)[1] });
 
 const COUNT = { A: "Pick 1 to 3.", B: "Pick 1 to 3 — only as many as clearly pass both tests.", C: "Pick 1 to 3 — most UIs have only 1 or 2.", D: "Pick 1 or 2." }[arg("variant", "app")];
-const MAX = ["app", "D"].includes(arg("variant", "app")) ? 2 : 3;
+const MAX = arg("variant", "app") === "app" ? 1 : arg("variant", "app") === "D" ? 2 : 3;
 const FOCAL_SYSTEM_PROMPT = `You pick the FOCAL primitives of ONE multi-component UI: the ${MAX === 2 ? "1 or 2" : "1 to 3"} elements a person looking at the whole UI sees first and recognizes it by.
 
 You are given the task, each component's role, and the UI's primitive library: each type's name, description, and the component features built from it (USED BY).
@@ -32,6 +32,7 @@ const CONFIGS = {
   s5off: { model: "claude-sonnet-5", max_tokens: 1000, thinking: { type: "disabled" }, output_config: { effort: "low" } },
   o5off: { model: "claude-opus-5", max_tokens: 1000, thinking: { type: "disabled" }, output_config: { effort: "low" } },
   o5low: { model: "claude-opus-5", max_tokens: 8000, thinking: { type: "adaptive" }, output_config: { effort: "low" } },
+  o5high: { model: "claude-opus-5", max_tokens: 16000, thinking: { type: "adaptive" }, output_config: { effort: "high" } },
 };
 
 // Labels (agreed 2026-09-27): each group must be hit when a type of it exists; allowed = borderline, not an extra.
