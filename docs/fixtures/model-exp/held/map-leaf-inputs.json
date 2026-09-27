@@ -1,0 +1,360 @@
+[
+ {
+  "leaf": "Cyberpunk: Night City Map",
+  "spec": {
+   "name": "Cyberpunk: Night City Map",
+   "genInstructions": "Build a stylized dark-neon interactive map of Night City with district labels, quest/gig markers, fast-travel points, and a route/objective overlay. Users explore markers and set navigation.",
+   "role": "The spatial navigation surface that visualizes quest markers and routes, exchanging selection and tracking state with the quest journal.",
+   "connectivity": {
+    "effectors": [
+     {
+      "name": "Cyberpunk: Quest Journal Panel",
+      "description": "When a quest is tracked in the journal, receives its id and objective coordinates; centers the view on that marker, emphasizes it, and renders a navigation route to it."
+     }
+    ],
+    "targets": [
+     {
+      "name": "Cyberpunk: Quest Journal Panel",
+      "description": "When the user clicks a quest marker on the map, emits that quest's id; the journal selects and expands the matching quest entry."
+     }
+    ]
+   },
+   "features": {
+    "District Overlay": [
+     "MapCanvas"
+    ],
+    "Quest Markers": [
+     "MapMarker"
+    ],
+    "Fast Travel Points": [
+     "MapMarker"
+    ],
+    "Route Overlay": [
+     "RouteOverlay"
+    ],
+    "Zoom Controls": [
+     "ZoomControl"
+    ],
+    "Marker Tooltips": [
+     "Tooltip"
+    ]
+   },
+   "excludedFeatures": []
+  },
+  "boxSize": {
+   "x": 832.3333333333333,
+   "y": 610.3777777777777
+  },
+  "style": "- Outermost container: bg-neutral-950 with a subtle diagonal scanline overlay via bg-gradient-to-br from-neutral-950 via-black to-neutral-900; add relative-safe backdrop tint text-cyan-50\n- Card/panel surface: bg-neutral-900/85 backdrop-blur-md with a top-edge accent via bg-gradient-to-b from-neutral-900/90 to-neutral-950/95\n- Inset/recessed surface: bg-black/60 with inner shadow shadow-[inset_0_0_12px_rgba(0,0,0,0.8)] and a faint cyan tint ring-1 ring-cyan-400/10\n- Chip/tag surface: bg-neutral-800/70 backdrop-blur-sm\n- Button surface (default): bg-neutral-800/80; primary action: bg-gradient-to-r from-cyan-400 to-cyan-300 text-black; danger action: bg-gradient-to-r from-rose-500 to-red-600 text-white\n- Panel border: border border-cyan-400/25 rounded-none (hard cyberpunk edges) — NEVER white; accent panels use border-yellow-300/40\n- Input border: border border-cyan-400/30 rounded-sm bg-black/50 focus:border-cyan-300/70 focus:ring-1 focus:ring-cyan-300/40\n- Button border: border border-cyan-300/40 rounded-none; primary button borderless (border-transparent); danger button border border-rose-400/50\n- Chip border: border border-fuchsia-400/40 rounded-full\n- Radius scale: panels rounded-none, inputs/inner-cards rounded-sm, chips rounded-full, badges rounded-sm\n- Primary text: text-cyan-50\n- Secondary text: text-cyan-200/70\n- Muted/disabled text: text-neutral-500\n- Primary accent fill: bg-cyan-400; accent text: text-cyan-300; accent border: border-cyan-400/50\n- Secondary accent (progression/perks): text-fuchsia-400, bg-fuchsia-500, border-fuchsia-400/50\n- Tertiary accent (map/quests): text-amber-300, bg-amber-400, border-amber-300/50\n- Success: text-emerald-400 / bg-emerald-500; Warning: text-yellow-300 / bg-yellow-400; Danger: text-rose-500 / bg-rose-600\n- Rarity tokens (inventory): common text-neutral-300/border-neutral-500, uncommon text-emerald-400/border-emerald-400, rare text-cyan-300/border-cyan-400, epic text-fuchsia-400/border-fuchsia-400, legendary text-amber-300/border-amber-300\n- Font family (all UI): font-mono for a terminal/tech feel\n- Display text (readouts, numerals, button/pad labels): font-mono font-bold tracking-widest uppercase, color text-cyan-300 (or matching accent per component); NEVER set a font-size on display text\n- Headings: text-lg font-bold uppercase tracking-[0.2em] leading-tight text-cyan-100\n- Body: text-sm font-normal tracking-normal leading-relaxed text-cyan-100/90\n- Labels: text-xs font-semibold uppercase tracking-[0.18em] leading-none text-cyan-300/80\n- Captions: text-[10px] font-medium uppercase tracking-[0.15em] leading-tight text-neutral-400\n- Inter-component gap: gap-3\n- Card padding: p-3\n- Compact item padding: p-2\n- Chip padding: px-2 py-1\n- Button padding: px-3 py-2\n- Header (chrome) height: h-9 — appearance: px-3, border-b border-cyan-400/25, bg-gradient-to-r from-cyan-500/15 via-neutral-900/80 to-transparent; title type text-xs font-bold uppercase tracking-[0.22em] text-cyan-200\n- Footer/status strip height: h-7 — appearance: px-3, border-t border-cyan-400/20, bg-black/70; text uses caption token with text-amber-300/70\n- Elevation floating panels: shadow-[0_0_20px_rgba(34,211,238,0.15)] plus shadow-xl; accent glow on active elements shadow-[0_0_12px_rgba(232,121,249,0.5)]\n- Flat/inset surfaces: shadow-none (rely on inner shadow)\n- Progress/stat bars: track bg-black/60 border border-cyan-400/20; fill bg-gradient-to-r from-cyan-400 to-cyan-200 with shadow-[0_0_8px_rgba(34,211,238,0.6)]; armor fill from-amber-400 to-yellow-300; health fill from-rose-500 to-red-400; street-cred fill from-fuchsia-500 to-purple-400\n- Base transition: transition-all duration-200 ease-out\n- Button hover: hover:bg-cyan-300 hover:text-black hover:shadow-[0_0_16px_rgba(34,211,238,0.5)] hover:border-cyan-200; active:scale-[0.97] active:brightness-110\n- Primary button hover: hover:brightness-125 hover:shadow-[0_0_20px_rgba(34,211,238,0.7)]\n- Danger button hover: hover:brightness-125 hover:shadow-[0_0_16px_rgba(244,63,94,0.6)]\n- Row hover: hover:bg-cyan-400/10 hover:border-l-2 hover:border-cyan-400 transition-colors duration-150\n- Interactive chip hover: hover:bg-fuchsia-500/25 hover:border-fuchsia-300 hover:text-fuchsia-200 transition-all duration-150\n- Selected/active state: ring-1 ring-cyan-400/60 bg-cyan-400/10 text-cyan-200\n- Locked/gated state: opacity-40 grayscale\n- Marker/node pulse (map markers, unlockable perk nodes): animate-pulse with accent glow shadow\n- Focus-visible on all interactives: focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70",
+  "primitives": {
+   "library": [
+    {
+     "type": "CharacterPortrait",
+     "description": "Framed avatar image display for a character, showing the supplied image source with an optional status/condition overlay.",
+     "props": {
+      "src": "string",
+      "alt?": "string",
+      "status?": "'normal' | 'damaged' | 'critical'"
+     }
+    },
+    {
+     "type": "LevelBadge",
+     "description": "Compact numeric badge rendering an integer rank/level value, optionally with progress toward the next level as a normalized 0-1 fraction.",
+     "props": {
+      "level": "number",
+      "progress?": "number"
+     }
+    },
+    {
+     "type": "StatBar",
+     "description": "Horizontal filled bar showing value within min..max (fill fraction = (value-min)/(max-min)); optional segmented rendering and optional overlaid numeric text.",
+     "props": {
+      "value": "number",
+      "min?": "number",
+      "max?": "number",
+      "segments?": "number",
+      "showValue?": "boolean",
+      "tone?": "'neutral' | 'accent' | 'danger'"
+     }
+    },
+    {
+     "type": "StatReadout",
+     "description": "Single label-free numeric or text readout of one datum (value given in its own unit as a number or preformatted string), with optional delta/modifier shown alongside; face content supplied via children.",
+     "props": {
+      "value": "number | string",
+      "delta?": "number",
+      "tone?": "'neutral' | 'accent' | 'danger'",
+      "children?": "React.ReactNode"
+     }
+    },
+    {
+     "type": "PerkNode",
+     "description": "Single unlockable skill-tree node button with rank state (current/max ranks), locked/unlockable/unlocked state driven by gating, and click to spend a point on it.",
+     "props": {
+      "state": "'locked' | 'available' | 'unlocked'",
+      "rank": "number",
+      "maxRank": "number",
+      "onSpend": "(id: string) => void",
+      "id": "string",
+      "hover?": "(id: string | null) => void",
+      "children?": "React.ReactNode"
+     }
+    },
+    {
+     "type": "EquipmentSlot",
+     "description": "Single equip slot that displays the currently slotted item (or empty placeholder) and emits selection/clear actions for that slot.",
+     "props": {
+      "item": "{ id: string; label: string; icon?: string; rarity?: string } | null",
+      "slotId": "string",
+      "onSelect": "(slotId: string) => void",
+      "onClear?": "(slotId: string) => void",
+      "accepts?": "string"
+     }
+    },
+    {
+     "type": "ActionButton",
+     "description": "Momentary push button that fires once per press; face content supplied via children; supports disabled state.",
+     "props": {
+      "onPress": "() => void",
+      "disabled?": "boolean",
+      "tone?": "'neutral' | 'accent' | 'danger'",
+      "children?": "React.ReactNode"
+     }
+    },
+    {
+     "type": "ToggleSwitch",
+     "description": "Latching two-state switch; on reflects current state and onChange emits the new boolean state.",
+     "props": {
+      "on": "boolean",
+      "onChange": "(on: boolean) => void",
+      "disabled?": "boolean",
+      "children?": "React.ReactNode"
+     }
+    },
+    {
+     "type": "Tooltip",
+     "description": "Floating info popover anchored to a hovered/focused element, rendering supplied content when open.",
+     "props": {
+      "open": "boolean",
+      "content": "React.ReactNode",
+      "anchor?": "{ x: number; y: number }",
+      "children?": "React.ReactNode"
+     }
+    },
+    {
+     "type": "TabSelector",
+     "description": "Segmented row of mutually exclusive category options; value is the selected option id and onChange emits the newly selected id.",
+     "props": {
+      "options": "{ id: string; label: string; count?: number }[]",
+      "value": "string",
+      "onChange": "(id: string) => void"
+     }
+    },
+    {
+     "type": "SearchInput",
+     "description": "Single-line text input for filtering; value is the current query string and onChange emits each new query.",
+     "props": {
+      "value": "string",
+      "onChange": "(q: string) => void",
+      "placeholder?": "string"
+     }
+    },
+    {
+     "type": "ItemGrid",
+     "description": "Grid-based selection of items rendered as tiles carrying icon, name, rarity, quantity and stat summary; value is the selected item id, onChange emits selection, onActivate emits use/equip of an item.",
+     "props": {
+      "items": "{ id: string; label: string; icon?: string; rarity?: string; quantity?: number; stats?: { label: string; value: number | string }[]; equipped?: boolean }[]",
+      "value": "string | null",
+      "onChange": "(id: string) => void",
+      "onActivate?": "(id: string) => void"
+     }
+    },
+    {
+     "type": "ItemDetails",
+     "description": "Detail readout for one selected item showing its name, description, rarity and list of stat lines supplied as data.",
+     "props": {
+      "item": "{ id: string; label: string; description?: string; rarity?: string; stats?: { label: string; value: number | string }[] } | null"
+     }
+    },
+    {
+     "type": "ListSelector",
+     "description": "Vertical selection list of multi-field entries (title, subtitle, category, status, optional nested children); value is the selected entry id, onChange emits selection, onActivate emits open/expand.",
+     "props": {
+      "items": "{ id: string; label: string; subtitle?: string; category?: string; status?: string; children?: { id: string; label: string; done?: boolean }[] }[]",
+      "value": "string | null",
+      "onChange": "(id: string) => void",
+      "onActivate?": "(id: string) => void"
+     }
+    },
+    {
+     "type": "ObjectiveChecklist",
+     "description": "Ordered list of objective steps each with completion state, rendering progress through the sequence.",
+     "props": {
+      "steps": "{ id: string; label: string; done: boolean; optional?: boolean }[]",
+      "activeId?": "string | null"
+     }
+    },
+    {
+     "type": "MapCanvas",
+     "description": "Pan/zoom-able stylized map surface that renders supplied district regions and labels in normalized 0-1 map coordinates; emits view changes (center 0-1 coords and zoom factor).",
+     "props": {
+      "regions": "{ id: string; label: string; path?: string; bounds?: { x: number; y: number; w: number; h: number } }[]",
+      "center": "{ x: number; y: number }",
+      "zoom": "number",
+      "onViewChange": "(view: { center: { x: number; y: number }; zoom: number }) => void",
+      "children?": "MapMarker | RouteOverlay"
+     }
+    },
+    {
+     "type": "MapMarker",
+     "description": "Point marker positioned at normalized 0-1 map coordinates with a kind/state, emitting click and hover with its id.",
+     "props": {
+      "id": "string",
+      "position": "{ x: number; y: number }",
+      "kind?": "string",
+      "state?": "'default' | 'selected' | 'tracked' | 'locked'",
+      "onSelect": "(id: string) => void",
+      "onHover?": "(id: string | null) => void"
+     }
+    },
+    {
+     "type": "RouteOverlay",
+     "description": "Path overlay drawn across a map surface from an ordered list of normalized 0-1 waypoints, with optional distance readout.",
+     "props": {
+      "points": "{ x: number; y: number }[]",
+      "visible": "boolean",
+      "distance?": "number"
+     }
+    },
+    {
+     "type": "ZoomControl",
+     "description": "Zoom stepper for a map view; value is the current zoom factor within min..max and onChange emits the new factor.",
+     "props": {
+      "value": "number",
+      "min": "number",
+      "max": "number",
+      "step?": "number",
+      "onChange": "(zoom: number) => void",
+      "onReset?": "() => void"
+     }
+    }
+   ],
+   "floors": {
+    "CharacterPortrait": {
+     "base": [
+      4,
+      5
+     ]
+    },
+    "LevelBadge": {
+     "base": [
+      3,
+      3
+     ]
+    },
+    "StatBar": {
+     "base": [
+      4,
+      1
+     ]
+    },
+    "StatReadout": {
+     "base": [
+      3.5,
+      2
+     ]
+    },
+    "PerkNode": {
+     "base": [
+      3.5,
+      3.5
+     ]
+    },
+    "EquipmentSlot": {
+     "base": [
+      5,
+      3.5
+     ]
+    },
+    "ActionButton": {
+     "base": [
+      4,
+      2
+     ]
+    },
+    "ToggleSwitch": {
+     "base": [
+      4,
+      2
+     ]
+    },
+    "Tooltip": {
+     "base": [
+      6,
+      2
+     ]
+    },
+    "TabSelector": {
+     "base": [
+      8,
+      2.25
+     ]
+    },
+    "SearchInput": {
+     "base": [
+      7,
+      2
+     ]
+    },
+    "ItemGrid": {
+     "base": [
+      11,
+      7.5
+     ]
+    },
+    "ItemDetails": {
+     "base": [
+      11,
+      8
+     ]
+    },
+    "ListSelector": {
+     "base": [
+      11,
+      5
+     ]
+    },
+    "ObjectiveChecklist": {
+     "base": [
+      9,
+      5
+     ]
+    },
+    "MapCanvas": {
+     "base": [
+      10,
+      8
+     ]
+    },
+    "MapMarker": {
+     "base": [
+      2,
+      2
+     ]
+    },
+    "RouteOverlay": {
+     "base": [
+      6,
+      4
+     ]
+    },
+    "ZoomControl": {
+     "base": [
+      2.25,
+      7.5
+     ]
+    }
+   }
+  }
+ }
+]

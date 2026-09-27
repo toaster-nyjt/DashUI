@@ -1,0 +1,38 @@
+{
+  "ActionButton": {
+    "base": [
+      4,
+      2
+    ]
+  },
+  "Tooltip": {
+    "base": [
+      6,
+      2
+    ]
+  },
+  "MapCanvas": {
+    "base": [
+      9,
+      7
+    ]
+  },
+  "MapMarker": {
+    "base": [
+      2,
+      2
+    ]
+  },
+  "RouteOverlay": {
+    "base": [
+      6,
+      4
+    ]
+  },
+  "ZoomControl": {
+    "base": [
+      2.25,
+      6.5
+    ]
+  }
+}

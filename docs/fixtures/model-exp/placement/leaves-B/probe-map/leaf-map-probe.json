@@ -1,0 +1,132 @@
+{
+  "summary": {
+    "leaf": "docs\\fixtures\\model-exp\\placement\\leaves-B\\1.tsx",
+    "renderError": null,
+    "markers": 14,
+    "visibleOnTop": 12,
+    "inBoxButCovered": 2,
+    "outOfBox": 0,
+    "click": {
+      "marker": "d-watson",
+      "onSelectCalls": [
+        "d-watson"
+      ],
+      "stateBefore": "{}",
+      "stateAfter": "{}"
+    }
+  },
+  "before": [
+    {
+      "id": "d-watson",
+      "x": 399,
+      "y": 160,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "d-westbrook",
+      "x": 614,
+      "y": 255,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "d-citycenter",
+      "x": 349,
+      "y": 309,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "d-heywood",
+      "x": 217,
+      "y": 410,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "d-pacifica",
+      "x": 84,
+      "y": 529,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "d-santodomingo",
+      "x": 564,
+      "y": 494,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "q-heist",
+      "x": 465,
+      "y": 208,
+      "inBox": true,
+      "onTop": false,
+      "state": "{}"
+    },
+    {
+      "id": "q-ghost",
+      "x": 109,
+      "y": 482,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "q-chippin",
+      "x": 639,
+      "y": 369,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "p-ripper",
+      "x": 324,
+      "y": 351,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "p-fixer",
+      "x": 242,
+      "y": 446,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "p-vendor",
+      "x": 523,
+      "y": 458,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "player",
+      "x": 283,
+      "y": 410,
+      "inBox": true,
+      "onTop": true,
+      "state": "{}"
+    },
+    {
+      "id": "waypoint",
+      "x": 465,
+      "y": 208,
+      "inBox": true,
+      "onTop": false,
+      "state": "{}"
+    }
+  ]
+}

@@ -6,7 +6,7 @@
  * a type that never passed is left out, and the caller hands its features to leaves as null.
  */
 import { HoistResult, PrimitiveFloor } from "@/app/utils/spec";
-import { derivePrimitiveUsage } from "@/app/utils/helpers";
+import { derivePrimitiveUsage, derivePrimitiveCompanions, heldTypeNames } from "@/app/utils/helpers";
 import { generatePrimitive } from "@/app/utils/primitiveGen";
 import { runLog } from "@/app/utils/runLog";
 
@@ -20,8 +20,9 @@ export async function POST(req: Request) {
   const t0 = Date.now();
 
   const usage = derivePrimitiveUsage(hoist);
+  const companions = derivePrimitiveCompanions(hoist);
   const results = await Promise.all(hoist.library.map(async (prim) =>
-    [prim.type, await generatePrimitive(task, prim, usage[prim.type], style, taskID)] as const));
+    [prim.type, await generatePrimitive(task, prim, hoist.library, usage[prim.type], companions[prim.type], style, taskID)] as const));
 
   const code: Record<string, string> = {};
   const floors: Record<string, PrimitiveFloor> = {};
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
   const dropped = results.filter(([, r]) => !r.code || !r.floor).map(([type]) => type);
 
   runLog(taskID, "primitives:done", `${Object.keys(code).length}/${hoist.library.length} type(s) usable in ${((Date.now() - t0) / 1000).toFixed(1)}s`,
-    { usable: Object.keys(code), dropped, attempts: Object.fromEntries(results.map(([t, r]) => [t, r.attempts])), floors });
+    { usable: Object.keys(code), dropped, held: Object.fromEntries(hoist.library.filter((t) => heldTypeNames(t).length).map((t) => [t.type, heldTypeNames(t)])), attempts: Object.fromEntries(results.map(([t, r]) => [t, r.attempts])), floors });
 
   return Response.json({ code, floors });
 }

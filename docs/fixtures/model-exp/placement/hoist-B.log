@@ -1,0 +1,21 @@
+hoist 76s  7119 out  valid=true  types=20
+  CharacterPortrait {"imageSrc?":"string","state?":"'idle' | 'alert' | 'damaged'","children?":"React.ReactNode"}
+  StatBar          {"value":"number","max":"number","segments?":"number","tone?":"'neutral' | 'accent' | 'danger' | 'warning'","showValue?":"boolean","animate?":"boolean"}
+  StatusEffectStrip {"effects":"{ id: string; label: string; kind?: 'buff' | 'debuff' | 'neutral'; remaining?: number }[]","onSelect?":"(id: string) => void"}
+  LevelBadge       {"level":"number","rank?":"string"}
+  NumericReadout   {"value":"number","unit?":"string","prefix?":"string","precision?":"number","animate?":"boolean"}
+  RecordListSelector {"options":"{ id: string; label: string; detail?: string; value?: string | number; status?: 'available' | 'locked' | 'active' }[]","value?":"string","onChange":"(id: string) => void","onActivate?":"(id: string) => void"}
+  ExpandableEntryList {"entries":"{ id: string; title: string; subtitle?: string; objectives?: { id: string; label: string; done: boolean }[]; rewards?: { label: string; value: string | number }[] }[]","expandedId?":"string","onExpand":"(id: string) => void","activeId?":"string","onSelect?":"(id: string) => void"}
+  ObjectiveChecklist {"items":"{ id: string; label: string; done: boolean; optional?: boolean }[]","onToggle?":"(id: string) => void"}
+  StatDetailList   {"items":"{ label: string; value: string | number; delta?: number }[]","title?":"string","visible?":"boolean"}
+  ActionButton     {"onPress":"() => void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  ToggleButton     {"on":"boolean","onChange":"(on: boolean) => void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  EquipmentSlot    {"id":"string","item?":"{ id: string; name: string; rarity?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'; iconSrc?: string; stat?: string | number }","selected?":"boolean","locked?":"boolean","onSelect?":"(id: string) => void","onClear?":"(id: string) => void"}
+  ImplantSlot      {"id":"string","implant?":"{ id: string; name: string; tier?: string | number }","locked?":"boolean","lockReason?":"string","selected?":"boolean","x?":"number","y?":"number","onSelect?":"(id: string) => void"}
+  BodyDiagramSurface {"highlightedRegion?":"string","children?":"ImplantSlot"}
+  MapCanvas        {"imageSrc?":"string","center":"{ x: number; y: number }","zoom":"number","onViewChange":"(view: { center: { x: number; y: number }; zoom: number }) => void","children?":"MapMarker | MapRoute"}
+  MapMarker        {"id":"string","x":"number","y":"number","kind?":"'quest' | 'poi' | 'player' | 'waypoint'","label?":"string","selected?":"boolean","onSelect?":"(id: string) => void"}
+  MapRoute         {"points":"{ x: number; y: number }[]","animated?":"boolean"}
+  ZoomPanControls  {"zoom":"number","min":"number","max":"number","onZoomChange":"(zoom: number) => void","onPan?":"(delta: { x: number; y: number }) => void","onRecenter?":"() => void"}
+  LegendKey        {"items":"{ id: string; label: string; kind?: string }[]"}
+  TabSelector      {"options":"{ id: string; label: string; count?: number }[]","value":"string","onChange":"(id: string) => void"}

@@ -4,9 +4,11 @@
 // browser request instead of one per type, so the browser's per-host connection limit
 // never queues them.
 import Anthropic from "@anthropic-ai/sdk";
-import { PRIMITIVE_SYSTEM_PROMPT, primitiveRequest } from "@/app/api/SKILLS";
-import { PrimitiveType, PrimitiveUse, PrimitiveFloor } from "./spec";
+import { buildPrimitiveSystemPrompt, primitiveRequest } from "@/app/api/SKILLS";
+import { primitivePromptSwitches, heldTypeNames } from "./helpers";
+import { PrimitiveType, PrimitiveUse, PrimitiveCompanions, PrimitiveFloor } from "./spec";
 import { checkPrimitive, extractPrimitiveCode } from "./primitiveChecks";
+import { repairSyntax } from "./syntaxRepair";
 import { runLog, usageOf } from "./runLog";
 
 const anthropic = new Anthropic({
@@ -22,15 +24,16 @@ const PRIMITIVE_MODEL = { model: "claude-opus-5", max_tokens: 64000, thinking: {
 const REFUSAL_FALLBACK = { model: "claude-opus-4-8", max_tokens: 16000, thinking: { type: "disabled" }, output_config: { effort: "max" } } as const;
 
 // One attempt: the model call (with the refusal fallback) and the static checks.
-async function attempt(task: string, prim: PrimitiveType, uses: PrimitiveUse[], style: string, previousError: string | undefined, taskID?: number):
+async function attempt(task: string, prim: PrimitiveType, library: PrimitiveType[], uses: PrimitiveUse[], companions: PrimitiveCompanions[], style: string, previousError: string | undefined, taskID?: number):
   Promise<{ code?: string; floor?: PrimitiveFloor; error?: string }> {
   const t0 = Date.now();
   const retryNote = previousError
     ? `\n\nYour previous attempt was REJECTED: ${previousError}\nReturn the full corrected primitive.`
     : "";
+  const switches = primitivePromptSwitches(prim, companions, library);
   const request = {
-    system: PRIMITIVE_SYSTEM_PROMPT + `\n\nVISUAL GUIDELINES — follow these guidelines so this primitive matches the rest of its UI:\n${style}`,
-    messages: [{ role: "user" as const, content: primitiveRequest(task, prim, uses) + retryNote }],
+    system: buildPrimitiveSystemPrompt(switches) + `\n\nVISUAL GUIDELINES — follow these guidelines so this primitive matches the rest of its UI:\n${style}`,
+    messages: [{ role: "user" as const, content: primitiveRequest(task, prim, uses, companions) + retryNote }],
   };
 
   let msg = await anthropic.messages.stream({ ...PRIMITIVE_MODEL, ...request }).finalMessage();
@@ -44,22 +47,25 @@ async function attempt(task: string, prim: PrimitiveType, uses: PrimitiveUse[], 
   }
 
   const raw = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("");
-  const code = extractPrimitiveCode(raw);
-  const { errors, floor } = checkPrimitive(prim, code);
+  // Small syntax slips are repaired deterministically instead of costing a retry.
+  const extracted = extractPrimitiveCode(raw);
+  const repaired = repairSyntax(extracted);
+  const code = repaired?.code ?? extracted;
+  const { errors, floor } = checkPrimitive(prim, code, library);
   if (msg.stop_reason === "max_tokens") errors.unshift("the output was cut off before the primitive was finished; write it more compactly");
   runLog(taskID, "primitive", `${prim.type}: ${errors.length ? "REJECTED — " + errors[0].slice(0, 120) : "ok, floor " + JSON.stringify(floor)}${previousError ? " (retry)" : ""}`,
-    { type: prim.type, prim, uses, previousError, errors, floor, code, ...usageOf(msg), secs: (Date.now() - t0) / 1000 });
+    { type: prim.type, prim, syntaxRepairs: repaired?.repairs.length ? repaired.repairs : undefined, uses, holds: heldTypeNames(prim), heldBy: switches.heldBy, companions: companions.map((c) => ({ component: c.component, types: c.types.map((t) => t.type) })), previousError, errors, floor, code, ...usageOf(msg), secs: (Date.now() - t0) / 1000 });
   return errors.length ? { error: errors[0], code } : { code, floor };
 }
 
 // Up to PRIMITIVE_RETRIES attempts. Returns the passing code + floor, or the last error
 // (the caller then leaves the type out, and its features are hand-built).
-export async function generatePrimitive(task: string, prim: PrimitiveType, uses: PrimitiveUse[], style: string, taskID?: number):
+export async function generatePrimitive(task: string, prim: PrimitiveType, library: PrimitiveType[], uses: PrimitiveUse[], companions: PrimitiveCompanions[], style: string, taskID?: number):
   Promise<{ code?: string; floor?: PrimitiveFloor; error?: string; attempts: number }> {
   let previousError: string | undefined;
   for (let n = 1; n <= PRIMITIVE_RETRIES; n++) {
     try {
-      const r = await attempt(task, prim, uses, style, previousError, taskID);
+      const r = await attempt(task, prim, library, uses, companions, style, previousError, taskID);
       if (!r.error) return { code: r.code, floor: r.floor, attempts: n };
       previousError = r.error;
     } catch (e) {

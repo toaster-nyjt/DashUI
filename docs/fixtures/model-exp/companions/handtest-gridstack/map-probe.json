@@ -1,0 +1,194 @@
+{
+  "dir": "handtest-gridstack",
+  "renderError": null,
+  "drift": [
+    {
+      "view": "v1-default",
+      "px": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "view": "v2-zoomed",
+      "px": [
+        0,
+        0,
+        0.7
+      ]
+    },
+    {
+      "view": "v3-dragged",
+      "px": [
+        0,
+        0,
+        0.7
+      ]
+    }
+  ],
+  "click": {
+    "marker": "m-r1",
+    "selected": "[]",
+    "hovered": "[]",
+    "viewChangedByClick": false,
+    "onTop": false,
+    "hitTag": "DIV",
+    "events": "[{\"t\":\"pointerdown\",\"inMarker\":false,\"tag\":\"DIV\"},{\"t\":\"pointerup\",\"inMarker\":false,\"tag\":\"DIV\"},{\"t\":\"click\",\"inMarker\":false,\"tag\":\"DIV\"}]"
+  },
+  "views": [
+    {
+      "name": "v1-default",
+      "view": "{\"center\":{\"x\":0.5,\"y\":0.5},\"zoom\":1}",
+      "markers": [
+        {
+          "id": "m-r1",
+          "region": {
+            "x": 236,
+            "y": 171.79999542236328,
+            "tag": "rect"
+          },
+          "marker": {
+            "x": 236,
+            "y": 171.796875,
+            "onTop": false,
+            "hitTag": "DIV"
+          },
+          "dist": 0
+        },
+        {
+          "id": "m-r2",
+          "region": {
+            "x": 488,
+            "y": 194.8000030517578,
+            "tag": "rect"
+          },
+          "marker": {
+            "x": 488,
+            "y": 194.796875,
+            "onTop": false,
+            "hitTag": "DIV"
+          },
+          "dist": 0
+        },
+        {
+          "id": "m-r3",
+          "region": {
+            "x": 358.3999938964844,
+            "y": 332.8000030517578,
+            "tag": "rect"
+          },
+          "marker": {
+            "x": 358.390625,
+            "y": 332.796875,
+            "onTop": true,
+            "hitTag": "path"
+          },
+          "dist": 0
+        }
+      ]
+    },
+    {
+      "name": "v2-zoomed",
+      "view": "{\"center\":{\"x\":0.35,\"y\":0.4},\"zoom\":2.5}",
+      "markers": [
+        {
+          "id": "m-r1",
+          "region": {
+            "x": 290,
+            "y": 169.49998474121094,
+            "tag": "rect"
+          },
+          "marker": {
+            "x": 290,
+            "y": 169.4921875,
+            "onTop": false,
+            "hitTag": "DIV"
+          },
+          "dist": 0
+        },
+        {
+          "id": "m-r2",
+          "region": {
+            "x": 920,
+            "y": 227,
+            "tag": "rect"
+          },
+          "marker": {
+            "x": 920,
+            "y": 226.9921875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 0
+        },
+        {
+          "id": "m-r3",
+          "region": {
+            "x": 596.5234375,
+            "y": 572.34375,
+            "tag": "DIV"
+          },
+          "marker": {
+            "x": 595.9765625,
+            "y": 571.9921875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 0.7
+        }
+      ]
+    },
+    {
+      "name": "v3-dragged",
+      "view": "{\"center\":{\"x\":0.41666666666666685,\"y\":0.4521739130434784},\"zoom\":2.5}",
+      "markers": [
+        {
+          "id": "m-r1",
+          "region": {
+            "x": 170,
+            "y": 109.49998474121094,
+            "tag": "rect"
+          },
+          "marker": {
+            "x": 170,
+            "y": 109.4921875,
+            "onTop": false,
+            "hitTag": "DIV"
+          },
+          "dist": 0
+        },
+        {
+          "id": "m-r2",
+          "region": {
+            "x": 800,
+            "y": 167,
+            "tag": "rect"
+          },
+          "marker": {
+            "x": 800,
+            "y": 166.9921875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 0
+        },
+        {
+          "id": "m-r3",
+          "region": {
+            "x": 476.5234375,
+            "y": 512.34375,
+            "tag": "DIV"
+          },
+          "marker": {
+            "x": 475.9765625,
+            "y": 511.9921875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 0.7
+        }
+      ]
+    }
+  ]
+}

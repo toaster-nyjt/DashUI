@@ -1,0 +1,140 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000,
+      "COMPANIONS": true,
+      "LOG": "cyberpunk-dashboard.run1.jsonl"
+    },
+    "wall": 63.175,
+    "passedFirstTry": 5,
+    "passed": 5,
+    "types": 5,
+    "totalAttempts": 5,
+    "outTokens": 20316,
+    "cost": 0.715
+  },
+  "results": [
+    {
+      "type": "EquipmentSlot",
+      "attempts": [
+        {
+          "secs": 43.29,
+          "out": 4454,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 43.29,
+      "inTok": 8759,
+      "outTok": 4454,
+      "floor": {
+        "base": [
+          4,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "BodyDiagram",
+      "attempts": [
+        {
+          "secs": 63.153,
+          "out": 5117,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 63.154,
+      "inTok": 8221,
+      "outTok": 5117,
+      "floor": {
+        "base": [
+          9,
+          13
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "MapCanvas",
+      "attempts": [
+        {
+          "secs": 42.06,
+          "out": 4363,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 42.062,
+      "inTok": 8120,
+      "outTok": 4363,
+      "floor": {
+        "base": [
+          12,
+          9
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "MapMarker",
+      "attempts": [
+        {
+          "secs": 39.342,
+          "out": 4091,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 39.342,
+      "inTok": 8251,
+      "outTok": 4091,
+      "floor": {
+        "base": [
+          2.5,
+          2.5
+        ],
+        "kind:district": [
+          5.5,
+          1.75
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "RouteOverlay",
+      "attempts": [
+        {
+          "secs": 21.279,
+          "out": 2291,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 21.279,
+      "inTok": 8106,
+      "outTok": 2291,
+      "floor": {
+        "base": [
+          4,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

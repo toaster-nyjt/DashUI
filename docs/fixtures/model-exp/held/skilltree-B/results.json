@@ -1,0 +1,29 @@
+{
+  "config": {
+    "budget": true,
+    "MODEL": "claude-opus-5",
+    "THINKING": "adaptive",
+    "EFFORT": "low"
+  },
+  "wall": 92.348,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "Cyberpunk: Perk & Cyberware Skill Tree",
+      "box": {
+        "x": 1664.6666666666665,
+        "y": 665.8666666666667
+      },
+      "secs": 92.105,
+      "outTok": 9131,
+      "codeTok": 7647,
+      "thinkTok": 1484,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + colHeader 2 + 4 tiers x 4.5 + 3 gaps x 0.75 + labels 4x1 + pad 1.5 + footer 1.75 = 35.75 <= 41.6",
+        "// BUDGET width: 5 branches x 10.5 + 4 gaps x 0.5 + rail 20 + pad 1.5 = 76 <= 104.0"
+      ],
+      "postProcessed": true
+    }
+  ]
+}

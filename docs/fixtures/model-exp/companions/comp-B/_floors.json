@@ -1,0 +1,62 @@
+{
+  "StatReadout": {
+    "base": [
+      3.5,
+      2.25
+    ]
+  },
+  "PerkNode": {
+    "base": [
+      3,
+      3
+    ]
+  },
+  "EquipmentSlot": {
+    "base": [
+      6,
+      2.75
+    ]
+  },
+  "ActionButton": {
+    "base": [
+      3.5,
+      2
+    ]
+  },
+  "ToggleSwitch": {
+    "base": [
+      4.5,
+      1.75
+    ]
+  },
+  "Tooltip": {
+    "base": [
+      9,
+      3
+    ]
+  },
+  "ItemGrid": {
+    "base": [
+      9,
+      7
+    ]
+  },
+  "MapCanvas": {
+    "base": [
+      12,
+      10
+    ]
+  },
+  "MapMarker": {
+    "base": [
+      2,
+      2
+    ]
+  },
+  "RouteOverlay": {
+    "base": [
+      4,
+      4
+    ]
+  }
+}

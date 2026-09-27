@@ -1,0 +1,47 @@
+{
+  "config": {
+    "budget": true,
+    "MODEL": "claude-opus-5",
+    "THINKING": "adaptive",
+    "EFFORT": "low"
+  },
+  "wall": 62.398,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "Cyberpunk 2077: Cyberware Augmentation Grid",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 554.8888888888889
+      },
+      "secs": 62.207,
+      "outTok": 6008,
+      "codeTok": 5178,
+      "thinkTok": 830,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + body(pad .75*2 = 1.5) + max(diagram 27, right[ slotgrid 4.25 + gap .5 + meter 2.4 + gap .5 + list flex(≥4.5) + gap .5 + stats 4.5 + gap .5 + toggle 2.25 ]) = 2.25+1.5+27+1.75(footer) = 32.5 ≤ 34.7",
+        "// BUDGET width: pad .75 + diagram 17 + gap .75 + right 31 + pad .75 = 50.25 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 1,
+      "leaf": "Cyberpunk 2077: Night City Map",
+      "box": {
+        "x": 943.3111111111111,
+        "y": 610.3777777777777
+      },
+      "secs": 38.529,
+      "outTok": 4113,
+      "codeTok": 3673,
+      "thinkTok": 440,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + gap 0.75 + body(map 30.35 / rail: ZoomPanControls 6.5 + gap 0.75 + KeyLegend 3.2 + slack) + gap 0.75 + footer 1.75 = 35.85 ≤ 38.1",
+        "// BUDGET width: pad 0.75 + map 44.5 + gap 0.75 + rail 11.5 + pad 0.75 = 58.25 ≤ 59.0"
+      ],
+      "postProcessed": true
+    }
+  ]
+}

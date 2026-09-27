@@ -8,7 +8,7 @@ import {
   sizeNotePrimCondense, sizeNoteRem, sizeBudgetBlock,
 } from "@/app/api/SKILLS";
 import { XY, LeafPrimitives, LeafFeatures, PrimitiveFloor } from "./spec";
-import { parseChromeHeights } from "./helpers";
+import { parseChromeHeights, heldTypeNames } from "./helpers";
 
 export function buildLeafSystem({ spec, boxSize, style, primitives, budget }: {
   spec: { features?: string[] | LeafFeatures };
@@ -67,7 +67,7 @@ export function buildLeafSystem({ spec, boxSize, style, primitives, budget }: {
   // QA/max-perf preamble + main instructions + component-JSON protocol + primitive library
   // (if any) + per-UI (or fallback) style + per-box size context + size budget (if any)
   const system = GENERATE_QA_DIRECTIVE + "\n\n"
-    + buildGenerateSystemPrompt({ primitives: hasLibrary, handBuilt, budget: withBudget })
+    + buildGenerateSystemPrompt({ primitives: hasLibrary, handBuilt, budget: withBudget, holders: !!primitives?.library.some((t) => heldTypeNames(t).length) })
     + buildComponentProtocol(hasLibrary, handBuilt)
     + (hasLibrary ? primitiveLibraryBlock(primitives!.library, primitives!.floors, withBudget) : "")
     + styleBlock + sizeNote + budgetBlock;

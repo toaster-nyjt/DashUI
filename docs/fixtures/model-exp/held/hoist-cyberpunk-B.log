@@ -1,0 +1,20 @@
+hoist 39s  3585 out  valid=true  types=19
+  CharacterPortrait {"src":"string","alt?":"string","state?":"'normal' | 'alert' | 'damaged'"}
+  StatBar          {"value":"number","max":"number","segments?":"number[]","tone?":"'neutral' | 'accent' | 'danger' | 'warning'"}
+  StatReadout      {"value":"number | string","delta?":"number","emphasis?":"'normal' | 'accent' | 'warning'"}
+  PerkNode         {"state":"'locked' | 'available' | 'unlocked'","rank?":"number","maxRank?":"number","onPress":"(id: string) => void","id":"string","children?":"React.ReactNode"}
+  ItemSlot         {"item":"{ id: string; name: string; rarity?: string; icon?: string } | null","locked?":"boolean","onSelect":"(id: string | null) => void","onClear?":"() => void"}
+  ItemGrid         {"items":"{ id: string; name: string; icon?: string; rarity?: string; quantity?: number; category?: string }[]","value":"string | null","onChange":"(id: string) => void","onActivate?":"(id: string) => void"}
+  ItemDetailsReadout {"name":"string","subtitle?":"string","description?":"string","stats?":"{ label: string; value: number | string; delta?: number }[]"}
+  TabSelector      {"options":"{ id: string; label: string; count?: number }[]","value":"string","onChange":"(id: string) => void"}
+  SearchInput      {"value":"string","onChange":"(q: string) => void","placeholder?":"string"}
+  ActionButton     {"onPress":"() => void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  ToggleSwitch     {"on":"boolean","onChange":"(on: boolean) => void","disabled?":"boolean"}
+  QuestList        {"items":"{ id: string; title: string; category?: string; status?: string; meta?: string; tracked?: boolean }[]","value":"string | null","onChange":"(id: string) => void","onActivate?":"(id: string) => void"}
+  ObjectiveChecklist {"steps":"{ id: string; text: string; state: 'pending' | 'current' | 'done' | 'failed' }[]"}
+  RewardPreview    {"rewards":"{ id: string; label: string; amount?: number | string; icon?: string }[]"}
+  MapCanvas        {"regions":"{ id: string; label: string; path?: string; x?: number; y?: number }[]","zoom":"number","center":"{ x: number; y: number }","onViewChange?":"(view: { zoom: number; center: { x: number; y: number } }) => void","children?":"MapMarker | RouteOverlay"}
+  MapMarker        {"id":"string","x":"number","y":"number","kind":"'quest' | 'gig' | 'hustle' | 'fastTravel'","selected?":"boolean","discovered?":"boolean","onSelect":"(id: string) => void"}
+  RouteOverlay     {"points":"{ x: number; y: number }[]","active?":"boolean"}
+  ZoomControl      {"value":"number","min":"number","max":"number","step?":"number","onChange":"(zoom: number) => void"}
+  Tooltip          {"open?":"boolean","children?":"React.ReactNode"}

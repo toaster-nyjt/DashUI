@@ -24,6 +24,7 @@ Both flows converge on the same endpoint: a box's component is resolved to JSON 
 `resolveComponent` and streamed through `/api/generate` (see §3).
 
 ### Codebase gotchas (read first)
+- **Project conventions** (prompt-writing rules, determinism, testing workflow, environment) live in `AGENTS.md`, which every agent session loads. Read it before changing prompts or checks.
 - **Modified Next.js.** `AGENTS.md`: "This is NOT the Next.js you know" — read
   `node_modules/next/dist/docs/` before writing Next-specific code. App Router.
 - Route handlers return `Response.json(...)`. Anthropic SDK. API key env var: `CLAUDE_API_KEY`. All system prompts live in `app/api/SKILLS.ts`. **Current model arrangement** (all measured; see §14 and `docs/fixtures/model-exp/*_COMPARISON.md`):
@@ -102,6 +103,17 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
    library + floors → `/api/generate` stream → post-processor → `Preview` renders it with
    the UI's `/primitives.tsx`.
 
+### Validation, retries and fallbacks (every stage)
+| Stage | Deterministic check | Attempts | When it never passes |
+|---|---|---|---|
+| plan | `validateConnectivity` (every connection names a real sibling, never itself) | 3 (`PLAN_RETRIES`) | UI aborted (no boxes) |
+| style | `validateStyleSheet` (appearance only; chrome height is the only size) | 3 (`STYLE_RETRIES`) | last sheet used anyway |
+| hoist | `validateHoist` (every component/feature covered verbatim, types valid/unique/used, JSX-safe names, held names real, holder states its unit, every held type has a placer) | 3 (`HOIST_RETRIES`); refusal → once on Opus 4.8 | UI built by hand (no primitives) |
+| layout | `validateLayout` (exact tiling: no gaps, overlaps, out-of-bounds) | 3 (`LAYOUT_RETRIES`) | UI aborted |
+| primitives (each type) | `repairSyntax` first, then `checkPrimitive`: compiles, one `export function <Type>`, no imports/default export, prefixed names, no hard-coded SVG ids / ResizeObserver / redefined FitText / unanchored cq units / % padding, valid floor (`parsePrimitiveFloor`), and `checkPlacement` for holders and held types | 3 (`PRIMITIVE_RETRIES`); refusal → once on Opus 4.8 | type dropped; its features become `null` (hand-built) |
+| leaves | `repairSyntax` (compile guarantee), then `sanitizeLeaf` (post-processor) | 1 + one regeneration if repair can't make it compile; refusal → once on Opus 4.8 | logged `syntaxStillBroken` |
+| path (wiring) | `validateWiring` (every channel id in both endpoints' code) | 3 (`PATH_RETRIES`) | no wiring applied |
+
 Measured on a DJ Table run (2026-09-25): about 222s end to end (plan 64s, style/hoist/layout 44s,
 primitives 46s, leaves 68s).
 
@@ -138,8 +150,7 @@ a prose sentence). It:
 That JSON string is what `handleSend` sends as the user message to `/api/generate`.
 
 **Wiring per route:**
-- **generate** — `system = GENERATE_SYSTEM_PROMPT + COMPONENT_PROTOCOL +
-  sizeNote`; the user message *is* the `resolveComponent` JSON. All three
+- **generate** — `system = buildLeafSystem(...)` (`app/utils/leafPrompt.ts`: QA directive + `buildGenerateSystemPrompt` + `buildComponentProtocol` + primitive library + style or fallback + size note + SIZE BUDGET; see §14); the user message *is* the `resolveComponent` JSON. All three
   `GeneratedBox` call sites pass `fresh = true`, so generation is single-shot from
   the component each time (no multi-turn history in this path).
 - **layout** — receives the **resolved component view** (per the convention above; reuses
@@ -154,8 +165,8 @@ That JSON string is what `handleSend` sends as the user message to `/api/generat
 **Why resolution stays client-side (and is NOT pushed into the protocol):** the
 index→name mapping is trivial but the *deterministic* part of the job. Moving it
 into the LLM (i.e. shipping the full `features` list + active indices and asking the
-model to resolve them) would put off-by-one / miscount risk on the **no-thinking**
-generate path, with **no validation net** (unlike layout, which has `validateLayout`).
+model to resolve them) would put off-by-one / miscount risk on the
+generate path (originally thinking-off; now Opus 5 adaptive, but still) with **no validation net** (unlike layout, which has `validateLayout`).
 The `features` list is also not bounded — the custom-feature flow appends to it
 ([GeneratedBox] `handleUpdateFeatureAndSend`), so arrays grow over a session. So the
 client does the reliable array math; the protocol owns only the schema + the
@@ -256,9 +267,10 @@ which must **never render in any form**. This is what enforces `GENERATE_SYSTEM_
   Stat Dashboard, Calendar, Chart Panel, Form).
 - `app/utils/useGetCode.ts` — `useGetCode` hook: streaming fetch to `/api/generate`,
   message history, `generatedCode` / `isGenerating`.
-- `app/api/{plan,style,layout,spec,generate,path}/route.ts` — the six LLM routes
-  (`style` → one coherent visual identity per generated UI, §9; `path` → runtime
-  functional wiring between a UI's components, §12).
+- `app/api/{plan,style,layout,hoist,primitives,spec,generate,path}/route.ts` — the eight LLM routes
+  (`style` → one coherent visual identity per generated UI, §9; `hoist`/`primitives` → the shared
+  primitive library, §14; `path` → runtime functional wiring between a UI's components, §12), plus
+  `log` (dev-only run log, §13). `spec` defines a custom component with `DEFINE_SYSTEM_PROMPT`.
 
 **Key types**
 ```ts
@@ -304,9 +316,9 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
 
 ## 5. Design decisions & reasoning (the "6 risks")
 
-1. **Async commit before self-gen.** `setComponentRegistry` is queued; the `await
-   fetchValidLayout` between it and `setElementArr` guarantees the registry
-   commits before boxes mount, so each box's mount effect finds its definition (no
+1. **Async commit before self-gen.** `setComponentRegistry` / `setStyleSpec` are queued before the
+   `await fetchValidPrimitives` (or, with no hoist, in the same batch as the parent box), so the
+   registry, style and primitives commit no later than the boxes mount, so each box's mount effect finds its definition (no
    `/api/spec` re-fetch). The box mount effect *is* the post-commit trigger.
 2. **Boxes self-trigger** via the `autoName` mount effect (manual boxes leave
    `autoName` undefined → no-op).
@@ -408,6 +420,7 @@ to their parent's inner grid (`1..w / 1..h`); ungroup converts them to global �
     `canvasWidth` and `gridBlockSize` from it.
 - **No cross-run dedup yet** (deliberately deferred; repeat identical themes can
   collide and `.find()` grabs the first).
+- **Dev hazard: Fast Refresh re-runs generation.** Editing a client-imported app file (`SKILLS.ts`, `helpers.ts`, `spec.ts`, components) while a DashUI tab is open re-runs effects: the last task's whole pipeline (task effect) or its leaves (auto-generate effect), as real paid calls appended to the same run log. Close the tab or stop the dev server while editing those files.
 - **Future: min-size-per-component.** Discussed approach — add optional
   `minBlockDim: XY` to `ComponentDef`, clamp resize in `GeneratedBox`
   (`handleResizeUp`). Keep it a *container* constraint; do NOT put minimums in the
@@ -627,7 +640,7 @@ visual identity that every one of its components is generated against.
 > old chrome token `"h-9 px-3 flex items-center shrink-0"` taught leaves to build
 > content-sized rows. The bullets below describe the original design where they differ.
 
-- Runs **after PLAN, before LAYOUT** in `runUIGeneration` (§2 step 1b). Always
+- Runs **after PLAN, in parallel with HOIST and LAYOUT** (§2 step 2; originally before layout). Always
   called on the auto path; lets errors fall to the pipeline's outer `catch`.
 - Input: `{ task, components }` where `components` is the planner defs **resolved
   through `resolveComponent`** (active set = each component's `defaultActiveIdx`),
@@ -688,8 +701,8 @@ visual identity that every one of its components is generated against.
 
 ### Generate prompt split (`SKILLS.ts`)
 The style sections were **extracted** out of `GENERATE_SYSTEM_PROMPT` into a standalone
-`GENERATE_STYLE_FALLBACK`. `generate/route.ts` builds `system = GENERATE_QA_DIRECTIVE +
-GENERATE_SYSTEM_PROMPT + COMPONENT_PROTOCOL + styleBlock + sizeNote` — `GENERATE_QA_DIRECTIVE`
+`GENERATE_STYLE_FALLBACK`. `buildLeafSystem` (`app/utils/leafPrompt.ts`, called by `generate/route.ts`) builds `system = GENERATE_QA_DIRECTIVE +
+buildGenerateSystemPrompt(...) + buildComponentProtocol(...) + [primitive library] + styleBlock + sizeNote + [SIZE BUDGET]` — `GENERATE_QA_DIRECTIVE`
 is a short max-performance + self-QA preamble (plan before coding, then self-review against the
 rules). `styleBlock` is the per-UI
 `style` (when present, labelled "VISUAL GUIDELINES") or `GENERATE_STYLE_FALLBACK` (when
@@ -878,8 +891,8 @@ immediately reflects A's current state" work, not just "B reacts to A's next cha
   generated code is untouched in `codeMap`, so "unwire" is just clearing the entry.
 
 ### The `/api/path` route
-- `claude-opus-4-8`, adaptive thinking + `effort: "medium"` (mirrors the reasoning-heavy
-  planner). `max_tokens: 32000` (several full components in one response). `PATH_SYSTEM_PROMPT`
+- `claude-opus-4-8`, thinking **off** + `effort: "max"` (so the whole budget goes to the echoed
+  component code; originally adaptive/medium). `max_tokens: 32000` (several full components in one response). `PATH_SYSTEM_PROMPT`
   in `SKILLS.ts`.
 - **Streams internally** (`messages.stream(...).finalMessage()`), unlike the other
   non-streaming design routes. Required: at `max_tokens` this high the SDK **rejects** a
@@ -918,10 +931,10 @@ Every generated UI writes one file, `logs/task-<taskID>.jsonl` (gitignored), wit
 |---|---|
 | `run:start` / `run:plan` / `run:style\|hoist\|layout` / `run:primitives` / `run:boxes` | Task, bounds, elapsed time per stage, resolved defs, placements, leaf keys |
 | `plan`, `layout`, `style`, `hoist` | Full model output (defs, placements, sheet, library + feature map); raw text when it didn't parse; tokens, time |
-| `primitive` | Per type per attempt (written by `/api/primitives`): contract, used-by, check errors, parsed floor, code, model (shows a refusal fallback), tokens, time |
-| `primitives:done` | Usable and dropped types, attempts per type, all floors, stage time |
-| `leaf:start` | Resolved spec (mapped features, `[]` structural, `null` hand-built), prompt mode (primitives only / + hand-built / base), library types, floors, box size, the full system prompt |
-| `leaf:done` | Raw output, final code, what the post-processor removed and added, stop reason, refusal fallback, tokens, time |
+| `primitive` | Per type per attempt (written by `/api/primitives`): contract, used-by, companions, `syntaxRepairs`, `holds` (types it holds) / `heldBy` (its holders), check errors, parsed floor, code, model (shows a refusal fallback), tokens, time |
+| `primitives:done` | Usable and dropped types, `held` (holder → held types), attempts per type, all floors, stage time |
+| `leaf:start` | Resolved spec (mapped features, `[]` structural, `null` hand-built), prompt mode (primitives only / + hand-built / base), library types, `held` (its library's holders), floors, box size, the full system prompt |
+| `leaf:done` | Raw output, final code, what the post-processor removed and added, syntax repairs / regeneration (`syntaxRepairs`, `syntaxRegenerated`, `syntaxStillBroken`), stop reason, refusal fallback, tokens, time |
 | `path` | Channels, input code, wired output |
 
 ## 14. Primitive pipeline — hoist, shared primitives, primitive-built leaves (latest major feature)
@@ -954,10 +967,20 @@ Built 2026-09-24/25 from `docs/PRIMITIVE_HOIST_PLAN (1).md` (Feature 1). The pla
    - percentage padding or margin;
    - an invalid floor (`parsePrimitiveFloor`: 0.5–16rem, real variant keys, applied from the constant).
 
-   Three attempts, with the first error fed back. A type that never passes is dropped, and its features are hand-built.
+   Three attempts (`PRIMITIVE_RETRIES`), with the first error fed back. A type that never passes is dropped, and its features are hand-built.
+
+   **Companions and held types.** Each request also lists **USED WITH**: the other types each using component builds from (`derivePrimitiveCompanions`). A surface that draws other types in its own coordinates (markers on a map) names them in its contract, `"children?": "MapMarker | RouteOverlay"` (HOIST rule HELD TYPES; `heldTypeNames`, checked by `validateHoist`). `primitivePromptSwitches` then swaps prompt variants:
+   - the holder gets **HELD LAYERS**: one layer inside its pan/zoom transform that grid-stacks each child as a full-size layer, and is never pointer-events-none;
+   - each held type gets **HELD**: its outermost element is pointer-events-none, and operable parts set `pointerEvents: "auto"` and stop propagation on pointerdown;
+   - the leaf's prompt gets **HELD LAYERS** too: pass held children directly, with no wrapper.
+   - the holder's description states its coordinate unit (e.g. normalized 0-1) and how children are placed: by their own position prop, or matched by id to the surface's data. `heldPlacement` decides who places each held type from the contracts alone (`hasCoordinates`: its own coordinates → self; else the surface, which then needs a data prop of ids with x/y). The holder and the held type get the matching sentence as a switch, so they can't disagree. `validateHoist` rejects a holder with no stated unit (`surfaceUnit` reads it from the description), or a held type nothing places. `checkPlacement` (`app/utils/placementCheck.ts`, run by `checkPrimitive`) renders the primitive with stub hooks at a probe position and rejects one whose children or position don't land where the unit says, or whose children sit under pointer-events-none.
+
+   Why: in-flow `h-full w-full` roots stacked the map's markers out of view, and the map's pan handler captured their clicks. Without a holder, every prompt is unchanged. Evidence: `docs/fixtures/model-exp/HELD_PRIMITIVES_COMPARISON.md`.
 3. **Leaves** (`/api/generate`, built by `buildLeafSystem`). `resolveComponent(…, primitiveSpec[taskID])` sends `features` as `{ feature: types | [] | null }` via `leafFeatures`:
    - **`null`** = build it yourself. That covers a feature the hoist never saw (toggled on later, user-added) or one whose type was dropped.
    - `needsHandBuiltRules` is true only when some feature is `null` (or the list is plain), and only then does the prompt include the hand-built-only rules and `sizeNote` sentences.
+
+   The size note is adapted for primitive leaves: hand-built-only sentences (`SIZENOTE_HANDBUILT_ONLY`) are dropped, the condense sentence (`SIZENOTE_PRIM_CONDENSE_PREFIX`) is replaced by `sizeNotePrimCondense`, and `sizeNoteRem` gives the box in rem when the SIZE BUDGET is off.
 
    The system prompt swaps rules per pipeline (`*_BASE` for manual boxes, `*_PRIM` for primitive leaves), so neither prompt carries an "exception" to its own rules. Primitive-leaf rules:
    - **PRIMITIVES:** use as-is, author everything around them, choose prop values, wire the data seam to state, and create sample data.
@@ -970,13 +993,15 @@ Built 2026-09-24/25 from `docs/PRIMITIVE_HOIST_PLAN (1).md` (Feature 1). The pla
    - the chrome heights from the style sheet (`parseChromeHeights`);
    - this leaf's own types' floors, then the rest of the library;
    - a request to write the sum as `// BUDGET height: … ≤ H` / `// BUDGET width: … ≤ W` comments.
-4. **Post-processor** (`sanitizeLeaf`, after the stream ends). A JSX-tree rewrite of literal class strings only:
+4. **Compile guarantee** (`app/utils/syntaxRepair.ts`, after the stream ends, before the post-processor). A leaf that doesn't compile is repaired deterministically (misquoted `url(#id)` references, or one missing/stray token at the first error, kept only if the whole file then compiles). If that fails, it is regenerated once with the compile error fed back. Primitives get the same repair before `checkPrimitive`, so these slips no longer cost a retry. Evidence: `docs/fixtures/model-exp/SYNTAX_REPAIR.md`.
+
+5. **Post-processor** (`sanitizeLeaf`, after the stream ends). A JSX-tree rewrite of literal class strings only:
    - around primitives (including through local components that render them), it removes `min-w-0`/`min-h-0`/`overflow-auto|scroll` and turns `overflow-hidden` into `overflow-clip`;
    - in face children, it removes truncate/w-full/h-full/overflow/absolute font sizes;
    - it makes the leaf's `flex-1` body a hidden-scrollbar scroll region, so an over-budget leaf scrolls instead of clipping.
 
    When anything changed, the route sends `LEAF_REPLACE_MARKER` + the cleaned code; `useGetCode` swaps it in. Leaves show the shimmer until the stream ends, so the swap is never visible. Opus 5 leaves rarely need it; it's the safety net for the refusal fallback.
-5. **Render** (`Preview`). `/primitives.tsx` is written with hooks, then `FIT_TEXT_SOURCE`, then every primitive of the UI, and the leaf gets `import { … } from "./primitives"`, so generated code stays import-free. Wiring (§12) is unchanged; `PATH_SYSTEM_PROMPT` says never to define, inline or modify a primitive.
+6. **Render** (`Preview`). `/primitives.tsx` is written with hooks, then `FIT_TEXT_SOURCE`, then every primitive of the UI, and the leaf gets `import { … } from "./primitives"`, so generated code stays import-free. Wiring (§12) is unchanged; `PATH_SYSTEM_PROMPT` says never to define, inline or modify a primitive.
 
 ### FitText (host code, `FIT_TEXT_SOURCE`)
 Hand-written, never generated. Primitives route all display text and face `children` through it. It binary-searches the largest font size at which its children fit in its box (wrapping multi-word content by default), measuring layout sizes so the host's `scale()` doesn't skew it, and skipping the search when nothing changed.

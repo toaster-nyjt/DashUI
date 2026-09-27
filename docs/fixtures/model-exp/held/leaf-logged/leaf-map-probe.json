@@ -1,0 +1,85 @@
+{
+  "summary": {
+    "leaf": "docs\\fixtures\\model-exp\\held\\leaf-logged\\0.tsx",
+    "renderError": null,
+    "markers": 9,
+    "visibleOnTop": 0,
+    "inBoxButCovered": 1,
+    "outOfBox": 8,
+    "click": null
+  },
+  "before": [
+    {
+      "id": "ft1",
+      "x": 269,
+      "y": 784,
+      "inBox": false,
+      "onTop": false,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "ft2",
+      "x": 515,
+      "y": 1228,
+      "inBox": false,
+      "onTop": false,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "ft3",
+      "x": 93,
+      "y": 2094,
+      "inBox": false,
+      "onTop": false,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "ft4",
+      "x": 683,
+      "y": 2590,
+      "inBox": false,
+      "onTop": false,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "q1",
+      "x": 430,
+      "y": 203,
+      "inBox": true,
+      "onTop": false,
+      "state": "{\"state\":\"tracked\"}"
+    },
+    {
+      "id": "q2",
+      "x": 170,
+      "y": 3313,
+      "inBox": false,
+      "onTop": false,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "q3",
+      "x": 116,
+      "y": 4142,
+      "inBox": false,
+      "onTop": false,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "q4",
+      "x": 614,
+      "y": 4639,
+      "inBox": false,
+      "onTop": false,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "q5",
+      "x": 346,
+      "y": 5124,
+      "inBox": false,
+      "onTop": false,
+      "state": "{\"state\":\"default\"}"
+    }
+  ]
+}

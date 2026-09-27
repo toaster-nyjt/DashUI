@@ -1,0 +1,120 @@
+{
+  "CharacterPortrait": {
+    "base": [
+      4,
+      5
+    ]
+  },
+  "StatBar": {
+    "base": [
+      6,
+      1.5
+    ]
+  },
+  "StatusEffectStrip": {
+    "base": [
+      6,
+      2.6
+    ]
+  },
+  "Badge": {
+    "base": [
+      2,
+      2
+    ]
+  },
+  "NumericReadout": {
+    "base": [
+      3.5,
+      1.5
+    ]
+  },
+  "PushButton": {
+    "base": [
+      2.75,
+      1.75
+    ]
+  },
+  "ToggleButton": {
+    "base": [
+      4.5,
+      2
+    ]
+  },
+  "TabSelector": {
+    "base": [
+      6,
+      2.25
+    ]
+  },
+  "ItemList": {
+    "base": [
+      9,
+      4.5
+    ]
+  },
+  "EquipmentSlot": {
+    "base": [
+      4.5,
+      4
+    ]
+  },
+  "BodyDiagram": {
+    "base": [
+      10,
+      13
+    ]
+  },
+  "StatLineList": {
+    "base": [
+      7,
+      2.75
+    ]
+  },
+  "StatTooltip": {
+    "base": [
+      9,
+      3
+    ]
+  },
+  "Checklist": {
+    "base": [
+      9,
+      3.5
+    ]
+  },
+  "MapCanvas": {
+    "base": [
+      10,
+      8
+    ]
+  },
+  "MapMarker": {
+    "base": [
+      2,
+      2
+    ],
+    "kind:district": [
+      5,
+      1.5
+    ]
+  },
+  "RouteOverlay": {
+    "base": [
+      2,
+      2
+    ]
+  },
+  "ZoomPanControls": {
+    "base": [
+      2.5,
+      6.5
+    ]
+  },
+  "KeyLegend": {
+    "base": [
+      6,
+      3.2
+    ]
+  }
+}

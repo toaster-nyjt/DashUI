@@ -1,0 +1,29 @@
+{
+  "config": {
+    "budget": true,
+    "MODEL": "claude-opus-5",
+    "THINKING": "adaptive",
+    "EFFORT": "low"
+  },
+  "wall": 58.485,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "Cyberpunk 2077: Weapon & Gear Loadout",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 554.8888888888889
+      },
+      "secs": 58.272,
+      "outTok": 5699,
+      "codeTok": 5144,
+      "thinkTok": 555,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + body(weapons 3×4 =12 + gap .5×2=1 + labels 1.5 + armor 2×4=8 + gap .5 = 23.25 max col) + footer 1.75 + padding .75 = 28.0 ≤ 34.7",
+        "// BUDGET width: pad .75 + weapons col 13 + gap .75 + preview 13 + gap .75 + detail col 15 + pad .75 = 44.0 ≤ 52.0"
+      ],
+      "postProcessed": true
+    }
+  ]
+}

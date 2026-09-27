@@ -1,4 +1,4 @@
-import { PrimitiveType, PrimitiveUse, PrimitiveFloor, LeafFeatures } from "@/app/utils/spec";
+import { PrimitiveType, PrimitiveUse, PrimitiveCompanions, PrimitiveFloor, LeafFeatures } from "@/app/utils/spec";
 
 // The fixed high-level design direction injected into both the STYLE prompt (as
 // creative brief for the art director) and the GENERATE prompt (as key directive
@@ -85,7 +85,7 @@ HARD CONSTRAINTS (the arrangement is REJECTED and you will be asked again if any
 DESIGN (build ONE cohesive UI, not a scattered set of tiles):
 - If the user has specific layout requests, follow those exactly.
 - Use each component's "genInstructions" and "role" to judge how central it is to the task; the primary component(s) by role should get more area and a prominent position; supporting/ancillary ones get less.
-- Use each component's "include" list as a CONTENT-DENSITY hint: a component with many active features needs more room to stay legible than a sparse one — bias its area up accordingly.
+- Use each component's "features" list as a CONTENT-DENSITY hint: a component with many active features needs more room to stay legible than a sparse one — bias its area up accordingly.
 - USE "connectivity" TO DRIVE PLACEMENT: functionally connected components must sit physically close so the user's flow runs naturally between them. Try to place components ADJACENT to the components in its "targets"/"effectors" — e.g. a control panel directly beside the display it drives, a menu next to the view it controls.
 - Before answering, DOUBLE-CHECK the arithmetic: the sum over all components of (colEnd-colStart+1) * (rowEnd-rowStart+1) must equal COLS * ROWS exactly, with no overlaps and no gaps.
 
@@ -153,19 +153,22 @@ const GEN_FLOORS_HEAD_INLINE = `- PRIMITIVE FLOORS — A FIRST-CLASS SIZING REQU
 const GEN_FLOORS_HEAD_BUDGET = `- PRIMITIVE FLOORS — A FIRST-CLASS SIZING REQUIREMENT: every primitive has a FLOOR — [width, height] in rem, the smallest size at which it still reads and works.
   - BUDGET FIRST: the SIZE BUDGET at the end of this prompt gives your box and the floors of your primitives, all in rem. Before laying anything out, do the sum it asks for.`;
 
+const GEN_HELD_LAYERS = `  - HELD LAYERS: when a contract types "children" as library type names, that primitive is a surface and those are the primitives drawn on it: pass them as its direct children — no wrapper elements, which would break its layering — each placed in the surface's own coordinates as its description says. They need no slot of their own: the surface is their box.
+`;
+
 // The primitive rules. handBuilt=false (every feature maps to a primitive) drops the one
 // sentence about hand-building, which could never apply there.
-const genPrimitiveRules = (handBuilt: boolean, budget = false): string => `- PRIMITIVES (only when a feature maps to primitive type names): each listed type is a pre-built React component, styled to this UI's VISUAL GUIDELINES and in scope by its exact name (e.g. <Knob />). Build every feature that names a type FROM that type — never your own version — because the same primitive code is shared across this UI, which keeps its repeated parts identical.
+const genPrimitiveRules = (handBuilt: boolean, budget = false, holders = false): string => `- PRIMITIVES (only when a feature maps to primitive type names): each listed type is a pre-built React component, styled to this UI's VISUAL GUIDELINES and in scope by its exact name (e.g. <Knob />). Build every feature that names a type FROM that type — never your own version — because the same primitive code is shared across this UI, which keeps its repeated parts identical.
   - USE AS-IS: never fork, re-implement or restyle a primitive (no className/style overrides, no recoloring wrappers), and never reapply the VISUAL GUIDELINES tokens for controls' insides (rings, tracks, thumbs, on/off fills) around one — it already has them. If it can't express a detail a feature needs, keep it and build ONLY that detail beside it.${handBuilt ? " A feature given as a plain string or mapped to null is one you build yourself as usual." : ""} Excluded features stay excluded even when a capable primitive is in scope.
   - YOU STILL AUTHOR EVERYTHING AROUND THEM: how many of each to render (a 3-band EQ is three <Knob/>s even though the feature lists Knob once), the layout, labels, header/footer chrome, spacing, and the containers around repeated primitives.
   - PROPS: each contract lists prop NAMES and TYPES, not values — YOU choose the values per feature from your genInstructions (the same Knob is min={-12} max={12} in one feature and min={0} max={100} in another). Pass CONFIG props (min, max, mode, ...) as fixed setup, and wire the DATA-SEAM props — the value/data prop and its callback (value + onChange, onPress, on + onChange) — to your own React state, as the INTERACTION rule requires (an unwired callback is a dead control).
   - DATA: primitives hold NO content of their own — every data prop (a list's options/rows, a waveform's data, a readout's value, a tree's nodes) is empty until YOU fill it, and an unfed primitive renders blank. Create realistic sample data in your own state, as you would for hand-built content, and pass it in.
-  - FACE CONTENT: when a contract has "children", that is the element's FACE — pass the text or icon that belongs ON it as children (never beside it); captions that belong beside or around it stay outside. The face scales its children to fit, like text:
+  - FACE CONTENT: when a contract ${holders ? 'types "children" as React.ReactNode' : 'has "children"'}, that is the element's FACE — pass the text or icon that belongs ON it as children (never beside it); captions that belong beside or around it stay outside. The face scales its children to fit, like text:
     - Never give children an absolute font size (no text-sm, text-[11px], fontSize...): it can't be scaled and gets clipped. Give them weight, tracking, case and color; to make one line smaller than another (a title over an artist), use an em-relative size such as text-[0.75em], which scales with the face.
     - Never put "truncate", "w-full", "h-full" or any "overflow-*" on children: the face can only shrink text it can see at full size, and these hide it, so the text renders as a lone ellipsis. Pass plain lines (one <span> per line, stacked with "flex flex-col" when there are several).
     - Size an icon in em (an inline <svg width="1em" height="1em" ...>, or a text glyph) — never a fixed or percentage size.
     - The floor assumes the simplest content (one line). If you pass more, such as two stacked lines, give the box room for all of it.
-<important>
+${holders ? GEN_HELD_LAYERS : ""}<important>
 - PRIMITIVE SLOTS — EVERY PRIMITIVE NEEDS A DEFINITE BOX: a primitive fills its box exactly and never sizes itself. Give each one a box with a definite width AND height, at least its FLOOR, made one of these ways:
   - explicitly in rem, at or above the floor (a 2rem floor gets 2rem or more) — never px;
   - a grid cell or "flex-1" share of a definite-size parent — only if the space actually left for it meets the floor;
@@ -182,16 +185,17 @@ ${budget ? GEN_FLOORS_HEAD_BUDGET : GEN_FLOORS_HEAD_INLINE}
 </important>
 `;
 
-// True when the component builds any content itself: no primitive library, or any
-// active feature given as a plain string / mapped to null. A structural feature ([]) holds
-// only other features' primitives, so it builds nothing by hand.
+// True when the component builds any content itself: no primitive library, any active feature
+// given as a plain string / mapped to null, or no feature mapped to a type at all. A structural
+// feature ([]) beside typed ones only arranges their primitives, so it alone builds nothing by hand.
 export const needsHandBuiltRules = (features: string[] | LeafFeatures, hasLibrary: boolean): boolean =>
-  !hasLibrary || Array.isArray(features) || Object.values(features).some((t) => t === null);
+  !hasLibrary || Array.isArray(features) || Object.values(features).some((t) => t === null)
+  || !Object.values(features).some((t) => t && t.length);
 
 // System prompt for component-generation (code string output), lots of strict restrictions to allow for rendering correctly within Sandpack.
 // primitives = a PRIMITIVE LIBRARY is present; handBuilt=false only for a leaf that
 // assembles EVERY feature from primitives. {primitives:false, handBuilt:true} = manual boxes.
-export const buildGenerateSystemPrompt = ({ primitives, handBuilt, budget = false }: { primitives: boolean; handBuilt: boolean; budget?: boolean }): string => `You are an expert React developer and designer. Generate a single React functional component based on the user's request. The request is structured client content — follow the COMPONENT PROTOCOL (below) to parse it.${primitives ? GEN_INTRO_PRIM : ""}
+export const buildGenerateSystemPrompt = ({ primitives, handBuilt, budget = false, holders = false }: { primitives: boolean; handBuilt: boolean; budget?: boolean; holders?: boolean }): string => `You are an expert React developer and designer. Generate a single React functional component based on the user's request. The request is structured client content — follow the COMPONENT PROTOCOL (below) to parse it.${primitives ? GEN_INTRO_PRIM : ""}
 
 RULES:
 - Output ONLY the React component code, no explanations or markdown
@@ -218,7 +222,7 @@ ${handBuilt ? GEN_LISTS_RULE : ""}${primitives ? GEN_AXES_PRIM : GEN_AXES_BASE}
 ${primitives ? GEN_BUILD_HEAD_PRIM : GEN_BUILD_HEAD_BASE} Treat "genInstructions", "role", and "connectivity" as GUIDELINES that shape HOW you build those features — their purpose, emphasis, and relationships — never as a source of extra features to add. If "genInstructions" seems to describe something not represented in the feature list, defer to the feature list.
 - ROLE & CONNECTIVITY ARE FOCUS GUIDELINES (not extra features): when the component includes "role" and/or "connectivity", use them to understand WHY this component exists and how it relates to its siblings, and let that shape which of its features you emphasize. "role" = this component's purpose within the larger UI. "connectivity" = which sibling components this one drives ("targets") or is driven by ("effectors"); any control or surface a connection needs is ALREADY present in the feature list, so realize those features well and make their purpose obvious rather than inventing new ones. The actual cross-component wiring is injected elsewhere, so build standalone but leave those features intact and ready for it.
 - INTERACTION AND DECORATION: a purely visual/display/stylized/aesthetic component is MORE THAN WELCOME — build it well and don't bolt fake controls onto something that is meant to just show information or aesthetics. But when a component's role carries explicit potential for interaction — anything a user would click, type into, drag, toggle, select, search, filter, sort, reorder, play/pause, or navigate — it MUST give every such control real, working React state and handlers so it genuinely responds to the user, never a static, decorative mockup of a control. (This governs whether the interactive elements you DO render actually work — it is NOT license to add features outside the feature list.) Again, purely visual components are more than welcome.
-${handBuilt ? GEN_PURE_VISUAL_RULE : ""}${primitives ? genPrimitiveRules(handBuilt, budget) : ""}- Use modern React patterns (hooks, functional components)
+${handBuilt ? GEN_PURE_VISUAL_RULE : ""}${primitives ? genPrimitiveRules(handBuilt, budget, holders) : ""}- Use modern React patterns (hooks, functional components)
 - IMPORTANT: Don't generate an attribute or customization if not explicitly told to do so! Example: If generating a graph but not told to include a legend, don't include a legend.
 - IMPORTANT: Never use template literals (backticks with \${}) inside JSX attributes. Use string concatenation instead. For example, use key={"item-" + index} instead of key={\`item-\${index}\`}
 - IMPORTANT: Any JSX attribute value, for example className=... that is not a plain quoted string literal MUST be wrapped in braces. A quoted string followed by any operator must be placed in braces.
@@ -356,7 +360,7 @@ OUTPUT FORMAT — this is strict and mechanical; the response is parsed by match
 const PROTOCOL_FEATURES_PLAIN = `  "features": string[],         // the CANONICAL, EXHAUSTIVE feature list: build EVERY feature here, and NOTHING outside it
   "excludedFeatures": string[]  // features turned off for this instance: never render these in any form, even partially`;
 const protocolFeaturesMapped = (handBuilt: boolean): string => `  "features": string[]                       // the CANONICAL, EXHAUSTIVE feature list: build EVERY feature here, and NOTHING outside it
-           | { "<feature name>": string[] | null }, // OR the same list, each feature mapped to the shared primitive type names it is built from; an EMPTY array = a structural feature, the arrangement that holds this component's other features (lay out their primitives; it has no element of its own)${handBuilt ? "; null = no assigned primitive, build it yourself (see PRIMITIVES)" : ""}
+           | { "<feature name>": string[] | null }, // OR the same list, each feature mapped to the shared primitive type names it is built from; an EMPTY array = a structural feature, the arrangement that holds this component's other features (it has no primitive of its own: you build it — the layout of those features' primitives plus anything drawn to show the arrangement, such as connecting lines or grouping)${handBuilt ? "; null = no assigned primitive, build it yourself (see PRIMITIVES)" : ""}
   "excludedFeatures": string[]  // features turned off for this instance: never render these in any form, even partially`;
 export const buildComponentProtocol = (primitives: boolean, handBuilt = true): string => `
 
@@ -404,8 +408,7 @@ export const sizeBudgetBlock = (box: { x: number; y: number }, used: [string, Pr
     : "";
   return `\n\nSIZE BUDGET — every number for the PRIMITIVE FLOORS check, in rem (16px):
 - Box: ${W}rem wide × ${H}rem tall.${chromeLine}
-- Floors [width × height] of the primitives your features use:
-${used.map(([t, f]) => `    ${t}: ${floorText(f)}`).join("\n")}${others.length ? `\n- Other library primitives, if you reuse one for an incidental element: ${others.map(([t, f]) => `${t} ${floorText(f)}`).join("; ")}.` : ""}
+${used.length ? "- Floors [width × height] of the primitives your features use:\n" + used.map(([t, f]) => `    ${t}: ${floorText(f)}`).join("\n") : "- No primitive your features use has a floor to budget."}${others.length ? `\n- Other library primitives, if you reuse one for an incidental element: ${others.map(([t, f]) => `${t} ${floorText(f)}`).join("; ")}.` : ""}
 Write the sum FIRST, as the opening lines inside GeneratedComponent, for the main stack in each direction — every stacked part in rem (a repeated primitive as count × floor), plus gaps, padding and chrome:
     // BUDGET height: <part> + <part> + ... = <total> ≤ ${H}
     // BUDGET width: <part> + <part> + ... = <total> ≤ ${W}
@@ -453,11 +456,12 @@ WHAT A PRIMITIVE IS NOT:
 - NOT STYLING. No color, className, font, radius, shadow, or size/pixel props. Primitives are size-fluid (they fill the slot a component gives them) and label-free (the component labels them). A semantic variant enum is fine only when it carries meaning (e.g. tone: 'neutral' | 'accent' | 'danger').
 - NOT CONTENT. Titles, names, the numbers shown, the options in a selection are supplied by components at runtime; never bake content into a contract.
 
-STRUCTURAL FEATURES: some features are only an arrangement of other features — a slot, lane, strip, section or column layout that holds controls/displays but has no control or display of its own (e.g. "FX Unit Slots" = the FX units the rack lays out). Assign such a feature an EMPTY array ([]); the component generator builds that structure itself around the primitives its other features use. Never invent a container/slot/lane type to give it something. Use [] ONLY when the feature has no operable or readable element of its own — if it contains one (a lane that IS a waveform display), assign that element's type.
+STRUCTURAL FEATURES: some features are only an arrangement of other features — a slot, lane, strip, section or column layout that holds controls/displays but has no control or display of its own (e.g. "FX Unit Slots" = the FX units the rack lays out). Assign such a feature an EMPTY array ([]); the component generator builds that structure itself around the primitives its other features use, including anything drawn to show it (connecting lines, dividers). Never invent a container/slot/lane type to give it something. Use [] ONLY when the feature has no operable or readable element of its own — if it contains one (a lane that IS a waveform display), assign that element's type.
 
 CONTRACTS: a contract is a prop INTERFACE — prop NAMES and their TypeScript TYPES, never values. Write "min": "number", never "min": 0. A prop belongs in a contract if and only if the primitive's own code needs it to function; everything else is the component generator's job:
 - IN the contract (the primitive reads it): its intrinsic parameters and modes (min, max, "mode?", "steps?" — the knob's drag math and snapping use these) and its data seam (value + onChange for continuous/stepped/selection/text controls; onPress for momentary buttons; on + onChange for latching toggles; value/data/playhead/level for displays).
 - FACE CONTENT: when the element's own face carries content that differs from use to use — text or an icon printed ON it that is its identity to the user — give it a "children?": "React.ReactNode" slot. The content itself is still supplied by the component generator, like any other data; the contract only provides the slot. Decide this per form, from what the element must show in every feature that uses it. Other text the element itself shows that varies by use (an input's placeholder) gets an optional string prop.
+- HELD TYPES: when other library types are drawn ON this element's surface, in its own coordinates (pins on a floor plan, nodes on a graph canvas), give it a "children?" slot typed as the union of exactly those type names — e.g. "children?": "GraphNode | GraphEdge" — instead of React.ReactNode, and say in its description the coordinate unit (e.g. normalized 0-1). Each held type either carries its own position in that unit (a position prop), or the surface lists each element's id with its x and y in a data prop. This is only for elements placed in the surface's own coordinates — never for a layout container (see WHAT A PRIMITIVE IS NOT). A slot holds face content or held types, never both.
 - NOT in the contract (the generator renders it AROUND the primitive): captions/labels that sit BESIDE or around the element (the primitive never draws its own name there), HOW MANY to render, position, grouping — and never any concrete value. The library gives the name "min"; the generator passes the number, so the same Knob is bipolar ±12 in one feature and 0..100 in another.
 A contract must span every feature that uses the type (that is what "one type per form" means in practice: the union of what all its uses need).
 TYPE EACH PROP TO SPAN ITS USES: spanning applies to each prop's TYPE, not just to which props exist. Pick the most expressive type that honestly covers every configuration any use of the type could need, not the simplest one that covers the first use you think of:
@@ -497,16 +501,27 @@ RULES:
 
 /* ---------- PRIMITIVE GENERATION ---------- */
 
+// Primitive-prompt variants, switched by primitivePromptSwitches (helpers.ts). USED WITH is listed
+// only when the type has companions; HELD LAYERS replaces FACE CONTENT for a type whose "children"
+// names library types (a holder); HELD is added for a type some holder names. Who places each
+// held type (heldPlacement, from the contracts) picks one sentence in each, so both agree.
+const PRIM_GIVEN_COMPANIONS = `
+- USED WITH: the other primitives each of those components also builds from, and what each one is — so yours fits beside them.`;
+const PRIM_FACE_BASE = `- FACE CONTENT: if the contract has "children", the element's face is where that content goes — render children ON the face through <FitText> (see TEXT), in the token typography and in the color of the current state. Without children the face is clean: never invent an emblem, glyph or text that pretends to be content.`;
+const primHolds = (places: string[]): string => `- HELD LAYERS: your contract's "children" names the primitives drawn ON your surface. Render them in ONE layer that stacks every child as its own full-size layer — className="absolute inset-0 grid grid-rows-[100%] grid-cols-[100%] [&>*]:[grid-area:1/1]" — and put that layer inside whatever you pan, zoom or scroll, so the children share your coordinate space. ${places.length ? `You place ${places.join(" / ")} yourself: match each child by its id prop to the entry in your data with the same id, and wrap it in a box at that entry's position, inside its layer.` : "Each child places itself from its own position — never position the children yourself."} Never make that layer or any of its ancestors pointer-events-none: the children take their own clicks and hover. Apart from them, draw only what your props supply — never invent an emblem, glyph or text that pretends to be content.`;
+const primHeld = (holders: string[], selfPlaced: boolean): string => `
+- HELD: you are drawn on the surface of ${holders.join(" / ")}, in the box it gives you. ${selfPlaced ? "That box is its whole surface: place your element at your own position, in the unit its description states — a point element (a pin, a node) at a fixed rem size, its FLOOR; a spanning element (a path, an area) stretches with the box." : "The surface sizes and places your box: fill it as usual."} Keep your outermost element "h-full w-full" but "pointer-events-none", give each part the user operates pointerEvents "auto", and call e.stopPropagation() in its onPointerDown, so you never block what lies beneath you or start the surface's drag.`;
+
 // System prompt for the PRIMITIVE route: generates ONE library type's code, once per
 // UI, against that UI's style sheet (appended as VISUAL GUIDELINES, exactly like the
 // generate route). One call per type, all in parallel. Output is concatenated into one
 // shared primitives file per taskID, so names must not collide across primitives.
-export const PRIMITIVE_SYSTEM_PROMPT = `You are an expert React developer and designer building ONE shared primitive for a multi-component UI. A primitive is a small, self-contained building block (a knob, a fader, a waveform display, a track list) that is generated ONCE and then used, unchanged, by every component of the UI that needs it — every use of this element in the UI is literally your code, so it must be excellent and it must work everywhere it is used.
+export const buildPrimitiveSystemPrompt = ({ companions, holds, heldBy, places = [], selfPlaced = false }: { companions: boolean; holds: boolean; heldBy: string[]; places?: string[]; selfPlaced?: boolean }): string => `You are an expert React developer and designer building ONE shared primitive for a multi-component UI. A primitive is a small, self-contained building block (a knob, a fader, a waveform display, a track list) that is generated ONCE and then used, unchanged, by every component of the UI that needs it — every use of this element in the UI is literally your code, so it must be excellent and it must work everywhere it is used.
 
 You are given:
 - Task: the UI this primitive belongs to.
 - PRIMITIVE: its "type" (the exact component name), a "description" of what it is and how input maps to value, and its "props" contract — prop NAMES and TypeScript TYPES (a trailing "?" marks an optional prop).
-- USED BY: every component feature that will build from it. It is the same element in each, configured differently through its props — design it to read correctly in ALL of them.
+- USED BY: every component feature that will build from it. It is the same element in each, configured differently through its props — design it to read correctly in ALL of them.${companions ? PRIM_GIVEN_COMPANIONS : ""}
 - VISUAL GUIDELINES (below): the UI's shared design token sheet.
 
 WHAT YOU OUTPUT:
@@ -523,11 +538,11 @@ CONTROLLED AND PROP-DRIVEN:
 - BUILD EVERY VARIATION THE CONTRACT ALLOWS: each member of a union prop (every orientation, mode, tone, ...) and both the presence and absence of each optional prop is its own complete, designed rendering — the components in USED BY will each pick a different combination, and every one of them must look intentional. A horizontal fader is laid out horizontally (track, thumb, travel along the width), not a vertical one rotated with a transform; a stepped knob shows its detents, a continuous one doesn't.
 - Every OPTIONAL prop must behave sensibly when absent (no steps -> continuous; no scrub callback -> display only, with no scrub affordance).
 - A primitive with no callbacks is a pure display: no hover or press affordance suggesting it can be operated.
-- Drags use pointer events with setPointerCapture, and drag surfaces carry "touch-none" so dragging never scrolls the page. Do not handle wheel events. Never call scrollIntoView, window.scrollTo/scrollBy, .focus() or autoFocus.
+- Drags use pointer events with setPointerCapture, and drag surfaces carry "touch-none" so dragging never scrolls the page. Do not handle wheel events. Never call scrollIntoView, window.scrollTo/scrollBy, .focus() or autoFocus.${heldBy.length ? primHeld(heldBy, selfPlaced) : ""}
 
 LABEL-FREE AND CONTENT-FREE:
 - Never draw a name, caption, title or unit for itself — the component that uses it does its labeling. It DOES show its own state visually (pointer angle, fill level, lit/unlit, fader position, playhead, selected row): that state IS the primitive.
-- FACE CONTENT: if the contract has "children", the element's face is where that content goes — render children ON the face through <FitText> (see TEXT), in the token typography and in the color of the current state. Without children the face is clean: never invent an emblem, glyph or text that pretends to be content.
+${holds ? primHolds(places) : PRIM_FACE_BASE}
 - Data passed through props (option labels, rows, text or numeric values) is rendered as given. Never invent sample data inside the primitive; when data is empty, render a clean empty state.
 
 SIZE-FLUID — it fills whatever slot the component gives it: tiny or huge, any aspect ratio, resized live on either axis:
@@ -547,7 +562,7 @@ FLOOR — the smallest box this primitive still works in:
 - Apply it from the constant, never retyped, on the outermost element, so the declared and applied floor can never differ: const floor = (<Type>_MIN as any)["orientation:" + orientation] ?? <Type>_MIN.base; ... style={{ minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" }} (use the override lookup only for props that have overrides). Inside, keep filling the box exactly as above: the floor only matters when the box would otherwise be smaller.
 
 TEXT — every piece of text is one of two kinds, and each kind has ONE way to be sized:
-- DISPLAY TEXT (the primitive's main readable value, and face content / children) is ALWAYS rendered through the host's <FitText>, never sized by you. <FitText> fills its parent and renders its children at the LARGEST font size at which they fit entirely — it measures the actual content, so long and short values both fit, never clipped or truncated.
+- DISPLAY TEXT (the primitive's main readable value, and face content) is ALWAYS rendered through the host's <FitText>, never sized by you. <FitText> fills its parent and renders its children at the LARGEST font size at which they fit entirely — it measures the actual content, so long and short values both fit, never clipped or truncated.
   - Usage: <FitText className="<display typography + color classes from VISUAL GUIDELINES>">{value}</FitText>. Multi-word content wraps onto lines when that lets it render larger (words are never broken; a value with no spaces stays on one line) — pass wrap={false} only when the design genuinely needs a single line. Optional align: "start" | "center" | "end" (default center).
   - Give it a definite-size region to fill (e.g. a padded "flex-1 min-h-0 min-w-0" box, or "absolute inset-[12%]" inside a face) — its size is exactly that region, so the space around it is how you keep text off the element's edges. Make that space with "inset-[x%]" on an absolute region or with flex gaps, never "p-[x%]": percentage padding is measured from the WIDTH, so in a short, wide slot it can swallow the whole height and leave FitText zero space.
   - Put typography (family, weight, tracking, color, transitions) in its className. NEVER set a font size on display text or its ancestors — no text-* size class, no fontSize style, no viewport or container-query units: FitText owns the size, and anything else fights it.
@@ -573,10 +588,13 @@ export function Knob(props: KnobProps) {
   // ...
 }`;
 
-// User message for one primitive: task, the hoisted type, and its derived usage.
-export const primitiveRequest = (task: string, prim: PrimitiveType, uses: PrimitiveUse[]): string =>
+// User message for one primitive: task, the hoisted type, its derived usage and companions.
+export const primitiveRequest = (task: string, prim: PrimitiveType, uses: PrimitiveUse[], companions: PrimitiveCompanions[] = []): string =>
   `Task: ${task}\n\nPRIMITIVE:\n${JSON.stringify(prim, null, 2)}\n\nUSED BY (component -> feature):\n` +
-  uses.map((u) => `- "${u.component}" -> "${u.feature}"`).join("\n");
+  uses.map((u) => `- "${u.component}" -> "${u.feature}"`).join("\n") +
+  (companions.length ? `\n\nUSED WITH (the other primitives each component builds from):\n` +
+    companions.map((c) => `- "${c.component}":\n` + c.types.map((t) => `    ${t.type}: ${t.description}`).join("\n")).join("\n") : "");
+
 
 /* ---------- FITTEXT (host utility, injected — not generated) ---------- */
 

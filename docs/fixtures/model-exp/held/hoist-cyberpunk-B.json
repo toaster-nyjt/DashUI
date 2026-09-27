@@ -1,0 +1,321 @@
+{
+  "library": [
+    {
+      "type": "CharacterPortrait",
+      "description": "Framed avatar image surface showing a character's portrait from an image source, with optional status glow state.",
+      "props": {
+        "src": "string",
+        "alt?": "string",
+        "state?": "'normal' | 'alert' | 'damaged'"
+      }
+    },
+    {
+      "type": "StatBar",
+      "description": "Horizontal filled bar showing value within 0..max; fill fraction is value/max clamped to 0-1.",
+      "props": {
+        "value": "number",
+        "max": "number",
+        "segments?": "number[]",
+        "tone?": "'neutral' | 'accent' | 'danger' | 'warning'"
+      }
+    },
+    {
+      "type": "StatReadout",
+      "description": "Compact alphanumeric readout showing a single stat value (number or text) with optional delta/modifier indication; no caption of its own.",
+      "props": {
+        "value": "number | string",
+        "delta?": "number",
+        "emphasis?": "'normal' | 'accent' | 'warning'"
+      }
+    },
+    {
+      "type": "PerkNode",
+      "description": "Selectable/unlockable node on a progression tree; reports press to spend a point, exposes locked/unlocked/available state and rank progress (rank within maxRank).",
+      "props": {
+        "state": "'locked' | 'available' | 'unlocked'",
+        "rank?": "number",
+        "maxRank?": "number",
+        "onPress": "(id: string) => void",
+        "id": "string",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "ItemSlot",
+      "description": "Single equipment/cyberware slot surface holding at most one item; reports clicks to equip/unequip and drop targets. Empty when item is null.",
+      "props": {
+        "item": "{ id: string; name: string; rarity?: string; icon?: string } | null",
+        "locked?": "boolean",
+        "onSelect": "(id: string | null) => void",
+        "onClear?": "() => void"
+      }
+    },
+    {
+      "type": "ItemGrid",
+      "description": "Grid selection of inventory items; each cell shows the item's icon, name, quantity and rarity tier. Reports the selected item id and a separate activation (equip/use) action.",
+      "props": {
+        "items": "{ id: string; name: string; icon?: string; rarity?: string; quantity?: number; category?: string }[]",
+        "value": "string | null",
+        "onChange": "(id: string) => void",
+        "onActivate?": "(id: string) => void"
+      }
+    },
+    {
+      "type": "ItemDetailsReadout",
+      "description": "Read-only detail block for one selected entity: name, rarity/type line, description text and a list of stat name/value pairs.",
+      "props": {
+        "name": "string",
+        "subtitle?": "string",
+        "description?": "string",
+        "stats?": "{ label: string; value: number | string; delta?: number }[]"
+      }
+    },
+    {
+      "type": "TabSelector",
+      "description": "Segmented row of mutually exclusive category options; emits the chosen option id.",
+      "props": {
+        "options": "{ id: string; label: string; count?: number }[]",
+        "value": "string",
+        "onChange": "(id: string) => void"
+      }
+    },
+    {
+      "type": "SearchInput",
+      "description": "Single-line text input for filtering; emits the current query string on every change.",
+      "props": {
+        "value": "string",
+        "onChange": "(q: string) => void",
+        "placeholder?": "string"
+      }
+    },
+    {
+      "type": "ActionButton",
+      "description": "Momentary push button that fires once per press; face content supplied by the component.",
+      "props": {
+        "onPress": "() => void",
+        "disabled?": "boolean",
+        "tone?": "'neutral' | 'accent' | 'danger'",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "ToggleSwitch",
+      "description": "Latching two-state switch; on reflects the current state and onChange emits the next state.",
+      "props": {
+        "on": "boolean",
+        "onChange": "(on: boolean) => void",
+        "disabled?": "boolean"
+      }
+    },
+    {
+      "type": "QuestList",
+      "description": "Vertical selection list of multi-field entries (title, category, level/difficulty, status); emits the selected entry id and an optional activation.",
+      "props": {
+        "items": "{ id: string; title: string; category?: string; status?: string; meta?: string; tracked?: boolean }[]",
+        "value": "string | null",
+        "onChange": "(id: string) => void",
+        "onActivate?": "(id: string) => void"
+      }
+    },
+    {
+      "type": "ObjectiveChecklist",
+      "description": "Ordered list of objective steps with per-step completion/current state; read-only progress display.",
+      "props": {
+        "steps": "{ id: string; text: string; state: 'pending' | 'current' | 'done' | 'failed' }[]"
+      }
+    },
+    {
+      "type": "RewardPreview",
+      "description": "Read-only display of reward entries (currency, xp, street cred, items) each with an icon/label and amount.",
+      "props": {
+        "rewards": "{ id: string; label: string; amount?: number | string; icon?: string }[]"
+      }
+    },
+    {
+      "type": "MapCanvas",
+      "description": "Pan/zoomable stylized map surface rendering region shapes and labels in its own normalized 0-1 coordinate space; positioned children are drawn in those coordinates.",
+      "props": {
+        "regions": "{ id: string; label: string; path?: string; x?: number; y?: number }[]",
+        "zoom": "number",
+        "center": "{ x: number; y: number }",
+        "onViewChange?": "(view: { zoom: number; center: { x: number; y: number } }) => void",
+        "children?": "MapMarker | RouteOverlay"
+      }
+    },
+    {
+      "type": "MapMarker",
+      "description": "Point marker placed at normalized 0-1 map coordinates; reports its id on click and exposes kind/selected/active state.",
+      "props": {
+        "id": "string",
+        "x": "number",
+        "y": "number",
+        "kind": "'quest' | 'gig' | 'hustle' | 'fastTravel'",
+        "selected?": "boolean",
+        "discovered?": "boolean",
+        "onSelect": "(id: string) => void"
+      }
+    },
+    {
+      "type": "RouteOverlay",
+      "description": "Polyline path drawn over a map surface through a sequence of normalized 0-1 coordinates, marking the navigation route to a destination.",
+      "props": {
+        "points": "{ x: number; y: number }[]",
+        "active?": "boolean"
+      }
+    },
+    {
+      "type": "ZoomControl",
+      "description": "Stepped zoom control emitting the new zoom level within min..max.",
+      "props": {
+        "value": "number",
+        "min": "number",
+        "max": "number",
+        "step?": "number",
+        "onChange": "(zoom: number) => void"
+      }
+    },
+    {
+      "type": "Tooltip",
+      "description": "Hover/focus-triggered floating info bubble anchored to its trigger element; content supplied by the component.",
+      "props": {
+        "open?": "boolean",
+        "children?": "React.ReactNode"
+      }
+    }
+  ],
+  "components": [
+    {
+      "name": "Cyberpunk: V Character HUD Panel",
+      "features": {
+        "Character Portrait": [
+          "CharacterPortrait"
+        ],
+        "Level Badge": [
+          "StatReadout"
+        ],
+        "Street Cred Bar": [
+          "StatBar"
+        ],
+        "Health Bar": [
+          "StatBar"
+        ],
+        "Armor Bar": [
+          "StatBar"
+        ],
+        "Attribute Levels": [
+          "StatReadout"
+        ],
+        "Available Points": [
+          "StatReadout"
+        ],
+        "Stat Readouts": [
+          "StatReadout"
+        ]
+      }
+    },
+    {
+      "name": "Cyberpunk: Perk & Cyberware Skill Tree",
+      "features": {
+        "Attribute Branches": [],
+        "Perk Nodes": [
+          "PerkNode"
+        ],
+        "Tier Gating": [
+          "PerkNode"
+        ],
+        "Point Spend Control": [
+          "ActionButton",
+          "StatReadout"
+        ],
+        "Cyberware Slots": [
+          "ItemSlot"
+        ],
+        "Node Tooltips": [
+          "Tooltip"
+        ],
+        "Reset Points": [
+          "ActionButton"
+        ]
+      }
+    },
+    {
+      "name": "Cyberpunk: Loadout & Inventory Grid",
+      "features": {
+        "Equipment Slots": [
+          "ItemSlot"
+        ],
+        "Item Grid": [
+          "ItemGrid"
+        ],
+        "Category Tabs": [
+          "TabSelector"
+        ],
+        "Rarity Coloring": [
+          "ItemGrid"
+        ],
+        "Item Details": [
+          "ItemDetailsReadout"
+        ],
+        "Equip Action": [
+          "ActionButton"
+        ],
+        "Search Filter": [
+          "SearchInput"
+        ]
+      }
+    },
+    {
+      "name": "Cyberpunk: Quest Journal Panel",
+      "features": {
+        "Quest Categories": [
+          "TabSelector"
+        ],
+        "Quest List": [
+          "QuestList"
+        ],
+        "Objective Steps": [
+          "ObjectiveChecklist"
+        ],
+        "Reward Preview": [
+          "RewardPreview"
+        ],
+        "Track Toggle": [
+          "ToggleSwitch"
+        ],
+        "Quest Search": [
+          "SearchInput"
+        ]
+      }
+    },
+    {
+      "name": "Cyberpunk: Night City Map",
+      "features": {
+        "District Overlay": [
+          "MapCanvas"
+        ],
+        "Quest Markers": [
+          "MapMarker"
+        ],
+        "Fast Travel Points": [
+          "MapMarker"
+        ],
+        "Route Overlay": [
+          "RouteOverlay"
+        ],
+        "Zoom Controls": [
+          "ZoomControl"
+        ],
+        "Marker Tooltips": [
+          "Tooltip"
+        ]
+      }
+    }
+  ],
+  "_meta": {
+    "model": "claude-opus-5",
+    "secs": 39.299,
+    "outTok": 3585,
+    "inTok": 7134,
+    "stop": "end_turn"
+  }
+}

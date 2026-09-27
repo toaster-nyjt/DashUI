@@ -1,0 +1,8 @@
+config: claude-opus-5 thinking=adaptive effort=low max_tokens=64000 companions=true -> C:\Users\realy\OneDrive\Documents\Work\DashUI\docs\fixtures\model-exp\held\prims-B
+wall 57s  first-try 6/6  passed 6/6  attempts 6  out 20656  $0.753
+  ActionButton     21s  x1    2347 out  ok  
+  Tooltip          21s  x1    1799 out  ok  
+  MapCanvas        40s  x1    4139 out  ok  
+  MapMarker        32s  x1    3412 out  ok  
+  RouteOverlay     31s  x1    3414 out  ok  
+  ZoomControl      57s  x1    5545 out  ok  

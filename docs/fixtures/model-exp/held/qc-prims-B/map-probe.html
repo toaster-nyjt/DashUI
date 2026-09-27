@@ -1,0 +1,398 @@
+<!doctype html><title>map-probe</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<body style="margin:0;background:#050505"><div id="root"></div><script>
+const { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } = React;
+function FitText(props) {
+    const { children, className, wrap = true, align = "center" } = props;
+    const boxRef = useRef(null);
+    const layerRef = useRef(null);
+    const textRef = useRef(null);
+    const [size, setSize] = useState(0);
+    // unsized: the parent gives the box no definite size, so there is nothing to fit to.
+    const [unsized, setUnsized] = useState(false);
+    const lastKey = useRef("");
+    const fit = useCallback(() => {
+        const box = boxRef.current, layer = layerRef.current, text = textRef.current;
+        if (!box || !layer || !text)
+            return;
+        // Hidden (display:none or detached): no layout to measure yet; try again when shown.
+        if (!box.getClientRects().length)
+            return;
+        // Measure with the text out of flow, so the box's size is the parent's, never the text's.
+        layer.style.position = "absolute";
+        const W = box.clientWidth, H = box.clientHeight;
+        if (!W || !H) {
+            // No definite size: show the text at its inherited size instead of shrinking it away.
+            layer.style.position = "static";
+            text.style.fontSize = "";
+            lastKey.current = "";
+            setSize(0);
+            setUnsized(true);
+            return;
+        }
+        setUnsized(false);
+        // Parents may re-render every frame (meters, playheads): skip when nothing changed.
+        const key = W + "x" + H + "|" + text.textContent;
+        if (key === lastKey.current)
+            return;
+        lastKey.current = key;
+        const fits = (px) => {
+            text.style.fontSize = px + "px";
+            return text.scrollWidth <= W - 1 && text.offsetHeight <= H - 1;
+        };
+        const cur = parseFloat(text.style.fontSize) || 0;
+        // Fast path: the current size still fits and one step larger doesn't.
+        if (cur > 0 && fits(cur) && !fits(cur + 0.25)) {
+            text.style.fontSize = cur + "px";
+            return;
+        }
+        let lo = 1, hi = Math.max(2, H), best = 1;
+        for (let i = 0; i < 14; i++) {
+            const mid = (lo + hi) / 2;
+            if (fits(mid)) {
+                best = mid;
+                lo = mid;
+            }
+            else
+                hi = mid;
+        }
+        best = Math.floor(best * 4) / 4;
+        text.style.fontSize = best + "px";
+        setSize(best);
+    }, []);
+    useLayoutEffect(fit);
+    useEffect(() => {
+        const box = boxRef.current;
+        if (!box || typeof ResizeObserver === "undefined")
+            return;
+        const ro = new ResizeObserver(() => fit());
+        ro.observe(box);
+        return () => ro.disconnect();
+    }, [fit]);
+    const justify = align === "start" ? "justify-start" : align === "end" ? "justify-end" : "justify-center";
+    return (React.createElement("div", { ref: boxRef, className: "relative h-full w-full min-w-0 min-h-0 overflow-hidden " + (className || "") },
+        React.createElement("div", { ref: layerRef, className: "inset-0 flex items-center " + justify, style: { position: unsized ? "static" : "absolute" } },
+            React.createElement("span", { ref: textRef, style: {
+                    fontSize: size ? size + "px" : undefined,
+                    lineHeight: 1.1,
+                    display: "inline-block",
+                    whiteSpace: wrap ? "normal" : "nowrap",
+                    maxWidth: wrap ? "calc(100% - 2px)" : undefined,
+                    wordBreak: "keep-all",
+                    overflowWrap: "normal",
+                    textAlign: align === "start" ? "left" : align === "end" ? "right" : "center",
+                } }, children))));
+}
+
+const MapCanvas_MIN = { "base": [12, 9] };
+function MapCanvas(props) {
+    const { regions, center, zoom, onViewChange, children } = props;
+    const uid = useRef("mapcanvas-" + Math.random().toString(36).slice(2)).current;
+    const hostRef = useRef(null);
+    const dragRef = useRef(null);
+    const [dragging, setDragging] = useState(false);
+    const [hot, setHot] = useState(null);
+    const z = Math.max(0.2, zoom || 1);
+    const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+    const onDown = (e) => {
+        const el = hostRef.current;
+        if (!el)
+            return;
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        dragRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY, c: { x: center.x, y: center.y } };
+        setDragging(true);
+    };
+    const onMove = (e) => {
+        const d = dragRef.current;
+        const el = hostRef.current;
+        if (!d || !el || d.id !== e.pointerId)
+            return;
+        const r = el.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0)
+            return;
+        const dx = (e.clientX - d.x) / r.width / z;
+        const dy = (e.clientY - d.y) / r.height / z;
+        onViewChange({ center: { x: clamp01(d.c.x - dx), y: clamp01(d.c.y - dy) }, zoom: z });
+    };
+    const onUp = (e) => {
+        if (dragRef.current && dragRef.current.id === e.pointerId) {
+            dragRef.current = null;
+            setDragging(false);
+        }
+    };
+    const floor = MapCanvas_MIN.base;
+    const tf = "translate(50%, 50%) scale(" + z + ") translate(" + (-center.x * 100) + "%, " + (-center.y * 100) + "%)";
+    const strokeW = 0.35 / z;
+    return (React.createElement("div", { className: "relative h-full w-full overflow-hidden touch-none select-none bg-black/60 ring-1 ring-cyan-400/10 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)]", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem", cursor: dragging ? "grabbing" : "grab" }, ref: hostRef, onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp },
+        React.createElement("div", { className: "pointer-events-none absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-fuchsia-500/5" }),
+        React.createElement("div", { className: "absolute inset-0", style: { transform: tf, transformOrigin: "0% 0%", willChange: "transform" } },
+            React.createElement("svg", { className: "absolute inset-0 h-full w-full", viewBox: "0 0 100 100", preserveAspectRatio: "none" },
+                React.createElement("defs", null,
+                    React.createElement("pattern", { id: uid + "-grid", width: "5", height: "5", patternUnits: "userSpaceOnUse" },
+                        React.createElement("path", { d: "M5 0 L0 0 L0 5", fill: "none", stroke: "rgba(34,211,238,0.14)", strokeWidth: 0.25 / z })),
+                    React.createElement("pattern", { id: uid + "-grid2", width: "25", height: "25", patternUnits: "userSpaceOnUse" },
+                        React.createElement("path", { d: "M25 0 L0 0 L0 25", fill: "none", stroke: "rgba(34,211,238,0.3)", strokeWidth: 0.4 / z })),
+                    React.createElement("linearGradient", { id: uid + "-reg", x1: "0", y1: "0", x2: "1", y2: "1" },
+                        React.createElement("stop", { offset: "0%", stopColor: "rgba(34,211,238,0.18)" }),
+                        React.createElement("stop", { offset: "100%", stopColor: "rgba(232,121,249,0.10)" })),
+                    React.createElement("linearGradient", { id: uid + "-hot", x1: "0", y1: "0", x2: "1", y2: "1" },
+                        React.createElement("stop", { offset: "0%", stopColor: "rgba(34,211,238,0.42)" }),
+                        React.createElement("stop", { offset: "100%", stopColor: "rgba(232,121,249,0.28)" }))),
+                React.createElement("rect", { x: "-50", y: "-50", width: "200", height: "200", fill: "url(#" + uid + "-grid)" }),
+                React.createElement("rect", { x: "-50", y: "-50", width: "200", height: "200", fill: "url(#" + uid + "-grid2)" }),
+                regions.map((r, i) => {
+                    const on = hot === r.id;
+                    const common = {
+                        fill: on ? "url(#" + uid + "-hot)" : "url(#" + uid + "-reg)",
+                        stroke: on ? "rgba(103,232,249,0.95)" : "rgba(34,211,238,0.45)",
+                        strokeWidth: on ? strokeW * 1.8 : strokeW,
+                        style: { transition: "fill 200ms ease-out, stroke 200ms ease-out" },
+                        onPointerEnter: () => setHot(r.id),
+                        onPointerLeave: () => setHot((h) => (h === r.id ? null : h)),
+                    };
+                    if (r.path) {
+                        return (React.createElement("g", { key: r.id + "-" + i },
+                            React.createElement("path", { d: r.path, vectorEffect: "non-scaling-stroke", ...common })));
+                    }
+                    const b = r.bounds;
+                    if (!b)
+                        return null;
+                    return (React.createElement("g", { key: r.id + "-" + i },
+                        React.createElement("rect", { x: b.x * 100, y: b.y * 100, width: b.w * 100, height: b.h * 100, ...common }),
+                        React.createElement("path", { d: "M" + (b.x * 100) + " " + ((b.y + b.h) * 100 - Math.min(4, b.h * 30)) +
+                                " L" + (b.x * 100) + " " + ((b.y + b.h) * 100) +
+                                " L" + (b.x * 100 + Math.min(4, b.w * 30)) + " " + ((b.y + b.h) * 100), fill: "none", stroke: on ? "rgba(253,224,71,0.9)" : "rgba(34,211,238,0.6)", strokeWidth: strokeW * 1.6 })));
+                })),
+            regions.map((r, i) => {
+                const b = r.bounds;
+                if (!b || !r.label)
+                    return null;
+                const on = hot === r.id;
+                return (React.createElement("div", { key: "lbl-" + r.id + "-" + i, className: "pointer-events-none absolute flex items-center justify-center", style: {
+                        left: b.x * 100 + "%",
+                        top: b.y * 100 + "%",
+                        width: b.w * 100 + "%",
+                        height: b.h * 100 + "%",
+                    } },
+                    React.createElement("span", { className: "font-mono font-semibold uppercase leading-none whitespace-nowrap transition-all duration-200 ease-out " +
+                            (on ? "text-cyan-100" : "text-cyan-300/70"), style: {
+                            fontSize: 0.625 / z + "rem",
+                            letterSpacing: 0.18 / z + "rem",
+                            textShadow: on ? "0 0 8px rgba(34,211,238,0.8)" : "none",
+                        } }, r.label)));
+            }),
+            children ? (React.createElement("div", { className: "absolute inset-0 grid grid-rows-[100%] grid-cols-[100%] [&>*]:[grid-area:1/1]" }, children)) : null),
+        React.createElement("div", { className: "pointer-events-none absolute inset-0" },
+            React.createElement("div", { className: "absolute left-1/2 top-1/2 h-px w-4 -translate-x-1/2 -translate-y-1/2 bg-amber-300/40" }),
+            React.createElement("div", { className: "absolute left-1/2 top-1/2 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-amber-300/40" }),
+            React.createElement("div", { className: "absolute inset-0 ring-1 ring-inset ring-cyan-400/20" }),
+            React.createElement("div", { className: "absolute left-0 top-0 h-3 w-3 border-l border-t border-cyan-300/60" }),
+            React.createElement("div", { className: "absolute right-0 top-0 h-3 w-3 border-r border-t border-cyan-300/60" }),
+            React.createElement("div", { className: "absolute bottom-0 left-0 h-3 w-3 border-b border-l border-cyan-300/60" }),
+            React.createElement("div", { className: "absolute bottom-0 right-0 h-3 w-3 border-b border-r border-cyan-300/60" }),
+            React.createElement("div", { className: "absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-300/30 to-transparent", style: { animation: "mc" + uid.slice(-4) + " 5s linear infinite" } })),
+        React.createElement("style", null, "@keyframes mc" + uid.slice(-4) + " { 0% { top: 0%; opacity: 0 } 10% { opacity: 1 } 90% { opacity: 1 } 100% { top: 100%; opacity: 0 } }")));
+}
+
+const MapMarker_MIN = { "base": [2, 2] };
+function MapMarker(props) {
+    const uid = useRef("mapmarker-" + Math.random().toString(36).slice(2)).current;
+    const [hot, setHot] = useState(false);
+    const [press, setPress] = useState(false);
+    const state = props.state || "default";
+    const locked = state === "locked";
+    const kind = (props.kind || "").toLowerCase();
+    const palette = state === "selected"
+        ? { main: "#67e8f9", glow: "rgba(34,211,238,0.75)", ring: "rgba(34,211,238,0.55)" }
+        : state === "tracked"
+            ? { main: "#fcd34d", glow: "rgba(251,191,36,0.7)", ring: "rgba(251,191,36,0.5)" }
+            : locked
+                ? { main: "#737373", glow: "rgba(115,115,115,0.25)", ring: "rgba(115,115,115,0.35)" }
+                : { main: "#e879f9", glow: "rgba(232,121,249,0.55)", ring: "rgba(232,121,249,0.4)" };
+    const glyph = (() => {
+        if (kind.indexOf("travel") >= 0 || kind.indexOf("fast") >= 0) {
+            // fast travel: chevron burst
+            return (React.createElement("g", null,
+                React.createElement("path", { d: "M50 30 L64 50 L50 70 L36 50 Z", fill: palette.main, opacity: "0.9" }),
+                React.createElement("path", { d: "M50 38 L58 50 L50 62 L42 50 Z", fill: "#0a0a0a" }),
+                React.createElement("path", { d: "M28 50 H16 M84 50 H72", stroke: palette.main, strokeWidth: "5", strokeLinecap: "square" })));
+        }
+        if (kind.indexOf("quest") >= 0 || kind.indexOf("main") >= 0 || kind.indexOf("job") >= 0) {
+            return (React.createElement("g", null,
+                React.createElement("path", { d: "M50 26 L58 44 L50 50 L42 44 Z", fill: palette.main }),
+                React.createElement("path", { d: "M50 74 L42 56 L50 50 L58 56 Z", fill: palette.main, opacity: "0.7" })));
+        }
+        if (kind.indexOf("shop") >= 0 || kind.indexOf("vendor") >= 0 || kind.indexOf("ripper") >= 0) {
+            return (React.createElement("g", null,
+                React.createElement("rect", { x: "36", y: "36", width: "28", height: "28", fill: palette.main, opacity: "0.85" }),
+                React.createElement("rect", { x: "44", y: "44", width: "12", height: "12", fill: "#0a0a0a" })));
+        }
+        if (kind.indexOf("danger") >= 0 || kind.indexOf("hostile") >= 0 || kind.indexOf("gang") >= 0) {
+            return (React.createElement("g", null,
+                React.createElement("path", { d: "M50 30 L68 66 H32 Z", fill: palette.main, opacity: "0.9" }),
+                React.createElement("rect", { x: "47", y: "42", width: "6", height: "14", fill: "#0a0a0a" }),
+                React.createElement("rect", { x: "47", y: "59", width: "6", height: "5", fill: "#0a0a0a" })));
+        }
+        return (React.createElement("g", null,
+            React.createElement("circle", { cx: "50", cy: "50", r: "13", fill: palette.main, opacity: "0.9" }),
+            React.createElement("circle", { cx: "50", cy: "50", r: "5", fill: "#0a0a0a" })));
+    })();
+    const scale = press ? 0.9 : hot && !locked ? 1.18 : state === "selected" ? 1.1 : 1;
+    return (React.createElement("div", { className: "h-full w-full pointer-events-none relative", style: { minWidth: MapMarker_MIN.base[0] + "rem", minHeight: MapMarker_MIN.base[1] + "rem" } },
+        React.createElement("div", { className: "absolute", style: {
+                left: (props.position.x * 100) + "%",
+                top: (props.position.y * 100) + "%",
+                width: "2rem",
+                height: "2rem",
+                transform: "translate(-50%, -50%) scale(" + scale + ")",
+                transition: "transform 200ms ease-out",
+                pointerEvents: "auto",
+                cursor: locked ? "not-allowed" : "pointer",
+                opacity: locked ? 0.45 : 1,
+                filter: locked ? "grayscale(1)" : "none",
+            }, onPointerDown: (e) => { e.stopPropagation(); setPress(true); }, onPointerUp: () => { setPress(false); if (!locked)
+                props.onSelect(props.id); }, onPointerCancel: () => setPress(false), onPointerEnter: () => { setHot(true); if (props.onHover)
+                props.onHover(props.id); }, onPointerLeave: () => { setHot(false); setPress(false); if (props.onHover)
+                props.onHover(null); } },
+            React.createElement("svg", { viewBox: "0 0 100 100", preserveAspectRatio: "xMidYMid meet", className: "h-full w-full overflow-visible" },
+                React.createElement("defs", null,
+                    React.createElement("radialGradient", { id: uid + "-halo" },
+                        React.createElement("stop", { offset: "0%", stopColor: palette.main, stopOpacity: "0.45" }),
+                        React.createElement("stop", { offset: "70%", stopColor: palette.main, stopOpacity: "0.08" }),
+                        React.createElement("stop", { offset: "100%", stopColor: palette.main, stopOpacity: "0" }))),
+                React.createElement("circle", { cx: "50", cy: "50", r: "46", fill: "url(#" + uid + "-halo)" }),
+                (state === "tracked" || state === "selected") && !locked ? (React.createElement("circle", { cx: "50", cy: "50", r: "40", fill: "none", stroke: palette.ring, strokeWidth: "2" },
+                    React.createElement("animate", { attributeName: "r", values: "26;46", dur: "1.8s", repeatCount: "indefinite" }),
+                    React.createElement("animate", { attributeName: "opacity", values: "0.8;0", dur: "1.8s", repeatCount: "indefinite" }))) : null,
+                React.createElement("g", { style: { transformOrigin: "50px 50px", filter: "drop-shadow(0 0 5px " + palette.glow + ")" } },
+                    React.createElement("polygon", { points: "50,8 88,50 50,92 12,50", fill: "rgba(10,10,10,0.82)", stroke: palette.main, strokeOpacity: state === "default" ? 0.55 : 0.95, strokeWidth: "3" }),
+                    React.createElement("polygon", { points: "50,18 78,50 50,82 22,50", fill: "none", stroke: palette.main, strokeOpacity: "0.25", strokeWidth: "1" }),
+                    glyph),
+                !locked ? (React.createElement("g", { stroke: palette.main, strokeWidth: "2.5", strokeLinecap: "square", opacity: hot || state !== "default" ? 0.95 : 0.4 },
+                    React.createElement("path", { d: "M50 2 V-4" }),
+                    React.createElement("path", { d: "M50 98 V104" }),
+                    React.createElement("path", { d: "M6 50 H0" }),
+                    React.createElement("path", { d: "M94 50 H100" }),
+                    React.createElement("g", { style: { transformOrigin: "50px 50px", animation: hot ? "none" : "none" } }))) : null,
+                locked ? (React.createElement("g", { stroke: "#a3a3a3", strokeWidth: "3", strokeLinecap: "square" },
+                    React.createElement("path", { d: "M30 30 L70 70", opacity: "0.5" }))) : null))));
+}
+
+function RouteOverlay(props) {
+    const uid = useRef("routeoverlay-" + Math.random().toString(36).slice(2)).current;
+    const floor = RouteOverlay_MIN.base;
+    const pts = Array.isArray(props.points) ? props.points.filter((p) => p && isFinite(p.x) && isFinite(p.y)) : [];
+    const has = pts.length >= 1;
+    const d = useMemo(() => {
+        if (pts.length < 2)
+            return "";
+        const c = pts.map((p) => ({ x: Math.max(0, Math.min(1, p.x)) * 100, y: Math.max(0, Math.min(1, p.y)) * 100 }));
+        let s = "M " + c[0].x.toFixed(3) + " " + c[0].y.toFixed(3);
+        for (let i = 1; i < c.length; i++)
+            s += " L " + c[i].x.toFixed(3) + " " + c[i].y.toFixed(3);
+        return s;
+    }, [props.points]);
+    const mid = pts.length ? pts[Math.floor((pts.length - 1) / 2)] : { x: 0.5, y: 0.5 };
+    const last = pts.length ? pts[pts.length - 1] : null;
+    const fmt = (n) => (n >= 100 ? Math.round(n).toString() : n.toFixed(1));
+    return (React.createElement("div", { className: "h-full w-full pointer-events-none relative transition-all duration-300 ease-out", style: {
+            minWidth: floor[0] + "rem",
+            minHeight: floor[1] + "rem",
+            opacity: props.visible && has ? 1 : 0,
+            filter: props.visible ? "none" : "blur(2px)",
+        } },
+        React.createElement("style", null, "@keyframes " + uid + "-dash{to{stroke-dashoffset:-24}}@keyframes " + uid + "-ping{0%{transform:scale(.6);opacity:.9}70%{transform:scale(1.9);opacity:0}100%{opacity:0}}"),
+        React.createElement("svg", { className: "absolute inset-0 h-full w-full", viewBox: "0 0 100 100", preserveAspectRatio: "none" },
+            React.createElement("defs", null,
+                React.createElement("linearGradient", { id: uid + "-g", x1: "0", y1: "0", x2: "1", y2: "1" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#fcd34d" }),
+                    React.createElement("stop", { offset: "55%", stopColor: "#22d3ee" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#e879f9" })),
+                React.createElement("filter", { id: uid + "-glow", x: "-50%", y: "-50%", width: "200%", height: "200%" },
+                    React.createElement("feGaussianBlur", { stdDeviation: "1.6", result: "b" }),
+                    React.createElement("feMerge", null,
+                        React.createElement("feMergeNode", { in: "b" }),
+                        React.createElement("feMergeNode", { in: "SourceGraphic" })))),
+            d ? (React.createElement("g", null,
+                React.createElement("path", { d: d, fill: "none", stroke: "#000", strokeOpacity: "0.65", strokeWidth: "7", strokeLinejoin: "round", strokeLinecap: "round", vectorEffect: "non-scaling-stroke" }),
+                React.createElement("path", { d: d, fill: "none", stroke: "url(#" + uid + "-g)", strokeOpacity: "0.35", strokeWidth: "6", strokeLinejoin: "round", strokeLinecap: "round", vectorEffect: "non-scaling-stroke", filter: "url(#" + uid + "-glow)" }),
+                React.createElement("path", { d: d, fill: "none", stroke: "url(#" + uid + "-g)", strokeWidth: "2", strokeLinejoin: "round", strokeLinecap: "round", vectorEffect: "non-scaling-stroke" }),
+                React.createElement("path", { d: d, fill: "none", stroke: "#ecfeff", strokeOpacity: "0.9", strokeWidth: "1.5", strokeLinecap: "round", strokeDasharray: "6 18", vectorEffect: "non-scaling-stroke", style: { animation: uid + "-dash 1.1s linear infinite" } }))) : null),
+        pts.map((p, i) => {
+            const isFirst = i === 0;
+            const isLast = i === pts.length - 1 && pts.length > 1;
+            const size = isFirst || isLast ? 0.72 : 0.42;
+            const col = isFirst ? "#fcd34d" : isLast ? "#e879f9" : "#22d3ee";
+            return (React.createElement("div", { key: "wp-" + i, className: "absolute", style: {
+                    left: Math.max(0, Math.min(1, p.x)) * 100 + "%",
+                    top: Math.max(0, Math.min(1, p.y)) * 100 + "%",
+                    width: size + "rem",
+                    height: size + "rem",
+                    transform: "translate(-50%,-50%)",
+                } },
+                (isFirst || isLast) && (React.createElement("div", { className: "absolute inset-0 rounded-full", style: {
+                        border: "1px solid " + col,
+                        animation: uid + "-ping 1.8s cubic-bezier(0,0,0.2,1) infinite",
+                        animationDelay: isLast ? "0.5s" : "0s",
+                    } })),
+                React.createElement("div", { className: "absolute inset-0 rounded-full", style: {
+                        background: isLast ? col : "rgba(0,0,0,0.85)",
+                        border: "1px solid " + col,
+                        boxShadow: "0 0 8px " + col,
+                        transform: isFirst || isLast ? "rotate(45deg)" : "none",
+                        borderRadius: isFirst ? "2px" : undefined,
+                    } })));
+        }),
+        typeof props.distance === "number" && has ? (React.createElement("div", { className: "absolute", style: {
+                left: Math.max(0, Math.min(1, (last || mid).x)) * 100 + "%",
+                top: Math.max(0, Math.min(1, (last || mid).y)) * 100 + "%",
+                transform: "translate(-50%,-190%)",
+            } },
+            React.createElement("div", { className: "flex items-center gap-1 whitespace-nowrap border border-amber-300/50 bg-black/80 px-2 py-1 shadow-[0_0_12px_rgba(252,211,77,0.35)] backdrop-blur-sm" },
+                React.createElement("span", { className: "block h-1 w-1 rounded-full bg-amber-300 shadow-[0_0_6px_rgba(252,211,77,0.9)]" }),
+                React.createElement("span", { className: "font-mono text-[10px] font-bold uppercase tracking-[0.18em] leading-none text-amber-300" }, fmt(props.distance))))) : null));
+}
+const RouteOverlay_MIN = { "base": [6, 4] };
+
+const REGIONS = [{"id":"r1","label":"QXALPHA","bounds":{"x":0.2,"y":0.25,"w":0.2,"h":0.16}},{"id":"r2","label":"QXBRAVO","bounds":{"x":0.55,"y":0.3,"w":0.2,"h":0.16}},{"id":"r3","label":"QXCHARLIE","bounds":{"x":0.35,"y":0.6,"w":0.24,"h":0.16}}];
+const MARKERS = [{"id":"m-r1","position":{"x":0.30000000000000004,"y":0.33}},{"id":"m-r2","position":{"x":0.65,"y":0.38}},{"id":"m-r3","position":{"x":0.47,"y":0.6799999999999999}}];
+window.__sel = []; window.__hov = [];
+const h = React.createElement;
+function Harness() {
+  const [view, setView] = useState({ center: { x: 0.5, y: 0.5 }, zoom: 1 });
+  window.__setView = setView; window.__view = view;
+  return h("div", { id: "slot", className: "bg-zinc-950", style: { position: "absolute", left: 20, top: 20, width: 720, height: 460 } },
+    h(MapCanvas, { regions: REGIONS, center: view.center, zoom: view.zoom, onViewChange: setView },
+      h(RouteOverlay, { points: MARKERS.map((m) => ({ x: m.position.x + 0.0003, y: m.position.y + 0.0003 })), visible: true }),
+      MARKERS.map((m) => h(MapMarker, { key: m.id, id: m.id, position: m.position, kind: "quest", state: "default",
+        onSelect: (id) => window.__sel.push(id), onHover: (id) => window.__hov.push(id) }))));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(h(Harness));
+// Children are passed bare, as a leaf passes them; route waypoints sit 0.03% off the markers, so the
+// element at exactly left:x% is the marker.
+// District centre = the smallest rendered element (>=1% of the slot) holding the label's centre,
+// outside the children — i.e. the region shape the map drew.
+window.__events = [];
+const markerEl = (pos) => [...document.querySelectorAll("#slot *")].find((c) => c.style && c.style.left && !/QX[A-Z]/.test(c.textContent) && Math.abs(parseFloat(c.style.left) - pos.x * 100) < 1e-6 && Math.abs(parseFloat(c.style.top) - pos.y * 100) < 1e-6);
+["pointerdown", "pointerup", "click"].forEach((t) => document.addEventListener(t, (e) => window.__events.push({ t, inMarker: MARKERS.some((m) => { const k = markerEl(m.position); return k && k.contains(e.target); }), tag: e.target.tagName }), true));
+window.__measure = () => {
+  const slotEl = document.getElementById("slot"), slot = slotEl.getBoundingClientRect(), area = slot.width * slot.height;
+  const kids = MARKERS.map((m) => markerEl(m.position)).filter(Boolean);
+  const inKids = (e) => kids.some((k) => k.contains(e)) || e.closest("[data-kid]") !== null || e.tagName === "polyline";
+  const labelAt = (txt) => { const w = document.createTreeWalker(slotEl, NodeFilter.SHOW_TEXT);
+    for (let n; (n = w.nextNode());) if (n.textContent.trim() === txt && !inKids(n.parentElement)) { const r = document.createRange(); r.selectNodeContents(n); const b = r.getBoundingClientRect(); if (b.width) return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; } return null; };
+  const regionAt = (p) => { if (!p) return null; let best = null;
+    for (const e of slotEl.querySelectorAll("*")) { if (inKids(e) || e.closest("text")) continue; const b = e.getBoundingClientRect(), a = b.width * b.height;
+      if (a < area * 0.01 || a > area * 0.95 || p.x < b.left || p.x > b.right || p.y < b.top || p.y > b.bottom) continue;
+      if (e.querySelector && [...e.querySelectorAll("*")].some((c) => c.textContent && c.textContent.trim() === "") && e.children.length > 3) continue;
+      if (!best || a < best.a) best = { a, x: b.x + b.width / 2, y: b.y + b.height / 2, tag: e.tagName }; }
+    return best; };
+  const markerAt = (id, pos) => { const e = markerEl(pos); if (!e) return null;
+    const b = e.getBoundingClientRect(); const c = { x: b.x + b.width / 2, y: b.y + b.height / 2 }; const hit = document.elementFromPoint(c.x, c.y);
+    return { ...c, onTop: !!(hit && e.contains(hit)), hitTag: hit && hit.tagName }; };
+  return MARKERS.map((m, i) => { const l = labelAt(REGIONS[i].label), r = regionAt(l), k = markerAt(m.id, m.position);
+    return { id: m.id, region: r && { x: r.x, y: r.y, tag: r.tag }, marker: k, dist: r && k ? +Math.hypot(r.x - k.x, r.y - k.y).toFixed(1) : null }; });
+};
+</script>

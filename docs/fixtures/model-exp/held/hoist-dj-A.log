@@ -1,0 +1,14 @@
+hoist 33s  3124 out  valid=true  types=13
+  SearchInput      {"value":"string","onChange":"(q: string) => void","placeholder?":"string"}
+  TreeSelector     {"nodes":"{ id: string; label: string; children?: any[] }[]","value":"string","onChange":"(id: string) => void"}
+  TrackList        {"columns":"{ key: string; label: string }[]","rows":"{ id: string; [key: string]: string | number }[]","value":"string","onChange":"(id: string) => void","onActivate?":"(id: string) => void","sortKey?":"string","sortDir?":"'asc' | 'desc'","onSortChange?":"(key: string, dir: 'asc' | 'desc') => void"}
+  PushButton       {"onPress":"() => void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  ToggleButton     {"on":"boolean","onChange":"(on: boolean) => void","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  Knob             {"min":"number","max":"number","value":"number","onChange":"(v: number) => void","mode?":"'continuous' | 'stepped'","steps?":"number[]","detents?":"number[]"}
+  Fader            {"min":"number","max":"number","value":"number","onChange":"(v: number) => void","orientation?":"'vertical' | 'horizontal'","center?":"number","steps?":"number[]"}
+  JogWheel         {"angle":"number","onScrub":"(deltaRevolutions: number) => void","mode?":"'vinyl' | 'cdj'","spinning?":"boolean"}
+  WaveformDisplay  {"peaks":"number[]","duration":"number","playhead":"number","beatGrid?":"number[]","zoom?":"number","mode?":"'scrolling' | 'overview'","onSeek?":"(seconds: number) => void"}
+  LevelMeter       {"level":"number","peak?":"number","orientation?":"'vertical' | 'horizontal'"}
+  Readout          {"value":"string | number","lines?":"(string | number)[]","emphasis?":"'primary' | 'secondary'"}
+  CuePad           {"set":"boolean","onPress":"() => void","onClear?":"() => void","children?":"React.ReactNode"}
+  OptionSelector   {"options":"{ id: string; label: string }[]","value":"string","onChange":"(id: string) => void"}

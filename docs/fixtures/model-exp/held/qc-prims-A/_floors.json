@@ -1,0 +1,20 @@
+{
+  "MapCanvas": {
+    "base": [
+      12,
+      10
+    ]
+  },
+  "MapMarker": {
+    "base": [
+      2,
+      2
+    ]
+  },
+  "RouteOverlay": {
+    "base": [
+      4,
+      4
+    ]
+  }
+}

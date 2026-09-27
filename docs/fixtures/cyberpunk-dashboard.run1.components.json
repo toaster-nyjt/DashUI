@@ -1,0 +1,199 @@
+[
+ {
+  "name": "Cyberpunk 2077: Character Vitals HUD",
+  "genInstructions": "Build a neon-glitch HUD panel showing V's animated portrait plus live bars for Health, Armor, Stamina and RAM, with a status-effect strip; it is the central readout of the player's current combat-readiness.",
+  "role": "Serves as the live survivability readout of the dashboard, aggregating bonuses from attributes, cyberware, and equipped gear into the player's current health, armor, stamina, and RAM.",
+  "connectivity": {
+   "effectors": [
+    {
+     "name": "Cyberpunk 2077: Attributes & Perks Panel",
+     "description": "When the user allocates points to attributes (especially Body and Reflexes/Cool), the panel emits the new attribute values; this HUD recomputes and re-renders max Health, max Stamina, and RAM ceiling accordingly and animates the bars to the new maxima."
+    },
+    {
+     "name": "Cyberpunk 2077: Cyberware Augmentation Grid",
+     "description": "When the user installs/removes cyberware, the grid emits the aggregate stat deltas (bonus RAM, armor, max health, regen); this HUD adds them to the corresponding bars and updates the RAM meter capacity and the status-effect strip with any implant-granted effects."
+    },
+    {
+     "name": "Cyberpunk 2077: Weapon & Gear Loadout",
+     "description": "When the user equips or unequips armor/clothing, the loadout emits the total armor rating; this HUD updates the Armor bar value and its numeric readout in real time."
+    }
+   ],
+   "targets": []
+  },
+  "features": [
+   "Character Portrait",
+   "Health Bar",
+   "Armor Bar",
+   "Stamina Bar",
+   "RAM Meter",
+   "Status Effect Strip",
+   "Level Badge",
+   "Glitch Frame"
+  ],
+  "excludedFeatures": []
+ },
+ {
+  "name": "Cyberpunk 2077: Attributes & Perks Panel",
+  "genInstructions": "Build the character-build panel with the five attributes (Body, Reflexes, Technical Ability, Intelligence, Cool), spend/refund controls, remaining attribute/perk point counters, and a scrollable perk allocation list per attribute.",
+  "role": "Acts as the character-progression hub, allocating attribute and perk points that raise vitals and unlock cyberware capacity across the dashboard.",
+  "connectivity": {
+   "effectors": [],
+   "targets": [
+    {
+     "name": "Cyberpunk 2077: Character Vitals HUD",
+     "description": "When the user spends a point on an attribute, emit the updated attribute set so the Vitals HUD recomputes derived stats (Body->max Health/Armor, Reflexes->Stamina, Intelligence->RAM) and re-renders the affected bars."
+    },
+    {
+     "name": "Cyberpunk 2077: Cyberware Augmentation Grid",
+     "description": "When attribute values cross defined thresholds, emit the new thresholds so the Cyberware grid unlocks additional capacity/slots and marks previously-locked implants as installable."
+    }
+   ]
+  },
+  "features": [
+   "Attribute List",
+   "Point Spend Buttons",
+   "Point Refund Buttons",
+   "Remaining Points Counter",
+   "Perk Point Counter",
+   "Perk Allocation List",
+   "Attribute Progress Bars"
+  ],
+  "excludedFeatures": []
+ },
+ {
+  "name": "Cyberpunk 2077: Cyberware Augmentation Grid",
+  "genInstructions": "Build a body-diagram grid of cyberware slots (frontal cortex, ocular, nervous system, circulatory, arms, legs, skeleton, etc.) where implants can be installed/removed, showing each implant's stat bonuses and a total capacity meter.",
+  "role": "Manages the player's installed augmentations, gated by attribute thresholds and feeding stat bonuses into the Vitals HUD.",
+  "connectivity": {
+   "effectors": [
+    {
+     "name": "Cyberpunk 2077: Attributes & Perks Panel",
+     "description": "Receives attribute-threshold updates; when a threshold is met, unlock the corresponding capacity/slots and flip locked implant entries to installable state, updating the capacity meter."
+    }
+   ],
+   "targets": [
+    {
+     "name": "Cyberpunk 2077: Character Vitals HUD",
+     "description": "On install/remove of any implant, emit the aggregated stat deltas (bonus RAM, armor, max health, regen, granted status effects) so the Vitals HUD updates its bars, RAM capacity, and status strip."
+    }
+   ]
+  },
+  "features": [
+   "Body Slot Diagram",
+   "Slot Grid",
+   "Implant Cards",
+   "Install Remove Toggle",
+   "Capacity Meter",
+   "Implant Stat Tooltip",
+   "Locked Slot Overlay"
+  ],
+  "excludedFeatures": []
+ },
+ {
+  "name": "Cyberpunk 2077: Weapon & Gear Loadout",
+  "genInstructions": "Build an equipment loadout panel with weapon slots (primary, secondary, melee), armor/clothing slots, an item rarity/stat display, and buy/sell actions for gear management.",
+  "role": "Handles the player's equipped weapons and armor, driving the Armor rating on the Vitals HUD and moving currency through the Eddies bar on transactions.",
+  "connectivity": {
+   "effectors": [],
+   "targets": [
+    {
+     "name": "Cyberpunk 2077: Character Vitals HUD",
+     "description": "When the user equips/unequips clothing or armor, emit the summed armor rating so the Vitals HUD updates its Armor bar value and numeric readout."
+    },
+    {
+     "name": "Cyberpunk 2077: Eddies & Street Cred Bar",
+     "description": "When the user buys or sells an item, emit the signed eddies amount (negative on purchase, positive on sale) so the Eddies bar debits or credits the balance and plays the count animation."
+    }
+   ]
+  },
+  "features": [
+   "Weapon Slots",
+   "Armor Clothing Slots",
+   "Item Rarity Frames",
+   "Item Stat Panel",
+   "Buy Sell Buttons",
+   "Loadout Preview"
+  ],
+  "excludedFeatures": []
+ },
+ {
+  "name": "Cyberpunk 2077: Night City Map",
+  "genInstructions": "Build an interactive dark neon map of Night City with district labels, quest/point-of-interest markers, the player marker, a set waypoint, and zoom/pan controls.",
+  "role": "Provides spatial navigation, showing waypoints set by the Quest Journal and letting marker clicks select quests back in the journal.",
+  "connectivity": {
+   "effectors": [
+    {
+     "name": "Cyberpunk 2077: Quest Journal Tracker",
+     "description": "When the user tracks a quest, receive its target coordinates/objective location and render/animate a waypoint marker plus a route line from the player marker to that point, panning to frame it."
+    }
+   ],
+   "targets": [
+    {
+     "name": "Cyberpunk 2077: Quest Journal Tracker",
+     "description": "When the user clicks a quest/POI marker on the map, emit that quest's id so the Journal scrolls to, expands, and highlights the corresponding quest entry."
+    }
+   ]
+  },
+  "features": [
+   "Map Canvas",
+   "District Labels",
+   "Quest Markers",
+   "Player Marker",
+   "Waypoint Route",
+   "Zoom Pan Controls",
+   "Legend"
+  ],
+  "excludedFeatures": []
+ },
+ {
+  "name": "Cyberpunk 2077: Quest Journal Tracker",
+  "genInstructions": "Build a quest log with tabs (Main Jobs, Side Jobs, Gigs), expandable quest entries showing objectives and rewards, and a 'track' control that pins a quest as active.",
+  "role": "Organizes active and available quests, sending tracked-quest waypoints to the Night City Map and responding to map marker selections.",
+  "connectivity": {
+   "effectors": [
+    {
+     "name": "Cyberpunk 2077: Night City Map",
+     "description": "When the user clicks a marker on the map, receive the quest id and scroll to, expand, and highlight that quest entry in the log."
+    }
+   ],
+   "targets": [
+    {
+     "name": "Cyberpunk 2077: Night City Map",
+     "description": "When the user presses 'track' on a quest, emit that quest's target location so the map places a waypoint and draws a route to it."
+    }
+   ]
+  },
+  "features": [
+   "Quest Category Tabs",
+   "Quest List",
+   "Expandable Entries",
+   "Objective Checklist",
+   "Reward Preview",
+   "Track Quest Button",
+   "Active Quest Highlight"
+  ],
+  "excludedFeatures": []
+ },
+ {
+  "name": "Cyberpunk 2077: Eddies & Street Cred Bar",
+  "genInstructions": "Build a slim top status bar showing the eurodollar (eddies) balance with an animated counter and a Street Cred level with a progress bar toward the next rank.",
+  "role": "Displays the player's currency and reputation, updating its eddies balance whenever the Loadout completes a transaction.",
+  "connectivity": {
+   "effectors": [
+    {
+     "name": "Cyberpunk 2077: Weapon & Gear Loadout",
+     "description": "Receive signed eddies amounts from buy/sell actions and debit or credit the balance, animating the counter up or down accordingly."
+    }
+   ],
+   "targets": []
+  },
+  "features": [
+   "Eddies Balance",
+   "Count Animation",
+   "Street Cred Level",
+   "Cred Progress Bar",
+   "Currency Icon"
+  ],
+  "excludedFeatures": []
+ }
+]

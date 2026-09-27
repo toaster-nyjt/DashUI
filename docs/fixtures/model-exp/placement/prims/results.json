@@ -1,0 +1,462 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000,
+      "COMPANIONS": true,
+      "LOG": "cyberpunk-dashboard.run1.jsonl"
+    },
+    "wall": 58.417,
+    "passedFirstTry": 19,
+    "passed": 19,
+    "types": 19,
+    "totalAttempts": 19,
+    "outTokens": 58139,
+    "cost": 2.237
+  },
+  "results": [
+    {
+      "type": "CharacterPortrait",
+      "attempts": [
+        {
+          "secs": 35.633,
+          "out": 3652,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 35.633,
+      "inTok": 8106,
+      "outTok": 3652,
+      "floor": {
+        "base": [
+          4,
+          5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "StatBar",
+      "attempts": [
+        {
+          "secs": 21.832,
+          "out": 2105,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 21.833,
+      "inTok": 8917,
+      "outTok": 2105,
+      "floor": {
+        "base": [
+          6,
+          1.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "StatusEffectStrip",
+      "attempts": [
+        {
+          "secs": 37.893,
+          "out": 3721,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 37.894,
+      "inTok": 7906,
+      "outTok": 3721,
+      "floor": {
+        "base": [
+          6,
+          2.6
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Badge",
+      "attempts": [
+        {
+          "secs": 58.396,
+          "out": 4929,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 58.397,
+      "inTok": 8105,
+      "outTok": 4929,
+      "floor": {
+        "base": [
+          2,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "NumericReadout",
+      "attempts": [
+        {
+          "secs": 21.656,
+          "out": 2070,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 21.657,
+      "inTok": 8172,
+      "outTok": 2070,
+      "floor": {
+        "base": [
+          3.5,
+          1.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "PushButton",
+      "attempts": [
+        {
+          "secs": 30.327,
+          "out": 3132,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 30.327,
+      "inTok": 8228,
+      "outTok": 3132,
+      "floor": {
+        "base": [
+          2.75,
+          1.75
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "ToggleButton",
+      "attempts": [
+        {
+          "secs": 26.231,
+          "out": 2609,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 26.231,
+      "inTok": 8427,
+      "outTok": 2609,
+      "floor": {
+        "base": [
+          4.5,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "TabSelector",
+      "attempts": [
+        {
+          "secs": 20.693,
+          "out": 1993,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 20.694,
+      "inTok": 7901,
+      "outTok": 1993,
+      "floor": {
+        "base": [
+          6,
+          2.25
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "ItemList",
+      "attempts": [
+        {
+          "secs": 37.842,
+          "out": 4259,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 37.843,
+      "inTok": 8779,
+      "outTok": 4259,
+      "floor": {
+        "base": [
+          9,
+          4.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "EquipmentSlot",
+      "attempts": [
+        {
+          "secs": 36.186,
+          "out": 3444,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 36.186,
+      "inTok": 8793,
+      "outTok": 3444,
+      "floor": {
+        "base": [
+          4.5,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "BodyDiagram",
+      "attempts": [
+        {
+          "secs": 33.732,
+          "out": 3199,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 33.733,
+      "inTok": 8240,
+      "outTok": 3199,
+      "floor": {
+        "base": [
+          10,
+          13
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "StatLineList",
+      "attempts": [
+        {
+          "secs": 18.595,
+          "out": 1878,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 18.596,
+      "inTok": 8642,
+      "outTok": 1878,
+      "floor": {
+        "base": [
+          7,
+          2.75
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "StatTooltip",
+      "attempts": [
+        {
+          "secs": 20.505,
+          "out": 2023,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 20.506,
+      "inTok": 8116,
+      "outTok": 2023,
+      "floor": {
+        "base": [
+          9,
+          3
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Checklist",
+      "attempts": [
+        {
+          "secs": 21.392,
+          "out": 2213,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 21.392,
+      "inTok": 7902,
+      "outTok": 2213,
+      "floor": {
+        "base": [
+          9,
+          3.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "MapCanvas",
+      "attempts": [
+        {
+          "secs": 33.522,
+          "out": 3516,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 33.522,
+      "inTok": 8139,
+      "outTok": 3516,
+      "floor": {
+        "base": [
+          10,
+          8
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "MapMarker",
+      "attempts": [
+        {
+          "secs": 31.154,
+          "out": 2990,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 31.155,
+      "inTok": 8285,
+      "outTok": 2990,
+      "floor": {
+        "base": [
+          2,
+          2
+        ],
+        "kind:district": [
+          5,
+          1.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "RouteOverlay",
+      "attempts": [
+        {
+          "secs": 21.714,
+          "out": 2175,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 21.715,
+      "inTok": 8140,
+      "outTok": 2175,
+      "floor": {
+        "base": [
+          2,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "ZoomPanControls",
+      "attempts": [
+        {
+          "secs": 55.015,
+          "out": 5014,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 55.015,
+      "inTok": 7942,
+      "outTok": 5014,
+      "floor": {
+        "base": [
+          2.5,
+          6.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "KeyLegend",
+      "attempts": [
+        {
+          "secs": 35.088,
+          "out": 3217,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 35.088,
+      "inTok": 7892,
+      "outTok": 3217,
+      "floor": {
+        "base": [
+          6,
+          3.2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

@@ -1,13 +1,17 @@
 // Primitive-stage model comparison. Runs every hoisted type through the REAL app code —
-// PRIMITIVE_SYSTEM_PROMPT + primitiveRequest (app/api/SKILLS.ts), extractPrimitiveCode +
-// checkPrimitive (app/utils/primitiveChecks.ts), derivePrimitiveUsage (helpers.ts) — with
+// buildPrimitiveSystemPrompt + primitiveRequest (app/api/SKILLS.ts), extractPrimitiveCode +
+// checkPrimitive (app/utils/primitiveChecks.ts), derivePrimitiveUsage/Companions (helpers.ts) — with
 // the same validate-and-retry loop as fetchValidPrimitives (3 attempts, first error fed back).
 // Usage: node prim-compare.cjs --out=<dir> --model=<id> --thinking=adaptive|disabled --effort=<e> --max-tokens=<n>
+//   [--log=<task jsonl> [--run=<n>]: task, hoist and style from one logged run instead of the DJ fixtures]
+//   [--hoist=<json>: use this hoist instead (e.g. a patched one)]
+//   [--companions=1: USED WITH + prompt switches, as the route sends them; 0 = the old request]
 const fs = require("fs"), path = require("path");
 const { load, ROOT } = require("./lib/load.cjs");
 const SK = load(ROOT + "/app/api/SKILLS.ts");
 const { checkPrimitive, extractPrimitiveCode } = load(ROOT + "/app/utils/primitiveChecks.ts");
-const { derivePrimitiveUsage } = load(ROOT + "/app/utils/helpers.ts");
+const { repairSyntax } = load(ROOT + "/app/utils/syntaxRepair.ts");
+const { derivePrimitiveUsage, derivePrimitiveCompanions, primitivePromptSwitches } = load(ROOT + "/app/utils/helpers.ts");
 const Anthropic = require(ROOT + "/node_modules/@anthropic-ai/sdk").default;
 
 const arg = (k, d) => process.argv.find((a) => a.startsWith("--" + k + "="))?.slice(k.length + 3) ?? d;
@@ -17,19 +21,28 @@ const MAX_TOKENS = +arg("max-tokens", "16000");
 const RETRIES = 3;
 const PRICE = { in: 5 / 1e6, out: 25 / 1e6 }; // Opus 4.8 and Opus 5: $5 / $25 per MTok
 
-const task = "DJ Table";
-const hoist = JSON.parse(fs.readFileSync(ROOT + "/docs/fixtures/dj-table.hoist.run5-low.json", "utf8"));
-const style = fs.readFileSync(ROOT + "/docs/fixtures/dj-table.style.appearance-only.txt", "utf8");
+const LOG = arg("log"), COMPANIONS = arg("companions", "0") === "1";
+// One log can hold several runs of a taskID; --run=<n> (1-based, default last) picks one.
+const runs = LOG ? fs.readFileSync(LOG, "utf8").trim().split("\n").map(JSON.parse)
+  .reduce((a, e) => (e.stage === "run:start" ? a.push([e]) : a.at(-1)?.push(e), a), []) : [];
+const logged = LOG && runs[(+arg("run", runs.length)) - 1];
+const task = logged ? logged[0].task : "DJ Table";
+const hoist = arg("hoist") ? JSON.parse(fs.readFileSync(arg("hoist"), "utf8")) : logged ? logged.filter((e) => e.stage === "hoist" && e.hoist).pop().hoist
+  : JSON.parse(fs.readFileSync(ROOT + "/docs/fixtures/dj-table.hoist.run5-low.json", "utf8"));
+const style = logged ? logged.find((e) => e.stage === "style").style
+  : fs.readFileSync(ROOT + "/docs/fixtures/dj-table.style.appearance-only.txt", "utf8");
 const usage = derivePrimitiveUsage(hoist);
+const companions = COMPANIONS ? derivePrimitiveCompanions(hoist) : {};
 // Same system prompt the primitive route builds.
-const system = SK.PRIMITIVE_SYSTEM_PROMPT + `\n\nVISUAL GUIDELINES — follow these guidelines so this primitive matches the rest of its UI:\n${style}`;
+const systemFor = (prim) => SK.buildPrimitiveSystemPrompt(COMPANIONS ? primitivePromptSwitches(prim, companions[prim.type] ?? [], hoist.library) : { companions: false, holds: false, heldBy: [], places: [], selfPlaced: false })
+  + `\n\nVISUAL GUIDELINES — follow these guidelines so this primitive matches the rest of its UI:\n${style}`;
 
 const env = fs.readFileSync(ROOT + "/.env.local", "utf8");
 const client = new Anthropic({ apiKey: env.match(/^\s*CLAUDE_API_KEY\s*=\s*["']?([^"'\r\n]+)/m)[1] });
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  console.log(`config: ${MODEL} thinking=${THINKING} effort=${EFFORT} max_tokens=${MAX_TOKENS} -> ${OUT}`);
+  console.log(`config: ${MODEL} thinking=${THINKING} effort=${EFFORT} max_tokens=${MAX_TOKENS} companions=${COMPANIONS} -> ${OUT}`);
   const t0 = Date.now();
   const only = arg("only", "").split(",").filter(Boolean);
   const results = await Promise.all(hoist.library.filter((t) => !only.length || only.includes(t.type)).map(async (prim) => {
@@ -43,15 +56,16 @@ const client = new Anthropic({ apiKey: env.match(/^\s*CLAUDE_API_KEY\s*=\s*["']?
         const msg = await client.messages.stream({
           model: MODEL, max_tokens: MAX_TOKENS,
           thinking: { type: THINKING }, output_config: { effort: EFFORT },
-          system,
-          messages: [{ role: "user", content: SK.primitiveRequest(task, prim, usage[prim.type]) + retryNote }],
+          system: systemFor(prim),
+          messages: [{ role: "user", content: SK.primitiveRequest(task, prim, usage[prim.type], companions[prim.type] ?? []) + retryNote }],
         }).finalMessage();
         r.inTok += msg.usage.input_tokens; r.outTok += msg.usage.output_tokens;
         // Code only from text blocks; thinking blocks are counted, never read.
         const raw = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("");
         const thinking = msg.content.filter((b) => b.type === "thinking" || b.type === "redacted_thinking").length;
-        const code = extractPrimitiveCode(raw);
-        const { errors, floor } = checkPrimitive(prim, code);
+        const extracted = extractPrimitiveCode(raw);
+        const code = repairSyntax(extracted)?.code ?? extracted;
+        const { errors, floor } = checkPrimitive(prim, code, hoist.library);
         if (msg.stop_reason === "max_tokens") errors.unshift("cut off at max_tokens");
         if (msg.stop_reason === "refusal") errors.unshift("refusal");
         if (/<\/?thinking>/i.test(raw)) errors.push("thinking tags leaked into text");
@@ -72,7 +86,7 @@ const client = new Anthropic({ apiKey: env.match(/^\s*CLAUDE_API_KEY\s*=\s*["']?
   const wall = (Date.now() - t0) / 1000;
   const cost = results.reduce((a, r) => a + r.inTok * PRICE.in + r.outTok * PRICE.out, 0);
   const summary = {
-    config: { MODEL, THINKING, EFFORT, MAX_TOKENS }, wall,
+    config: { MODEL, THINKING, EFFORT, MAX_TOKENS, COMPANIONS, LOG }, wall,
     passedFirstTry: results.filter((r) => r.firstTry).length, passed: results.filter((r) => r.passed).length,
     types: results.length, totalAttempts: results.reduce((a, r) => a + r.attempts.length, 0),
     outTokens: results.reduce((a, r) => a + r.outTok, 0), cost: +cost.toFixed(3),

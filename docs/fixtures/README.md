@@ -9,6 +9,9 @@ Evidence and tools behind the primitive pipeline (`docs/UI_GENERATOR.md` §14, d
 | `dj-table.components.json` | The canonical DJ Table plan (resolved components) |
 | `dj-table.hoist.run1…run5-low.json` | Hoist outputs while the prompt was designed; **run5-low is canonical** |
 | `dj-table.style.appearance-only.txt` | The appearance-only style sheet used by most tests |
+| `cyberpunk.run1.jsonl` | Run 1 of the logged Cyberpunk 2077 task (task-1790475795579), pinned: that log later gained a second run |
+| `cyberpunk.run1.components.json` | Its resolved components (hoist input) |
+| `cyberpunk-dashboard.run1.jsonl` / `.components.json` | The first live run on the held-type code (task-1790488443585), pinned, with its hoist input |
 
 The logged end-to-end runs in `/logs/task-<taskID>.jsonl` (gitignored) are the other input source. The newer harnesses read their real inputs from there.
 
@@ -18,13 +21,15 @@ All load app TypeScript through `lib/load.cjs` and read `CLAUDE_API_KEY` from `.
 
 | Script | Tests |
 |---|---|
-| `hoist-check.cjs` | One hoist (`HOIST_SYSTEM_PROMPT` + `validateHoist`); `--in`, `--model`, `--effort` |
-| `prim-compare.cjs` | Every hoisted type through the primitive prompt + `checkPrimitive`, with retries; `--only=Type,…` |
+| `hoist-check.cjs` | One hoist (`HOIST_SYSTEM_PROMPT` + `validateHoist`); `--in`, `--task`, `--model`, `--effort` |
+| `prim-compare.cjs` | Every hoisted type through the primitive prompt + `checkPrimitive`, with retries; `--only=Type,…`, `--log=` (+ `--run=`), `--hoist=`, `--companions=1` |
 | `plan-check.cjs` | One plan (`PLAN_SYSTEM_PROMPT`) + connectivity, mirroring and naming checks |
 | `leaf-compare.cjs` | A logged run's leaves through `buildLeafSystem` (`--budget=0/1`), post-processed like the route |
 | `leaf-render.mjs` | Renders a leaf set at its real box sizes with the run's primitives; measures overflow |
 | `build-gallery2.mjs` | Contract-driven gallery of a primitive set (every variant × 4 slot shapes); `--fit` picks the FitText source |
 | `fit-regress.mjs` | FitText test cases + edge cases, measuring every span (old vs new FitText) |
+| `map-probe.mjs` | A map trio (MapCanvas + held MapMarker/RouteOverlay) in real Chrome over CDP: zoom, real drag, real hover/click; each marker's distance from its district |
+| `leaf-map-probe.mjs` | A generated leaf with a held type (`--held=<Type>`, default MapMarker) at its box size: markers visible and on top, real click reaches `onSelect`, the leaf reacts |
 
 **Earlier, reference-file based** (written before the app merge; they import `docs/SKILLS.primitives.reference.ts`): `hoist-run.mjs`, `prim-run.mjs`, `leaf-run.mjs`, `style-run.mjs`, `build-e2e.mjs`, `fittest.mjs`, `prompt-audit.mjs`, plus `slot-scan.cjs` (static min-zero / face-child scan) and `sanitize-leaf.cjs` (the original post-processor, ported to `app/utils/leafSanitizer.ts`).
 
@@ -41,6 +46,10 @@ All load app TypeScript through `lib/load.cjs` and read `CLAUDE_API_KEY` from `.
 | `model-exp/hoist-compare` | 12 hoists: Opus 4.8 vs Opus 5 on 3 plans |
 | `model-exp/plan-compare` | 30 plans: 5 tasks × 3 configs × 2 |
 | `model-exp/leaf-budget` | SIZE BUDGET prompt test on a logged run's 6 leaves (code, renders, overflow) |
+| `model-exp/companions` | Companion context off vs on (10 types × 2), the logged trio, hand-edited fixes, probe renders |
+| `model-exp/syntax` | Syntax repair: `corpus.json` (every non-compiling leaf/primitive in the logs), the fallback regeneration sample |
+| `model-exp/placement` | Held placement + units: 2 re-hoists, 19 primitives, Cyberware/Map leaves × 2, probes |
+| `model-exp/held` | Held types: 4 hoists, map primitives × 2 on a patched hoist, Map leaf × 2, probe renders |
 
 ## Reports
 
@@ -48,3 +57,5 @@ All load app TypeScript through `lib/load.cjs` and read `CLAUDE_API_KEY` from `.
 - `model-exp/HOIST_MODEL_COMPARISON.md` — hoist model choice.
 - `model-exp/PLAN_MODEL_COMPARISON.md` — why the plan stays on Opus 4.8.
 - `model-exp/LEAF_BUDGET_COMPARISON.md` — the SIZE BUDGET leaf prompt, and why thinking-off isn't a shortcut.
+- `model-exp/SYNTAX_REPAIR.md` — deterministic syntax repair for leaves and primitives (corpus of every non-compiling output in the logs).
+- `model-exp/HELD_PRIMITIVES_COMPARISON.md` — companion context (USED WITH) and held types (a surface's `children` naming the types it holds).

@@ -188,6 +188,12 @@ Deferred / decided-against for now: recursive group generation (see §7).
   - **Thinking off (Opus 4.8) isn't viable even with the block:** no faster (it writes 20–40% more code)
     and still overflows the short, wide Library box by 10–24rem.
   - **Switched on (2026-09-25):** `LEAF_SIZE_BUDGET = true`.
+- **Companion context and held primitives (2026-09-26, `docs/fixtures/model-exp/HELD_PRIMITIVES_COMPARISON.md`).**
+  A cross-reference of the Cyberpunk run found the map's markers and route didn't follow the map. A browser probe then showed the markers were never on screen at all.
+  - **Companions:** each primitive request now lists USED WITH, the other types its components build from. This fixed the holder's coordinate space (2/2 vs 1/2) but not the map.
+  - **Held types:** a surface's contract names what it holds (`"children?": "MapMarker | RouteOverlay"`, HOIST rule HELD TYPES, checked by `validateHoist`). The primitive prompt switches on it: HELD LAYERS for the holder (grid-stacked full-size layers inside its transform) and HELD for held types (pass-through root, operable parts stop propagation). The leaf prompt passes held children directly.
+  - **Result:** the hoist declared the holder 2/2 on Cyberpunk and 0/2 on DJ Table. The map trio holds 0–0.7px through zoom and pan, with real clicks working 2/2. The regenerated Map leaf shows 10/10 and 9/9 markers, against 0/9 in the live run.
+  - All switches are no-ops without a holder (leaf and manual-box prompts byte-identical).
 - **User-added features: out of scope for now** — they resolve to `null` and the leaf builds
   them inline (already covered by the PRIMITIVES fallback rule). Same for features toggled on
   after generation (the hoist sees only default-active features) and for features whose

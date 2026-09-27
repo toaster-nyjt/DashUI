@@ -1,0 +1,90 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000,
+      "COMPANIONS": true,
+      "LOG": "cyberpunk.run1.jsonl"
+    },
+    "wall": 38.17,
+    "passedFirstTry": 3,
+    "passed": 3,
+    "types": 3,
+    "totalAttempts": 3,
+    "outTokens": 9458,
+    "cost": 0.355
+  },
+  "results": [
+    {
+      "type": "MapCanvas",
+      "attempts": [
+        {
+          "secs": 38.17,
+          "out": 3859,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 38.17,
+      "inTok": 7883,
+      "outTok": 3859,
+      "floor": {
+        "base": [
+          12,
+          9
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "MapMarker",
+      "attempts": [
+        {
+          "secs": 28.358,
+          "out": 2815,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 28.359,
+      "inTok": 7989,
+      "outTok": 2815,
+      "floor": {
+        "base": [
+          2,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "RouteOverlay",
+      "attempts": [
+        {
+          "secs": 27.555,
+          "out": 2784,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 27.556,
+      "inTok": 7899,
+      "outTok": 2784,
+      "floor": {
+        "base": [
+          6,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

@@ -1,0 +1,1631 @@
+<title>skilltree-B</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<body style="background:#050505;color:#aaa;font:12px sans-serif;margin:0;padding:12px">
+<div id="root"></div>
+<script>
+const { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } = React;
+function FitText(props) {
+    const { children, className, wrap = true, align = "center" } = props;
+    const boxRef = useRef(null);
+    const layerRef = useRef(null);
+    const textRef = useRef(null);
+    const [size, setSize] = useState(0);
+    // unsized: the parent gives the box no definite size, so there is nothing to fit to.
+    const [unsized, setUnsized] = useState(false);
+    const lastKey = useRef("");
+    const fit = useCallback(() => {
+        const box = boxRef.current, layer = layerRef.current, text = textRef.current;
+        if (!box || !layer || !text)
+            return;
+        // Hidden (display:none or detached): no layout to measure yet; try again when shown.
+        if (!box.getClientRects().length)
+            return;
+        // Measure with the text out of flow, so the box's size is the parent's, never the text's.
+        layer.style.position = "absolute";
+        const W = box.clientWidth, H = box.clientHeight;
+        if (!W || !H) {
+            // No definite size: show the text at its inherited size instead of shrinking it away.
+            layer.style.position = "static";
+            text.style.fontSize = "";
+            lastKey.current = "";
+            setSize(0);
+            setUnsized(true);
+            return;
+        }
+        setUnsized(false);
+        // Parents may re-render every frame (meters, playheads): skip when nothing changed.
+        const key = W + "x" + H + "|" + text.textContent;
+        if (key === lastKey.current)
+            return;
+        lastKey.current = key;
+        const fits = (px) => {
+            text.style.fontSize = px + "px";
+            return text.scrollWidth <= W - 1 && text.offsetHeight <= H - 1;
+        };
+        const cur = parseFloat(text.style.fontSize) || 0;
+        // Fast path: the current size still fits and one step larger doesn't.
+        if (cur > 0 && fits(cur) && !fits(cur + 0.25)) {
+            text.style.fontSize = cur + "px";
+            return;
+        }
+        let lo = 1, hi = Math.max(2, H), best = 1;
+        for (let i = 0; i < 14; i++) {
+            const mid = (lo + hi) / 2;
+            if (fits(mid)) {
+                best = mid;
+                lo = mid;
+            }
+            else
+                hi = mid;
+        }
+        best = Math.floor(best * 4) / 4;
+        text.style.fontSize = best + "px";
+        setSize(best);
+    }, []);
+    useLayoutEffect(fit);
+    useEffect(() => {
+        const box = boxRef.current;
+        if (!box || typeof ResizeObserver === "undefined")
+            return;
+        const ro = new ResizeObserver(() => fit());
+        ro.observe(box);
+        return () => ro.disconnect();
+    }, [fit]);
+    const justify = align === "start" ? "justify-start" : align === "end" ? "justify-end" : "justify-center";
+    return (React.createElement("div", { ref: boxRef, className: "relative h-full w-full min-w-0 min-h-0 overflow-hidden " + (className || "") },
+        React.createElement("div", { ref: layerRef, className: "inset-0 flex items-center " + justify, style: { position: unsized ? "static" : "absolute" } },
+            React.createElement("span", { ref: textRef, style: {
+                    fontSize: size ? size + "px" : undefined,
+                    lineHeight: 1.1,
+                    display: "inline-block",
+                    whiteSpace: wrap ? "normal" : "nowrap",
+                    maxWidth: wrap ? "calc(100% - 2px)" : undefined,
+                    wordBreak: "keep-all",
+                    overflowWrap: "normal",
+                    textAlign: align === "start" ? "left" : align === "end" ? "right" : "center",
+                } }, children))));
+}
+
+function SearchInput(props) {
+    const { value, onChange, placeholder } = props;
+    const uid = useRef("searchinput-" + Math.random().toString(36).slice(2)).current;
+    const [focused, setFocused] = useState(false);
+    const floor = SearchInput_MIN.base;
+    return (React.createElement("div", { className: "h-full w-full relative", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" } },
+        React.createElement("div", { className: "absolute inset-0 flex items-stretch bg-black/60 border rounded-sm shadow-[inset_0_0_12px_rgba(0,0,0,0.8)] transition-all duration-200 ease-out overflow-hidden " +
+                (focused
+                    ? "border-cyan-300/70 ring-1 ring-cyan-300/40 shadow-[inset_0_0_12px_rgba(0,0,0,0.8),0_0_16px_rgba(34,211,238,0.35)]"
+                    : "border-cyan-400/30") },
+            React.createElement("div", { className: "w-[3px] transition-all duration-200 ease-out " +
+                    (focused ? "bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.8)]" : "bg-cyan-400/30") }),
+            React.createElement("div", { className: "flex items-center justify-center pl-2 pr-1" },
+                React.createElement("svg", { viewBox: "0 0 24 24", preserveAspectRatio: "xMidYMid meet", className: "h-[1rem] w-[1rem]", fill: "none" },
+                    React.createElement("defs", null,
+                        React.createElement("linearGradient", { id: uid + "-g", x1: "0", y1: "0", x2: "1", y2: "1" },
+                            React.createElement("stop", { offset: "0%", stopColor: "#67e8f9" }),
+                            React.createElement("stop", { offset: "100%", stopColor: "#22d3ee" }))),
+                    React.createElement("circle", { cx: "10.5", cy: "10.5", r: "6.5", stroke: "url(#" + uid + "-g)", strokeWidth: "2", opacity: focused ? 1 : 0.6, className: "transition-opacity duration-200" }),
+                    React.createElement("line", { x1: "15.5", y1: "15.5", x2: "21", y2: "21", stroke: "url(#" + uid + "-g)", strokeWidth: "2", strokeLinecap: "round", opacity: focused ? 1 : 0.6 }))),
+            React.createElement("input", { type: "text", value: value, placeholder: placeholder, onChange: (e) => onChange(e.target.value), onFocus: () => setFocused(true), onBlur: () => setFocused(false), spellCheck: false, className: "flex-1 min-w-0 bg-transparent outline-none border-none text-cyan-50 placeholder:text-neutral-500 font-mono text-sm tracking-[0.12em] uppercase pr-1" }),
+            value.length > 0 && (React.createElement("button", { type: "button", onClick: () => onChange(""), className: "px-2 flex items-center justify-center text-cyan-300/70 hover:text-black hover:bg-cyan-300 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70" },
+                React.createElement("svg", { viewBox: "0 0 24 24", preserveAspectRatio: "xMidYMid meet", className: "h-[0.85rem] w-[0.85rem]", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round" },
+                    React.createElement("line", { x1: "5", y1: "5", x2: "19", y2: "19" }),
+                    React.createElement("line", { x1: "19", y1: "5", x2: "5", y2: "19" })))),
+            React.createElement("div", { className: "pointer-events-none absolute inset-0 overflow-hidden" },
+                React.createElement("div", { className: "absolute top-0 bottom-0 w-1/3 bg-gradient-to-r from-transparent via-cyan-300/10 to-transparent transition-opacity duration-300 " +
+                        (focused ? "opacity-100 animate-[searchinput-sweep_2.2s_linear_infinite]" : "opacity-0") }))),
+        React.createElement("style", null, "@keyframes searchinput-sweep{0%{transform:translateX(-120%)}100%{transform:translateX(420%)}}")));
+}
+const SearchInput_MIN = { "base": [7, 2] };
+
+const StatBar_MIN = { "base": [4, 1] };
+function StatBar(props) {
+    const uid = useRef("statbar-" + Math.random().toString(36).slice(2)).current;
+    const min = props.min ?? 0;
+    const max = props.max ?? 100;
+    const tone = props.tone ?? "neutral";
+    const span = max - min === 0 ? 1 : max - min;
+    const raw = (props.value - min) / span;
+    const frac = Math.max(0, Math.min(1, isFinite(raw) ? raw : 0));
+    const pct = frac * 100;
+    const TONES = {
+        neutral: { a: "#22d3ee", b: "#a5f3fc", glow: "rgba(34,211,238,0.6)", text: "text-cyan-100", ring: "ring-cyan-400/20" },
+        accent: { a: "#d946ef", b: "#c084fc", glow: "rgba(232,121,249,0.6)", text: "text-fuchsia-100", ring: "ring-fuchsia-400/20" },
+        danger: { a: "#f43f5e", b: "#fb7185", glow: "rgba(244,63,94,0.6)", text: "text-rose-100", ring: "ring-rose-400/20" },
+    };
+    const t = TONES[tone];
+    const segs = props.segments && props.segments > 1 ? Math.floor(props.segments) : 0;
+    const floor = StatBar_MIN.base;
+    return (React.createElement("div", { className: "relative h-full w-full", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" } },
+        React.createElement("div", { className: "absolute inset-0 overflow-hidden bg-black/60 border border-cyan-400/20 ring-1 " + t.ring + " shadow-[inset_0_0_12px_rgba(0,0,0,0.8)]" },
+            React.createElement("svg", { className: "absolute inset-0 h-full w-full", preserveAspectRatio: "none", viewBox: "0 0 100 100" },
+                React.createElement("defs", null,
+                    React.createElement("pattern", { id: uid + "-hatch", width: "6", height: "6", patternUnits: "userSpaceOnUse", patternTransform: "rotate(35)" },
+                        React.createElement("rect", { x: "0", y: "0", width: "1.4", height: "6", fill: t.a, opacity: "0.10" })),
+                    React.createElement("linearGradient", { id: uid + "-fill", x1: "0", y1: "0", x2: "1", y2: "0" },
+                        React.createElement("stop", { offset: "0%", stopColor: t.a }),
+                        React.createElement("stop", { offset: "100%", stopColor: t.b }))),
+                React.createElement("rect", { x: "0", y: "0", width: "100", height: "100", fill: "url(#" + uid + "-hatch)" })),
+            React.createElement("div", { className: "absolute left-0 top-0 h-full transition-all duration-500 ease-out", style: {
+                    width: pct + "%",
+                    background: "linear-gradient(90deg," + t.a + "," + t.b + ")",
+                    boxShadow: "0 0 8px " + t.glow + ", 0 0 18px " + t.glow,
+                } },
+                React.createElement("div", { className: "absolute inset-0 opacity-30", style: { background: "linear-gradient(180deg,rgba(255,255,255,0.55),rgba(255,255,255,0) 55%,rgba(0,0,0,0.35))" } }),
+                React.createElement("div", { className: "absolute inset-y-0 right-0 w-[8%] animate-pulse", style: { background: "linear-gradient(90deg,rgba(255,255,255,0)," + t.b + ")" } })),
+            frac > 0.005 && frac < 0.995 ? (React.createElement("div", { className: "absolute top-0 h-full w-[2px] transition-all duration-500 ease-out", style: { left: "calc(" + pct + "% - 1px)", background: "#ffffff", opacity: 0.75, boxShadow: "0 0 10px " + t.glow } })) : null,
+            segs > 0 ? (React.createElement("div", { className: "absolute inset-0 flex" }, Array.from({ length: segs }).map((_, i) => (React.createElement("div", { key: "seg-" + i, className: "h-full flex-1", style: {
+                    borderRight: i === segs - 1 ? "none" : "1px solid rgba(0,0,0,0.85)",
+                    boxShadow: i === segs - 1 ? "none" : "inset -2px 0 0 rgba(255,255,255,0.04)",
+                } }))))) : null,
+            props.showValue ? (React.createElement("div", { className: "absolute inset-y-[14%] left-[3%] right-[3%]" },
+                React.createElement(FitText, { className: "font-mono font-bold tracking-widest uppercase " + t.text + " [text-shadow:0_0_6px_rgba(0,0,0,0.95)]", wrap: false, align: "end" }, String(Math.round(props.value))))) : null,
+            React.createElement("div", { className: "pointer-events-none absolute left-0 top-0 h-[3px] w-[3px]", style: { background: t.a, opacity: 0.8 } }),
+            React.createElement("div", { className: "pointer-events-none absolute right-0 bottom-0 h-[3px] w-[3px]", style: { background: t.a, opacity: 0.8 } }))));
+}
+
+const Tooltip_MIN = { "base": [7, 2] };
+function Tooltip(props) {
+    const { open, content, anchor, children } = props;
+    const uid = useRef("tooltip-" + Math.random().toString(36).slice(2)).current;
+    const floor = Tooltip_MIN.base;
+    const [shown, setShown] = useState(open);
+    useEffect(() => {
+        if (open) {
+            setShown(true);
+            return;
+        }
+        const t = setTimeout(() => setShown(false), 180);
+        return () => clearTimeout(t);
+    }, [open]);
+    const positioned = !!anchor;
+    const bubbleStyle = positioned
+        ? { left: anchor.x + "px", top: anchor.y + "px", transform: "translate(-50%,-100%) translateY(-0.6rem)" }
+        : { left: "50%", bottom: "100%", transform: "translateX(-50%)", marginBottom: "0.4rem" };
+    return (React.createElement("div", { className: "relative h-full w-full", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" } },
+        React.createElement("style", null, "@keyframes " + uid + "-in{0%{opacity:0;transform:scale(.92)}60%{opacity:1}100%{opacity:1;transform:scale(1)}}" +
+            "@keyframes " + uid + "-sweep{0%{transform:translateY(-100%)}100%{transform:translateY(400%)}}" +
+            "@keyframes " + uid + "-flick{0%,100%{opacity:1}42%{opacity:.72}46%{opacity:1}}"),
+        children != null ? (React.createElement("div", { className: "absolute inset-0 min-w-0 min-h-0" }, children)) : null,
+        shown ? (React.createElement("div", { className: "pointer-events-none absolute z-50", style: bubbleStyle },
+            React.createElement("div", { className: "relative transition-all duration-200 ease-out " +
+                    (open ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"), style: { animation: open ? uid + "-in 220ms ease-out" : undefined } },
+                React.createElement("div", { className: "relative max-w-[22rem] min-w-0 overflow-hidden border border-cyan-400/40 bg-neutral-900/90 backdrop-blur-md px-3 py-2 shadow-[0_0_20px_rgba(34,211,238,0.22)] shadow-xl" },
+                    React.createElement("div", { className: "pointer-events-none absolute inset-0 overflow-hidden opacity-40" },
+                        React.createElement("div", { className: "absolute inset-x-0 h-1/3 bg-gradient-to-b from-transparent via-cyan-300/25 to-transparent", style: { animation: uid + "-sweep 2.6s linear infinite" } })),
+                    React.createElement("div", { className: "pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-cyan-400 via-fuchsia-400/70 to-transparent" }),
+                    React.createElement("div", { className: "pointer-events-none absolute left-0 top-0 h-2 w-2 border-l border-t border-cyan-300/80" }),
+                    React.createElement("div", { className: "pointer-events-none absolute right-0 top-0 h-2 w-2 border-r border-t border-cyan-300/80" }),
+                    React.createElement("div", { className: "pointer-events-none absolute left-0 bottom-0 h-2 w-2 border-l border-b border-fuchsia-400/70" }),
+                    React.createElement("div", { className: "pointer-events-none absolute right-0 bottom-0 h-2 w-2 border-r border-b border-fuchsia-400/70" }),
+                    React.createElement("div", { className: "relative min-w-0 font-mono text-xs leading-relaxed tracking-[0.08em] text-cyan-100/90", style: { animation: uid + "-flick 4s steps(1,end) infinite" } }, content)),
+                React.createElement("div", { className: "pointer-events-none absolute left-1/2 top-full -translate-x-1/2" },
+                    React.createElement("div", { className: "h-2 w-px bg-cyan-400/70 shadow-[0_0_8px_rgba(34,211,238,0.8)]" }),
+                    React.createElement("div", { className: "mx-auto h-1 w-1 -translate-y-[1px] rotate-45 bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.9)]" }))))) : null));
+}
+
+const ToggleSwitch_MIN = { "base": [4, 2] };
+function ToggleSwitch(props) {
+    const { on, onChange, disabled, children } = props;
+    const uid = useRef("toggleswitch-" + Math.random().toString(36).slice(2)).current;
+    const [press, setPress] = useState(false);
+    const floor = ToggleSwitch_MIN.base;
+    const accent = on ? "rgba(34,211,238," : "rgba(115,115,115,";
+    return (React.createElement("div", { className: "h-full w-full flex items-center justify-center gap-2 select-none", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" } },
+        React.createElement("button", { type: "button", disabled: disabled, onPointerDown: (e) => { if (disabled)
+                return; e.currentTarget.setPointerCapture?.(e.pointerId); setPress(true); }, onPointerUp: () => setPress(false), onPointerCancel: () => setPress(false), onClick: () => { if (!disabled)
+                onChange(!on); }, className: "relative touch-none rounded-sm border transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 " +
+                (disabled ? "opacity-40 grayscale cursor-default " : "cursor-pointer ") +
+                (on
+                    ? "border-cyan-400/50 bg-cyan-400/10 shadow-[0_0_14px_rgba(34,211,238,0.35)] "
+                    : "border-cyan-400/25 bg-black/60 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)] ") +
+                (press ? "scale-[0.97] brightness-110" : ""), style: { width: "3.25rem", height: "1.5rem" } },
+            React.createElement("svg", { viewBox: "0 0 130 60", preserveAspectRatio: "none", className: "absolute inset-0 h-full w-full" },
+                React.createElement("defs", null,
+                    React.createElement("linearGradient", { id: uid + "-fill", x1: "0", y1: "0", x2: "1", y2: "0" },
+                        React.createElement("stop", { offset: "0%", stopColor: "rgba(34,211,238,0.35)" }),
+                        React.createElement("stop", { offset: "100%", stopColor: "rgba(34,211,238,0.05)" }))),
+                on && React.createElement("rect", { x: "0", y: "0", width: "130", height: "60", fill: "url(#" + uid + "-fill)" }),
+                [0, 1, 2, 3, 4, 5].map((i) => (React.createElement("line", { key: "h-" + i, x1: 4 + i * 24, y1: "0", x2: -8 + i * 24, y2: "60", stroke: accent + (on ? "0.18)" : "0.10)"), strokeWidth: "2" })))),
+            React.createElement("span", { className: "absolute top-[10%] bottom-[10%] w-[42%] rounded-sm transition-all duration-200 ease-out " +
+                    (on
+                        ? "left-[56%] bg-gradient-to-b from-cyan-200 to-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.7)]"
+                        : "left-[2%] bg-gradient-to-b from-neutral-500 to-neutral-700 shadow-none") },
+                React.createElement("span", { className: "absolute inset-y-[22%] left-[26%] w-[2px] bg-black/50" }),
+                React.createElement("span", { className: "absolute inset-y-[22%] right-[26%] w-[2px] bg-black/50" })),
+            React.createElement("span", { className: "absolute -inset-[2px] rounded-sm pointer-events-none transition-opacity duration-300 " +
+                    (on ? "opacity-100 animate-pulse" : "opacity-0"), style: { boxShadow: "0 0 16px rgba(34,211,238,0.45)" } })),
+        children !== undefined && children !== null && children !== false ? (React.createElement("div", { className: "flex-1 min-w-0 h-full py-1 flex items-center" },
+            React.createElement("div", { className: "flex-1 min-w-0 h-[70%] min-h-0" },
+                React.createElement(FitText, { align: "start", className: "font-mono font-bold tracking-widest uppercase transition-colors duration-200 " +
+                        (disabled ? "text-neutral-500" : on ? "text-cyan-300" : "text-cyan-200/50") }, children)))) : null));
+}
+
+const RouteOverlay_MIN = { "base": [4, 4] };
+function RouteOverlay(props) {
+    const { points, visible, distance } = props;
+    const uid = useRef("routeoverlay-" + Math.random().toString(36).slice(2)).current;
+    const floor = RouteOverlay_MIN.base;
+    const pts = Array.isArray(points) ? points.filter((p) => p && isFinite(p.x) && isFinite(p.y)) : [];
+    const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+    const d = useMemo(() => {
+        if (pts.length === 0)
+            return "";
+        return pts
+            .map((p, i) => (i === 0 ? "M " : "L ") + (clamp(p.x) * 1000).toFixed(2) + " " + (clamp(p.y) * 1000).toFixed(2))
+            .join(" ");
+    }, [JSON.stringify(pts)]);
+    const last = pts.length ? pts[pts.length - 1] : null;
+    const first = pts.length ? pts[0] : null;
+    return (React.createElement("div", { className: "h-full w-full relative overflow-hidden transition-all duration-500 ease-out", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem", opacity: visible ? 1 : 0 } },
+        React.createElement("svg", { className: "absolute inset-0 h-full w-full", viewBox: "0 0 1000 1000", preserveAspectRatio: "none" },
+            React.createElement("defs", null,
+                React.createElement("linearGradient", { id: uid + "-line", x1: "0", y1: "0", x2: "1", y2: "1" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#22d3ee" }),
+                    React.createElement("stop", { offset: "55%", stopColor: "#67e8f9" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#e879f9" })),
+                React.createElement("filter", { id: uid + "-glow", x: "-50%", y: "-50%", width: "200%", height: "200%" },
+                    React.createElement("feGaussianBlur", { stdDeviation: "8", result: "b" }),
+                    React.createElement("feMerge", null,
+                        React.createElement("feMergeNode", { in: "b" }),
+                        React.createElement("feMergeNode", { in: "SourceGraphic" })))),
+            d ? (React.createElement("g", { filter: "url(#" + uid + "-glow)" },
+                React.createElement("path", { d: d, fill: "none", stroke: "#0ff", strokeOpacity: "0.18", strokeWidth: "14", strokeLinejoin: "round", strokeLinecap: "round", vectorEffect: "non-scaling-stroke" }),
+                React.createElement("path", { d: d, fill: "none", stroke: "url(#" + uid + "-line)", strokeWidth: "3", strokeLinejoin: "round", strokeLinecap: "round", vectorEffect: "non-scaling-stroke" }),
+                React.createElement("path", { d: d, fill: "none", stroke: "#ecfeff", strokeWidth: "2", strokeLinecap: "round", strokeDasharray: "10 26", vectorEffect: "non-scaling-stroke" },
+                    React.createElement("animate", { attributeName: "stroke-dashoffset", from: "72", to: "0", dur: "1.6s", repeatCount: "indefinite" })))) : null),
+        pts.map((p, i) => {
+            const isFirst = i === 0;
+            const isLast = i === pts.length - 1;
+            return (React.createElement("div", { key: "node-" + i, className: "absolute", style: { left: clamp(p.x) * 100 + "%", top: clamp(p.y) * 100 + "%" } },
+                React.createElement("div", { className: "absolute -translate-x-1/2 -translate-y-1/2 rotate-45 transition-all duration-200 ease-out " +
+                        (isLast
+                            ? "h-3 w-3 bg-fuchsia-500 shadow-[0_0_12px_rgba(232,121,249,0.8)] animate-pulse"
+                            : isFirst
+                                ? "h-2.5 w-2.5 bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.8)]"
+                                : "h-1.5 w-1.5 bg-cyan-200/80 shadow-[0_0_6px_rgba(34,211,238,0.6)]") }),
+                (isFirst || isLast) && (React.createElement("div", { className: "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border animate-ping " +
+                        (isLast ? "h-5 w-5 border-fuchsia-400/60" : "h-5 w-5 border-cyan-400/50") }))));
+        }),
+        typeof distance === "number" && pts.length > 0 && last ? (React.createElement("div", { className: "absolute h-5 w-20 -translate-x-1/2 transition-all duration-300 ease-out", style: {
+                left: clamp(last.x) * 100 + "%",
+                top: "calc(" + clamp(last.y) * 100 + "% - 1.6rem)",
+            } },
+            React.createElement("div", { className: "absolute inset-0 border border-fuchsia-400/40 bg-black/80 shadow-[0_0_12px_rgba(232,121,249,0.5)]" }),
+            React.createElement("div", { className: "absolute inset-y-[14%] inset-x-[6%]" },
+                React.createElement(FitText, { className: "font-mono font-bold tracking-widest uppercase text-fuchsia-300", wrap: false }, (distance < 10 ? distance.toFixed(1) : Math.round(distance).toString()) + "M")))) : null,
+        pts.length === 0 && visible ? (React.createElement("div", { className: "absolute inset-0 flex items-center justify-center" },
+            React.createElement("div", { className: "border border-cyan-400/25 bg-black/60 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.15em] leading-tight text-neutral-400" }, "NO ROUTE"))) : null));
+}
+
+const LevelBadge_MIN = { "base": [3, 3] };
+function LevelBadge(props) {
+    const uid = useRef("levelbadge-" + Math.random().toString(36).slice(2)).current;
+    const floor = LevelBadge_MIN.base;
+    const hasProg = typeof props.progress === "number" && isFinite(props.progress);
+    const p = hasProg ? Math.max(0, Math.min(1, props.progress)) : 0;
+    const lvl = Math.round(props.level);
+    const prevRef = useRef(lvl);
+    const [flash, setFlash] = useState(false);
+    useEffect(() => {
+        if (prevRef.current !== lvl) {
+            prevRef.current = lvl;
+            setFlash(true);
+            const t = setTimeout(() => setFlash(false), 620);
+            return () => clearTimeout(t);
+        }
+    }, [lvl]);
+    const hex = (r) => {
+        let d = "";
+        for (let i = 0; i < 6; i++) {
+            const a = (Math.PI / 180) * (i * 60 - 90);
+            const x = 50 + r * Math.cos(a);
+            const y = 50 + r * Math.sin(a);
+            d += (i === 0 ? "M" : "L") + x.toFixed(2) + " " + y.toFixed(2) + " ";
+        }
+        return d + "Z";
+    };
+    const ticks = [];
+    for (let i = 0; i < 24; i++) {
+        const a = (Math.PI / 180) * (i * 15 - 90);
+        const r1 = 47.5;
+        const r2 = i % 6 === 0 ? 42 : 45;
+        ticks.push(React.createElement("line", { key: "tk-" + i, x1: 50 + r1 * Math.cos(a), y1: 50 + r1 * Math.sin(a), x2: 50 + r2 * Math.cos(a), y2: 50 + r2 * Math.sin(a), stroke: i % 6 === 0 ? "rgba(34,211,238,0.55)" : "rgba(34,211,238,0.2)", strokeWidth: i % 6 === 0 ? 2 : 1 }));
+    }
+    return (React.createElement("div", { className: "relative h-full w-full", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" } },
+        React.createElement("svg", { viewBox: "0 0 100 100", preserveAspectRatio: "xMidYMid meet", className: "absolute inset-0 h-full w-full" },
+            React.createElement("defs", null,
+                React.createElement("linearGradient", { id: uid + "-face", x1: "0", y1: "0", x2: "0", y2: "1" },
+                    React.createElement("stop", { offset: "0%", stopColor: "rgba(23,23,23,0.95)" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "rgba(0,0,0,0.95)" })),
+                React.createElement("linearGradient", { id: uid + "-arc", x1: "0", y1: "1", x2: "1", y2: "0" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#22d3ee" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#a5f3fc" })),
+                React.createElement("radialGradient", { id: uid + "-glow", cx: "50%", cy: "50%", r: "50%" },
+                    React.createElement("stop", { offset: "55%", stopColor: "rgba(34,211,238,0)" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "rgba(34,211,238,0.22)" })),
+                React.createElement("filter", { id: uid + "-blur", x: "-50%", y: "-50%", width: "200%", height: "200%" },
+                    React.createElement("feGaussianBlur", { stdDeviation: "2.4" }))),
+            React.createElement("circle", { cx: "50", cy: "50", r: "49", fill: "url(#" + uid + "-glow)" }),
+            React.createElement("path", { d: hex(47), fill: "url(#" + uid + "-face)", stroke: "rgba(34,211,238,0.28)", strokeWidth: "1.5" }),
+            React.createElement("path", { d: hex(41), fill: "none", stroke: "rgba(34,211,238,0.14)", strokeWidth: "1" }),
+            ticks,
+            hasProg ? (React.createElement("g", null,
+                React.createElement("path", { d: hex(44), pathLength: 1, fill: "none", stroke: "rgba(34,211,238,0.14)", strokeWidth: "5", strokeLinecap: "butt" }),
+                React.createElement("path", { d: hex(44), pathLength: 1, fill: "none", stroke: "url(#" + uid + "-arc)", strokeWidth: "5", strokeLinecap: "butt", strokeDasharray: p + " 1", filter: "url(#" + uid + "-blur)", opacity: "0.8", style: { transition: "stroke-dasharray 600ms cubic-bezier(.2,.8,.2,1)" } }),
+                React.createElement("path", { d: hex(44), pathLength: 1, fill: "none", stroke: "url(#" + uid + "-arc)", strokeWidth: "3", strokeLinecap: "butt", strokeDasharray: p + " 1", style: { transition: "stroke-dasharray 600ms cubic-bezier(.2,.8,.2,1)" } }))) : (React.createElement("path", { d: hex(44), fill: "none", stroke: "rgba(34,211,238,0.3)", strokeWidth: "1.5", strokeDasharray: "3 4" })),
+            flash ? (React.createElement("path", { d: hex(47), fill: "none", stroke: "#e879f9", strokeWidth: "3", className: "animate-ping" })) : null),
+        React.createElement("div", { className: "absolute inset-[26%] flex items-center justify-center" },
+            React.createElement(FitText, { wrap: false, className: "font-mono font-bold tracking-widest uppercase transition-all duration-200 ease-out " +
+                    (flash ? "text-fuchsia-300 drop-shadow-[0_0_10px_rgba(232,121,249,0.8)]" : "text-cyan-300 drop-shadow-[0_0_6px_rgba(34,211,238,0.5)]") }, String(lvl)))));
+}
+
+const TabSelector_MIN = { "base": [8, 2.25] };
+function TabSelector(props) {
+    const { options, value, onChange } = props;
+    const uid = useRef("tabselector-" + Math.random().toString(36).slice(2)).current;
+    const [hover, setHover] = useState(null);
+    const [pressed, setPressed] = useState(null);
+    const floor = TabSelector_MIN.base;
+    return (React.createElement("div", { className: "h-full w-full relative", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" } },
+        React.createElement("div", { className: "absolute inset-0 bg-black/60 ring-1 ring-cyan-400/10 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)]" }),
+        React.createElement("div", { className: "absolute inset-0 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" }, options.length === 0 ? (React.createElement("div", { className: "h-full w-full flex items-center justify-center" },
+            React.createElement("span", { className: "text-[10px] font-medium uppercase tracking-[0.15em] text-neutral-500" }, "\u2014 \u2014 \u2014"))) : (React.createElement("div", { className: "min-h-full w-full flex flex-wrap content-stretch items-stretch gap-[2px] p-[2px]" }, options.map((o, i) => {
+            const active = o.id === value;
+            const isHover = hover === o.id && !active;
+            const isPress = pressed === o.id;
+            return (React.createElement("button", { key: "tab-" + uid + "-" + o.id, type: "button", onClick: () => onChange(o.id), onPointerDown: () => setPressed(o.id), onPointerUp: () => setPressed(null), onPointerCancel: () => setPressed(null), onPointerEnter: () => setHover(o.id), onPointerLeave: () => { setHover(null); setPressed(null); }, className: "group relative flex-1 basis-[5.5rem] min-w-0 flex items-center justify-center gap-1.5 px-2 overflow-hidden border transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 " +
+                    (active
+                        ? "border-cyan-400/60 bg-cyan-400/10 text-cyan-200 shadow-[0_0_14px_rgba(34,211,238,0.28)] "
+                        : "border-cyan-400/15 bg-neutral-900/70 text-cyan-200/60 hover:bg-cyan-400/10 hover:border-cyan-400/40 hover:text-cyan-100 ") +
+                    (isPress ? "scale-[0.97] brightness-125 " : ""), style: {
+                    clipPath: "polygon(0.45rem 0, 100% 0, 100% calc(100% - 0.45rem), calc(100% - 0.45rem) 100%, 0 100%)",
+                    transitionDelay: i * 12 + "ms",
+                } },
+                React.createElement("span", { className: "pointer-events-none absolute inset-0 bg-gradient-to-b transition-opacity duration-300 " +
+                        (active
+                            ? "from-cyan-400/25 via-transparent to-transparent opacity-100"
+                            : "from-cyan-300/10 via-transparent to-transparent " + (isHover ? "opacity-100" : "opacity-0")) }),
+                React.createElement("span", { className: "pointer-events-none absolute left-0 top-0 h-full w-[2px] transition-all duration-300 ease-out " +
+                        (active
+                            ? "bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.8)] opacity-100"
+                            : isHover
+                                ? "bg-cyan-400/50 opacity-100"
+                                : "opacity-0") }),
+                React.createElement("span", { className: "pointer-events-none absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-cyan-300 to-fuchsia-400 shadow-[0_0_8px_rgba(34,211,238,0.7)] transition-all duration-300 ease-out " +
+                        (active ? "w-full opacity-100" : "w-0 opacity-0") }),
+                active && (React.createElement("span", { className: "pointer-events-none absolute right-[0.15rem] top-[0.15rem] h-1 w-1 rounded-full bg-fuchsia-400 shadow-[0_0_8px_rgba(232,121,249,0.8)] animate-pulse" })),
+                React.createElement("span", { className: "relative min-w-0 truncate text-[11px] font-bold uppercase tracking-[0.16em] leading-none transition-all duration-200 " +
+                        (active ? "text-cyan-100 drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]" : "") }, o.label),
+                typeof o.count === "number" && (React.createElement("span", { className: "relative rounded-full border px-1.5 py-[1px] text-[9px] font-semibold leading-none tabular-nums transition-all duration-200 " +
+                        (active
+                            ? "border-fuchsia-400/60 bg-fuchsia-500/25 text-fuchsia-200 shadow-[0_0_10px_rgba(232,121,249,0.45)]"
+                            : "border-cyan-400/25 bg-black/50 text-cyan-200/60") }, o.count))));
+        }))))));
+}
+
+const ActionButton_MIN = { "base": [4, 2] };
+function ActionButton(props) {
+    const tone = props.tone || 'neutral';
+    const disabled = !!props.disabled;
+    const uid = useRef("actionbutton-" + Math.random().toString(36).slice(2)).current;
+    const [pressed, setPressed] = useState(false);
+    const [hover, setHover] = useState(false);
+    const [flash, setFlash] = useState(0);
+    const T = {
+        neutral: {
+            face: "bg-neutral-800/80",
+            glowFace: "rgba(34,211,238,0.10)",
+            edge: "rgba(34,211,238,0.45)",
+            edgeHot: "rgba(165,243,252,0.95)",
+            text: hover && !disabled ? "text-cyan-100" : "text-cyan-300",
+            glow: "0 0 16px rgba(34,211,238,0.45)",
+            bar: "rgba(34,211,238,0.9)"
+        },
+        accent: {
+            face: "bg-gradient-to-r from-cyan-400 to-cyan-300",
+            glowFace: "rgba(255,255,255,0.18)",
+            edge: "rgba(103,232,249,0.8)",
+            edgeHot: "rgba(255,255,255,0.95)",
+            text: "text-black",
+            glow: "0 0 22px rgba(34,211,238,0.7)",
+            bar: "rgba(0,0,0,0.6)"
+        },
+        danger: {
+            face: "bg-gradient-to-r from-rose-500 to-red-600",
+            glowFace: "rgba(255,255,255,0.15)",
+            edge: "rgba(251,113,133,0.7)",
+            edgeHot: "rgba(255,228,230,0.95)",
+            text: "text-white",
+            glow: "0 0 18px rgba(244,63,94,0.65)",
+            bar: "rgba(255,255,255,0.7)"
+        }
+    }[tone];
+    const fire = () => {
+        if (disabled)
+            return;
+        setFlash(function (f) { return f + 1; });
+        props.onPress();
+    };
+    return (React.createElement("div", { className: "relative h-full w-full select-none", style: { minWidth: ActionButton_MIN.base[0] + "rem", minHeight: ActionButton_MIN.base[1] + "rem" } },
+        React.createElement("button", { type: "button", disabled: disabled, onPointerDown: function (e) {
+                if (disabled)
+                    return;
+                e.currentTarget.setPointerCapture?.(e.pointerId);
+                setPressed(true);
+            }, onPointerUp: function () { if (pressed) {
+                setPressed(false);
+                fire();
+            } }, onPointerCancel: function () { setPressed(false); }, onPointerEnter: function () { setHover(true); }, onPointerLeave: function () { setHover(false); setPressed(false); }, onKeyDown: function (e) { if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setPressed(true);
+            } }, onKeyUp: function (e) { if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setPressed(false);
+                fire();
+            } }, className: "group absolute inset-0 touch-none overflow-hidden border-0 bg-transparent p-0 transition-all duration-200 ease-out focus-visible:outline-none " +
+                (disabled ? "cursor-not-allowed opacity-40 grayscale" : "cursor-pointer"), style: {
+                transform: pressed && !disabled ? "scale(0.965)" : "scale(1)",
+                filter: !disabled && hover ? "brightness(1.18)" : "none",
+                clipPath: "polygon(0 0, calc(100% - 0.55rem) 0, 100% 0.55rem, 100% 100%, 0.55rem 100%, 0 calc(100% - 0.55rem))"
+            } },
+            React.createElement("span", { className: "absolute inset-0 " + T.face + " transition-all duration-200 ease-out", style: { boxShadow: !disabled && (hover || pressed) ? T.glow : "inset 0 0 14px rgba(0,0,0,0.7)" } }),
+            React.createElement("span", { className: "pointer-events-none absolute inset-0 opacity-[0.18] mix-blend-overlay", style: { backgroundImage: "repeating-linear-gradient(0deg, rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 1px, transparent 1px, transparent 3px)" } }),
+            React.createElement("span", { className: "pointer-events-none absolute inset-y-0 w-1/3 transition-all duration-500 ease-out", style: {
+                    left: !disabled && hover ? "110%" : "-45%",
+                    background: "linear-gradient(100deg, transparent, " + T.glowFace + ", transparent)",
+                    transform: "skewX(-18deg)"
+                } }),
+            React.createElement("span", { key: "flash-" + flash, className: "pointer-events-none absolute inset-0 " + (flash > 0 ? "animate-[ping_0.45s_ease-out_1]" : ""), style: { background: flash > 0 ? T.glowFace : "transparent", opacity: 0 } }),
+            React.createElement("svg", { className: "pointer-events-none absolute inset-0 h-full w-full", viewBox: "0 0 100 100", preserveAspectRatio: "none" },
+                React.createElement("defs", null,
+                    React.createElement("linearGradient", { id: uid + "-edge", x1: "0", y1: "0", x2: "1", y2: "1" },
+                        React.createElement("stop", { offset: "0%", stopColor: !disabled && (hover || pressed) ? T.edgeHot : T.edge }),
+                        React.createElement("stop", { offset: "55%", stopColor: T.edge }),
+                        React.createElement("stop", { offset: "100%", stopColor: !disabled && hover ? T.edgeHot : T.edge }))),
+                React.createElement("path", { d: "M0.8 0.8 H92 L99.2 8 V99.2 H8 L0.8 92 Z", fill: "none", stroke: "url(#" + uid + "-edge)", strokeWidth: pressed ? 2.6 : 1.6, vectorEffect: "non-scaling-stroke", className: "transition-all duration-200 ease-out" })),
+            React.createElement("span", { className: "pointer-events-none absolute left-0 top-0 h-[3px] transition-all duration-300 ease-out", style: { width: hover && !disabled ? "45%" : "18%", background: T.bar } }),
+            React.createElement("span", { className: "pointer-events-none absolute bottom-0 right-0 h-[3px] transition-all duration-300 ease-out", style: { width: hover && !disabled ? "45%" : "18%", background: T.bar } }),
+            props.children !== undefined && props.children !== null && props.children !== false ? (React.createElement("span", { className: "absolute inset-x-[10%] inset-y-[18%]" },
+                React.createElement(FitText, { className: "font-mono font-bold uppercase tracking-widest transition-colors duration-200 " + T.text }, props.children))) : null)));
+}
+
+const ObjectiveChecklist_MIN = { "base": [9, 5] };
+function ObjectiveChecklist(props) {
+    const uid = useRef("objchk-" + Math.random().toString(36).slice(2)).current;
+    const steps = props.steps || [];
+    const total = steps.length;
+    const doneCount = steps.reduce(function (a, s) { return a + (s.done ? 1 : 0); }, 0);
+    const pct = total > 0 ? (doneCount / total) * 100 : 0;
+    const floor = ObjectiveChecklist_MIN.base;
+    return (React.createElement("div", { className: "h-full w-full flex flex-col", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" } },
+        React.createElement("style", null, "@keyframes " + uid + "-scan{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}@keyframes " + uid + "-blip{0%,100%{opacity:.35;transform:scale(.82)}50%{opacity:1;transform:scale(1.12)}}@keyframes " + uid + "-in{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}"),
+        React.createElement("div", { className: "relative h-1.5 w-full bg-black/60 border border-cyan-400/20 overflow-hidden" },
+            React.createElement("div", { className: "absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-400 to-cyan-200 shadow-[0_0_8px_rgba(34,211,238,0.6)] transition-all duration-500 ease-out", style: { width: pct + "%" } }),
+            total > 0 && doneCount < total ? (React.createElement("div", { className: "absolute inset-y-0 w-1/4 bg-gradient-to-r from-transparent via-cyan-300/25 to-transparent", style: { animation: uid + "-scan 2.4s linear infinite" } })) : null),
+        React.createElement("div", { className: "relative flex-1 min-h-0 min-w-0 mt-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" }, total === 0 ? (React.createElement("div", { className: "h-full w-full flex items-center justify-center" },
+            React.createElement("span", { className: "text-[10px] font-medium uppercase tracking-[0.15em] leading-tight text-neutral-500" }, "NO OBJECTIVES"))) : (React.createElement("div", { className: "flex flex-col" }, steps.map(function (s, i) {
+            const active = props.activeId != null && props.activeId === s.id && !s.done;
+            const accent = s.done
+                ? "text-cyan-300"
+                : active
+                    ? "text-amber-300"
+                    : s.optional
+                        ? "text-fuchsia-400"
+                        : "text-cyan-100/70";
+            return (React.createElement("div", { key: s.id, className: "relative flex items-stretch gap-2 pl-1 pr-1 py-1 transition-all duration-200 ease-out " +
+                    (active ? "bg-amber-400/10 border-l-2 border-amber-300 " : "border-l-2 border-transparent ") +
+                    (s.done ? "opacity-70 " : ""), style: { animation: uid + "-in 320ms ease-out both", animationDelay: Math.min(i, 10) * 35 + "ms" } },
+                React.createElement("div", { className: "relative w-4 flex flex-col items-center" },
+                    i > 0 ? (React.createElement("div", { className: "absolute top-0 h-1/2 w-px " + (s.done ? "bg-cyan-400/50" : "bg-cyan-400/15") })) : null,
+                    i < total - 1 ? (React.createElement("div", { className: "absolute bottom-0 h-1/2 w-px " + (s.done ? "bg-cyan-400/40" : "bg-cyan-400/15") })) : null,
+                    React.createElement("div", { className: "relative my-auto" },
+                        React.createElement("svg", { viewBox: "0 0 24 24", preserveAspectRatio: "xMidYMid meet", className: "w-4 h-4 overflow-visible" },
+                            React.createElement("defs", null,
+                                React.createElement("linearGradient", { id: uid + "-fill", x1: "0", y1: "0", x2: "1", y2: "1" },
+                                    React.createElement("stop", { offset: "0%", stopColor: "#22d3ee" }),
+                                    React.createElement("stop", { offset: "100%", stopColor: "#a5f3fc" }))),
+                            React.createElement("rect", { x: "3", y: "3", width: "18", height: "18", fill: s.done ? "url(#" + uid + "-fill)" : "rgba(0,0,0,0.6)", stroke: s.done ? "#67e8f9" : active ? "#fcd34d" : s.optional ? "rgba(232,121,249,0.6)" : "rgba(34,211,238,0.35)", strokeWidth: "2", style: {
+                                    transition: "all 300ms ease-out",
+                                    filter: s.done
+                                        ? "drop-shadow(0 0 4px rgba(34,211,238,0.7))"
+                                        : active
+                                            ? "drop-shadow(0 0 5px rgba(252,211,77,0.6))"
+                                            : "none",
+                                    animation: active ? uid + "-blip 1.4s ease-in-out infinite" : undefined,
+                                } }),
+                            s.done ? (React.createElement("path", { d: "M7 12.5l3.2 3.3L17 8.6", fill: "none", stroke: "#000", strokeWidth: "2.6", strokeLinecap: "square" })) : null))),
+                React.createElement("div", { className: "flex-1 min-w-0 flex items-center gap-1.5" },
+                    React.createElement("span", { className: "min-w-0 truncate text-xs font-mono leading-none tracking-[0.08em] uppercase transition-colors duration-200 " +
+                            accent + (s.done ? " line-through decoration-cyan-400/60" : "") + (active ? " font-bold" : " font-semibold") }, s.label),
+                    s.optional ? (React.createElement("span", { className: "shrink text-[10px] font-medium uppercase tracking-[0.15em] leading-none text-fuchsia-400/90 border border-fuchsia-400/40 rounded-full px-1.5 py-0.5 bg-neutral-800/70" }, "OPT")) : null)));
+        }))))));
+}
+
+const CharacterPortrait_MIN = { "base": [4, 5] };
+function CharacterPortrait(props) {
+    const uid = useRef("cportrait-" + Math.random().toString(36).slice(2)).current;
+    const status = props.status || "normal";
+    const [loaded, setLoaded] = useState(false);
+    const [err, setErr] = useState(false);
+    const tone = status === "critical"
+        ? { ring: "ring-rose-500/50", border: "border-rose-500/60", glow: "shadow-[0_0_22px_rgba(244,63,94,0.45)]", hex: "#f43f5e", tint: "bg-rose-600/25" }
+        : status === "damaged"
+            ? { ring: "ring-amber-300/40", border: "border-amber-300/50", glow: "shadow-[0_0_18px_rgba(251,191,36,0.35)]", hex: "#fbbf24", tint: "bg-amber-500/15" }
+            : { ring: "ring-cyan-400/25", border: "border-cyan-400/40", glow: "shadow-[0_0_18px_rgba(34,211,238,0.25)]", hex: "#22d3ee", tint: "bg-cyan-400/5" };
+    const corner = (pts, key) => (React.createElement("polyline", { key: key, points: pts, fill: "none", stroke: tone.hex, strokeWidth: "1.6", strokeLinecap: "square", opacity: "0.9" }));
+    return (React.createElement("div", { className: "relative h-full w-full", style: { minWidth: CharacterPortrait_MIN.base[0] + "rem", minHeight: CharacterPortrait_MIN.base[1] + "rem" } },
+        React.createElement("style", null, "@keyframes " + uid + "-scan{0%{transform:translateY(-110%)}100%{transform:translateY(510%)}}@keyframes " + uid + "-glitch{0%,88%,100%{transform:translate(0,0);opacity:0}90%{transform:translate(-2%,0);opacity:.55}93%{transform:translate(2%,1%);opacity:.4}96%{transform:translate(-1%,-1%);opacity:.5}}@keyframes " + uid + "-pulse{0%,100%{opacity:.25}50%{opacity:.7}}"),
+        React.createElement("div", { className: "absolute inset-0 overflow-hidden bg-black/60 border " + tone.border + " " + tone.glow + " ring-1 " + tone.ring + " transition-all duration-200 ease-out" },
+            React.createElement("div", { className: "absolute inset-0" }, !err && props.src ? (React.createElement("img", { src: props.src, alt: props.alt || "", draggable: false, onLoad: () => setLoaded(true), onError: () => setErr(true), className: "h-full w-full object-cover transition-all duration-500 ease-out " +
+                    (loaded ? "opacity-100 scale-100" : "opacity-0 scale-105") +
+                    (status === "critical" ? " saturate-150 contrast-125" : status === "damaged" ? " saturate-75" : "") })) : (React.createElement("div", { className: "absolute inset-0 bg-gradient-to-br from-neutral-900 via-black to-neutral-900 flex items-center justify-center" },
+                React.createElement("svg", { viewBox: "0 0 24 24", preserveAspectRatio: "xMidYMid meet", className: "h-1/2 w-1/2 opacity-40" },
+                    React.createElement("circle", { cx: "12", cy: "8.5", r: "3.6", fill: "none", stroke: tone.hex, strokeWidth: "1.1" }),
+                    React.createElement("path", { d: "M4.5 20c1.2-4.2 4.1-6.2 7.5-6.2S18.3 15.8 19.5 20", fill: "none", stroke: tone.hex, strokeWidth: "1.1" }))))),
+            React.createElement("div", { className: "absolute inset-0 " + tone.tint + " mix-blend-screen pointer-events-none transition-colors duration-300" }),
+            React.createElement("div", { className: "absolute inset-0 pointer-events-none opacity-30", style: { backgroundImage: "repeating-linear-gradient(to bottom, rgba(0,0,0,0.55) 0px, rgba(0,0,0,0.55) 1px, transparent 1px, transparent 3px)" } }),
+            React.createElement("div", { className: "absolute inset-0 overflow-hidden pointer-events-none" },
+                React.createElement("div", { className: "absolute left-0 w-full", style: {
+                        height: "18%",
+                        background: "linear-gradient(to bottom, transparent, " + tone.hex + "55, transparent)",
+                        animation: uid + "-scan 3.6s linear infinite",
+                    } })),
+            status !== "normal" && (React.createElement("div", { className: "absolute inset-0 pointer-events-none mix-blend-screen", style: {
+                    background: "repeating-linear-gradient(to bottom, " + tone.hex + "40 0 2px, transparent 2px 9px)",
+                    animation: uid + "-glitch " + (status === "critical" ? "1.6s" : "3s") + " steps(1,end) infinite",
+                } })),
+            React.createElement("div", { className: "absolute inset-0 pointer-events-none shadow-[inset_0_0_26px_rgba(0,0,0,0.9)]" }),
+            React.createElement("svg", { viewBox: "0 0 100 100", preserveAspectRatio: "none", className: "absolute inset-0 h-full w-full pointer-events-none" },
+                corner("0.8,14 0.8,0.8 14,0.8", "tl"),
+                corner("86,0.8 99.2,0.8 99.2,14", "tr"),
+                corner("99.2,86 99.2,99.2 86,99.2", "br"),
+                corner("14,99.2 0.8,99.2 0.8,86", "bl")),
+            React.createElement("div", { className: "absolute right-0 top-0 flex items-center gap-[2px] p-1" }, [0, 1, 2].map((i) => {
+                const lit = status === "critical" ? i < 3 : status === "damaged" ? i < 2 : i < 1;
+                return (React.createElement("span", { key: "pip-" + i, className: "block h-[3px] w-[6px] transition-all duration-200 " + (lit ? "" : "opacity-20"), style: {
+                        background: lit ? tone.hex : "#525252",
+                        boxShadow: lit ? "0 0 6px " + tone.hex : "none",
+                        animation: lit && status === "critical" ? uid + "-pulse 0.7s ease-in-out infinite" : undefined,
+                    } }));
+            })))));
+}
+
+const ListSelector_MIN = { "base": [11, 5] };
+function ListSelector(props) {
+    const { items, value, onChange, onActivate } = props;
+    const uid = useRef("listselector-" + Math.random().toString(36).slice(2)).current;
+    const [hover, setHover] = useState(null);
+    const statusTone = (s) => {
+        const t = (s || "").toLowerCase();
+        if (t.indexOf("done") >= 0 || t.indexOf("complete") >= 0 || t.indexOf("success") >= 0)
+            return "text-emerald-400 border-emerald-400/50";
+        if (t.indexOf("fail") >= 0 || t.indexOf("danger") >= 0 || t.indexOf("critical") >= 0)
+            return "text-rose-500 border-rose-400/50";
+        if (t.indexOf("active") >= 0 || t.indexOf("track") >= 0 || t.indexOf("progress") >= 0)
+            return "text-cyan-300 border-cyan-400/50";
+        if (t.indexOf("lock") >= 0 || t.indexOf("new") >= 0)
+            return "text-amber-300 border-amber-300/50";
+        return "text-fuchsia-400 border-fuchsia-400/40";
+    };
+    return (React.createElement("div", { className: "h-full w-full relative overflow-hidden bg-black/60 ring-1 ring-cyan-400/10 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)]", style: { minWidth: ListSelector_MIN.base[0] + "rem", minHeight: ListSelector_MIN.base[1] + "rem" } },
+        React.createElement("svg", { className: "absolute inset-0 h-full w-full pointer-events-none opacity-40", preserveAspectRatio: "none", viewBox: "0 0 100 100" },
+            React.createElement("defs", null,
+                React.createElement("linearGradient", { id: uid + "-sheen", x1: "0", y1: "0", x2: "1", y2: "1" },
+                    React.createElement("stop", { offset: "0%", stopColor: "rgb(34,211,238)", stopOpacity: "0.08" }),
+                    React.createElement("stop", { offset: "60%", stopColor: "rgb(0,0,0)", stopOpacity: "0" }))),
+            React.createElement("rect", { x: "0", y: "0", width: "100", height: "100", fill: "url(#" + uid + "-sheen)" })),
+        items.length === 0 ? (React.createElement("div", { className: "absolute inset-0 flex items-center justify-center" },
+            React.createElement("div", { className: "text-[10px] font-medium uppercase tracking-[0.15em] leading-tight text-neutral-500 animate-pulse" }, "// no entries"))) : (React.createElement("div", { className: "absolute inset-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" }, items.map((it, i) => {
+            const sel = value === it.id;
+            const hov = hover === it.id;
+            return (React.createElement("div", { key: it.id, className: "relative" },
+                React.createElement("div", { role: "button", tabIndex: 0, onPointerEnter: () => setHover(it.id), onPointerLeave: () => setHover((h) => (h === it.id ? null : h)), onClick: () => {
+                        if (sel && onActivate)
+                            onActivate(it.id);
+                        else
+                            onChange(it.id);
+                    }, onDoubleClick: () => { if (onActivate)
+                        onActivate(it.id); }, onKeyDown: (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            if (sel && onActivate)
+                                onActivate(it.id);
+                            else
+                                onChange(it.id);
+                        }
+                    }, className: "relative flex items-center gap-2 p-2 cursor-pointer select-none border-b border-cyan-400/10 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 " +
+                        (sel
+                            ? "bg-cyan-400/10 ring-1 ring-cyan-400/60 text-cyan-200"
+                            : hov
+                                ? "bg-cyan-400/10"
+                                : "bg-transparent") },
+                    React.createElement("span", { className: "block w-[3px] self-stretch transition-all duration-200 " +
+                            (sel ? "bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.8)]" : hov ? "bg-cyan-400/50" : "bg-cyan-400/15") }),
+                    React.createElement("span", { className: "text-[10px] font-medium uppercase tracking-[0.15em] leading-tight tabular-nums transition-colors duration-200 " +
+                            (sel ? "text-cyan-300" : "text-neutral-500") }, (i + 1 < 10 ? "0" : "") + (i + 1)),
+                    React.createElement("span", { className: "flex-1 min-w-0 flex flex-col gap-[2px]" },
+                        React.createElement("span", { className: "flex items-baseline gap-2 min-w-0" },
+                            React.createElement("span", { className: "min-w-0 truncate text-xs font-bold uppercase tracking-[0.18em] leading-none transition-colors duration-200 " +
+                                    (sel ? "text-cyan-100" : hov ? "text-cyan-200" : "text-cyan-100/80") }, it.label),
+                            it.category ? (React.createElement("span", { className: "min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.15em] leading-tight text-fuchsia-400/80" }, it.category)) : null),
+                        it.subtitle ? (React.createElement("span", { className: "min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.15em] leading-tight text-neutral-400" }, it.subtitle)) : null),
+                    it.status ? (React.createElement("span", { className: "min-w-0 truncate max-w-[40%] border rounded-full px-2 py-1 text-[10px] font-medium uppercase tracking-[0.15em] leading-none bg-neutral-800/70 transition-all duration-200 " +
+                            statusTone(it.status) +
+                            (sel ? " shadow-[0_0_12px_rgba(232,121,249,0.5)]" : "") }, it.status)) : null),
+                sel && it.children && it.children.length > 0 ? (React.createElement("div", { className: "bg-black/50 border-b border-cyan-400/10 py-1" }, it.children.map((c) => (React.createElement("div", { key: c.id, className: "flex items-center gap-2 pl-6 pr-2 py-1" },
+                    React.createElement("span", { className: "h-[6px] w-[6px] rotate-45 transition-all duration-200 " +
+                            (c.done ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" : "bg-cyan-400/40 animate-pulse") }),
+                    React.createElement("span", { className: "min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.15em] leading-tight " +
+                            (c.done ? "text-neutral-500 line-through" : "text-cyan-200/70") }, c.label)))))) : null));
+        })))));
+}
+
+const StatReadout_MIN = { "base": [3.5, 2] };
+function StatReadout(props) {
+    const { value, delta, tone = "neutral", children } = props;
+    const uid = useRef("statreadout-" + Math.random().toString(36).slice(2)).current;
+    const floor = StatReadout_MIN.base;
+    const TONES = {
+        neutral: {
+            text: "text-cyan-50",
+            accent: "text-cyan-300/80",
+            ring: "ring-cyan-400/15",
+            bar: "from-cyan-400/70 via-cyan-200/40 to-transparent",
+            glow: "0 0 10px rgba(34,211,238,0.35)",
+            rgb: "34,211,238",
+        },
+        accent: {
+            text: "text-fuchsia-300",
+            accent: "text-fuchsia-300/80",
+            ring: "ring-fuchsia-400/25",
+            bar: "from-fuchsia-500/80 via-purple-400/40 to-transparent",
+            glow: "0 0 14px rgba(232,121,249,0.5)",
+            rgb: "232,121,249",
+        },
+        danger: {
+            text: "text-rose-400",
+            accent: "text-rose-300/80",
+            ring: "ring-rose-400/25",
+            bar: "from-rose-500/80 via-red-500/40 to-transparent",
+            glow: "0 0 14px rgba(244,63,94,0.5)",
+            rgb: "244,63,94",
+        },
+    };
+    const t = TONES[tone] || TONES.neutral;
+    const [pulse, setPulse] = useState(0);
+    const prev = useRef(value);
+    useEffect(() => {
+        if (prev.current !== value) {
+            prev.current = value;
+            setPulse((p) => p + 1);
+        }
+    }, [value]);
+    const hasDelta = typeof delta === "number" && !isNaN(delta);
+    const dPos = hasDelta && delta > 0;
+    const dNeg = hasDelta && delta < 0;
+    const deltaColor = dPos ? "text-emerald-400" : dNeg ? "text-rose-400" : "text-neutral-500";
+    const deltaText = hasDelta
+        ? (dPos ? "+" : dNeg ? "\u2212" : "\u00B1") + Math.abs(delta)
+        : "";
+    return (React.createElement("div", { className: "relative h-full w-full overflow-hidden", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" } },
+        React.createElement("style", null, "@keyframes " + uid + "-flick{0%{opacity:.25;transform:translateY(-6%) scale(1.06)}35%{opacity:1}55%{opacity:.6}100%{opacity:1;transform:translateY(0) scale(1)}}" +
+            "@keyframes " + uid + "-sweep{0%{transform:translateX(-110%)}100%{transform:translateX(110%)}}" +
+            "@keyframes " + uid + "-pip{0%,100%{opacity:.35}50%{opacity:1}}"),
+        React.createElement("div", { className: "absolute inset-0 bg-black/60 ring-1 " + t.ring + " shadow-[inset_0_0_12px_rgba(0,0,0,0.8)]" }),
+        React.createElement("svg", { className: "absolute inset-0 h-full w-full", viewBox: "0 0 100 100", preserveAspectRatio: "none" },
+            React.createElement("path", { d: "M0 0 H14 M0 0 V14", stroke: "rgba(" + t.rgb + ",0.55)", strokeWidth: "2", vectorEffect: "non-scaling-stroke", fill: "none" }),
+            React.createElement("path", { d: "M100 100 H86 M100 100 V86", stroke: "rgba(" + t.rgb + ",0.55)", strokeWidth: "2", vectorEffect: "non-scaling-stroke", fill: "none" })),
+        React.createElement("div", { className: "absolute left-0 right-0 top-0 h-[3%] min-h-[2px] bg-gradient-to-r " + t.bar }),
+        React.createElement("div", { className: "pointer-events-none absolute inset-0 overflow-hidden" },
+            React.createElement("div", { className: "absolute -inset-y-2 w-[35%]", style: {
+                    background: "linear-gradient(90deg,transparent,rgba(" + t.rgb + ",0.10),transparent)",
+                    animation: uid + "-sweep 4.5s linear infinite",
+                } })),
+        React.createElement("div", { className: "absolute inset-[7%] flex min-h-0 min-w-0 flex-col" },
+            React.createElement("div", { key: pulse, className: "relative min-h-0 min-w-0 flex-1", style: { animation: uid + "-flick 420ms ease-out" } },
+                React.createElement("div", { className: "absolute inset-0 flex min-h-0 min-w-0 items-stretch" },
+                    React.createElement("div", { className: "min-h-0 min-w-0 flex-1" },
+                        React.createElement(FitText, { className: "font-mono font-bold uppercase tracking-widest transition-colors duration-200 " + t.text, wrap: false, align: hasDelta ? "start" : "center" }, String(value))),
+                    hasDelta ? (React.createElement("div", { className: "min-h-0 w-[30%] min-w-0 self-center" },
+                        React.createElement(FitText, { className: "font-mono font-bold uppercase tracking-widest " + deltaColor, wrap: false, align: "end" }, deltaText))) : null),
+                React.createElement("div", { className: "pointer-events-none absolute inset-0", style: { boxShadow: "inset 0 0 0 0 transparent", textShadow: t.glow } })),
+            children != null && children !== false ? (React.createElement("div", { className: "mt-[2px] flex min-h-0 min-w-0 items-center gap-1", style: { height: "34%" } },
+                React.createElement("div", { className: "h-[45%] w-[3px]", style: { background: "rgba(" + t.rgb + ",0.7)", animation: uid + "-pip 2s ease-in-out infinite" } }),
+                React.createElement("div", { className: "min-h-0 min-w-0 flex-1" },
+                    React.createElement(FitText, { className: "font-mono font-semibold uppercase tracking-[0.18em] " + t.accent, wrap: false, align: "start" }, children)))) : null)));
+}
+
+const MapMarker_MIN = { "base": [2, 2] };
+function MapMarker(props) {
+    const uid = useRef("mapmarker-" + Math.random().toString(36).slice(2)).current;
+    const [hot, setHot] = useState(false);
+    const [down, setDown] = useState(false);
+    const state = props.state || "default";
+    const kind = (props.kind || "").toLowerCase();
+    const locked = state === "locked";
+    const isTravel = kind.indexOf("travel") >= 0 || kind.indexOf("fast") >= 0 || kind.indexOf("transit") >= 0;
+    const isQuest = kind.indexOf("quest") >= 0 || kind.indexOf("main") >= 0 || kind.indexOf("job") >= 0 || kind.indexOf("gig") >= 0;
+    const isVendor = kind.indexOf("vendor") >= 0 || kind.indexOf("shop") >= 0 || kind.indexOf("ripper") >= 0;
+    let accent = "#22d3ee";
+    if (isQuest)
+        accent = "#fcd34d";
+    if (isVendor)
+        accent = "#e879f9";
+    if (state === "tracked")
+        accent = isQuest ? "#fbbf24" : "#22d3ee";
+    if (state === "selected")
+        accent = isQuest ? "#fde68a" : "#67e8f9";
+    if (locked)
+        accent = "#737373";
+    const clampedX = Math.max(0, Math.min(1, props.position.x));
+    const clampedY = Math.max(0, Math.min(1, props.position.y));
+    const active = state === "selected" || state === "tracked";
+    const lift = locked ? 1 : hot ? 1.18 : active ? 1.08 : 1;
+    const scale = down && !locked ? lift * 0.9 : lift;
+    const glow = locked ? 0 : hot ? 10 : state === "selected" ? 9 : state === "tracked" ? 7 : 3;
+    const size = active || hot ? 2.1 : 1.8;
+    return (React.createElement("div", { className: "relative h-full w-full", style: { minWidth: MapMarker_MIN.base[0] + "rem", minHeight: MapMarker_MIN.base[1] + "rem" } },
+        React.createElement("div", { className: "absolute", style: {
+                left: clampedX * 100 + "%",
+                top: clampedY * 100 + "%",
+                width: size + "rem",
+                height: size + "rem",
+                transform: "translate(-50%,-50%) scale(" + scale + ")",
+                transition: "transform 200ms ease-out, width 200ms ease-out, height 200ms ease-out",
+                opacity: locked ? 0.45 : 1,
+                filter: locked ? "grayscale(1)" : "none",
+                cursor: locked ? "not-allowed" : "pointer",
+                touchAction: "none",
+            }, onPointerEnter: () => { setHot(true); if (props.onHover)
+                props.onHover(props.id); }, onPointerLeave: () => { setHot(false); setDown(false); if (props.onHover)
+                props.onHover(null); }, onPointerDown: (e) => { if (locked)
+                return; e.currentTarget.setPointerCapture?.(e.pointerId); setDown(true); }, onPointerUp: () => { if (locked)
+                return; setDown(false); props.onSelect(props.id); } },
+            React.createElement("svg", { viewBox: "0 0 100 100", preserveAspectRatio: "xMidYMid meet", className: "h-full w-full overflow-visible" },
+                React.createElement("defs", null,
+                    React.createElement("radialGradient", { id: uid + "-core", cx: "50%", cy: "40%", r: "60%" },
+                        React.createElement("stop", { offset: "0%", stopColor: "#ffffff", stopOpacity: locked ? 0.2 : 0.95 }),
+                        React.createElement("stop", { offset: "55%", stopColor: accent, stopOpacity: "0.95" }),
+                        React.createElement("stop", { offset: "100%", stopColor: accent, stopOpacity: "0.15" })),
+                    React.createElement("filter", { id: uid + "-blur", x: "-80%", y: "-80%", width: "260%", height: "260%" },
+                        React.createElement("feGaussianBlur", { stdDeviation: glow }))),
+                glow > 0 ? (React.createElement("circle", { cx: "50", cy: "50", r: "26", fill: accent, opacity: "0.35", filter: "url(#" + uid + "-blur)" })) : null,
+                state === "tracked" && !locked ? (React.createElement("g", null,
+                    React.createElement("circle", { cx: "50", cy: "50", r: "40", fill: "none", stroke: accent, strokeWidth: "2", opacity: "0.5" },
+                        React.createElement("animate", { attributeName: "r", values: "30;48;30", dur: "2.2s", repeatCount: "indefinite" }),
+                        React.createElement("animate", { attributeName: "opacity", values: "0.6;0;0.6", dur: "2.2s", repeatCount: "indefinite" })))) : null,
+                state === "selected" && !locked ? (React.createElement("g", { stroke: accent, strokeWidth: "4", fill: "none", opacity: "0.9" },
+                    React.createElement("g", null,
+                        React.createElement("path", { d: "M50 8 A42 42 0 0 1 84 30" }),
+                        React.createElement("path", { d: "M50 92 A42 42 0 0 1 16 70" }),
+                        React.createElement("animateTransform", { attributeName: "transform", type: "rotate", from: "0 50 50", to: "360 50 50", dur: "6s", repeatCount: "indefinite" })))) : null,
+                React.createElement("circle", { cx: "50", cy: "50", r: "42", fill: "none", stroke: accent, strokeOpacity: "0.28", strokeWidth: "2", strokeDasharray: "4 6" }),
+                isTravel ? (React.createElement("g", null,
+                    React.createElement("polygon", { points: "50,14 81,32 81,68 50,86 19,68 19,32", fill: "#000000", fillOpacity: "0.75", stroke: accent, strokeWidth: "5", strokeLinejoin: "miter" }),
+                    React.createElement("path", { d: "M50 30 L64 52 L54 52 L54 70 L46 70 L46 52 L36 52 Z", fill: "url(#" + uid + "-core)" }))) : isQuest ? (React.createElement("g", null,
+                    React.createElement("polygon", { points: "50,12 88,50 50,88 12,50", fill: "#000000", fillOpacity: "0.75", stroke: accent, strokeWidth: "5", strokeLinejoin: "miter" }),
+                    React.createElement("rect", { x: "45", y: "30", width: "10", height: "26", fill: "url(#" + uid + "-core)" }),
+                    React.createElement("rect", { x: "45", y: "61", width: "10", height: "9", fill: accent }))) : (React.createElement("g", null,
+                    React.createElement("polygon", { points: "50,16 84,50 50,84 16,50", fill: "#000000", fillOpacity: "0.7", stroke: accent, strokeWidth: "4", strokeLinejoin: "miter", opacity: "0.8" }),
+                    React.createElement("circle", { cx: "50", cy: "50", r: "15", fill: "url(#" + uid + "-core)" }))),
+                React.createElement("g", { stroke: accent, strokeWidth: "4", strokeLinecap: "butt", opacity: hot && !locked ? 0.95 : 0.4 },
+                    React.createElement("line", { x1: "50", y1: "0", x2: "50", y2: "8" }),
+                    React.createElement("line", { x1: "50", y1: "92", x2: "50", y2: "100" }),
+                    React.createElement("line", { x1: "0", y1: "50", x2: "8", y2: "50" }),
+                    React.createElement("line", { x1: "92", y1: "50", x2: "100", y2: "50" })),
+                locked ? (React.createElement("g", { stroke: "#a3a3a3", strokeWidth: "6", strokeLinecap: "round" },
+                    React.createElement("line", { x1: "34", y1: "34", x2: "66", y2: "66" }),
+                    React.createElement("line", { x1: "66", y1: "34", x2: "34", y2: "66" }))) : null))));
+}
+
+const ItemGridRarity = {
+    common: { text: "text-neutral-300", border: "border-neutral-500/60", glow: "0 0 10px rgba(163,163,163,0.35)", bg: "from-neutral-700/25" },
+    uncommon: { text: "text-emerald-400", border: "border-emerald-400/60", glow: "0 0 12px rgba(52,211,153,0.45)", bg: "from-emerald-500/20" },
+    rare: { text: "text-cyan-300", border: "border-cyan-400/60", glow: "0 0 12px rgba(34,211,238,0.5)", bg: "from-cyan-500/20" },
+    epic: { text: "text-fuchsia-400", border: "border-fuchsia-400/60", glow: "0 0 14px rgba(232,121,249,0.5)", bg: "from-fuchsia-500/20" },
+    legendary: { text: "text-amber-300", border: "border-amber-300/60", glow: "0 0 16px rgba(252,211,77,0.55)", bg: "from-amber-400/25" },
+};
+const ItemGrid_MIN = { "base": [11, 7.5] };
+function ItemGrid(props) {
+    const { items, value, onChange, onActivate } = props;
+    const uid = useRef("itemgrid-" + Math.random().toString(36).slice(2)).current;
+    const [hover, setHover] = useState(null);
+    const [pulse, setPulse] = useState(null);
+    const rarityOf = (r) => ItemGridRarity[(r || "common").toLowerCase()] || ItemGridRarity.common;
+    const fire = (id) => {
+        if (!onActivate)
+            return;
+        onActivate(id);
+        setPulse(id);
+        window.setTimeout(() => setPulse((p) => (p === id ? null : p)), 420);
+    };
+    return (React.createElement("div", { className: "h-full w-full relative", style: { minWidth: ItemGrid_MIN.base[0] + "rem", minHeight: ItemGrid_MIN.base[1] + "rem" } },
+        React.createElement("div", { className: "absolute inset-0 bg-black/60 ring-1 ring-cyan-400/10 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)] overflow-hidden" },
+            React.createElement("div", { className: "absolute inset-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" }, items.length === 0 ? (React.createElement("div", { className: "h-full w-full min-h-[5rem] flex items-center justify-center" },
+                React.createElement("div", { className: "text-[10px] font-medium uppercase tracking-[0.15em] leading-tight text-neutral-500 border border-cyan-400/15 px-2 py-1" }, "// no items"))) : (React.createElement("div", { className: "grid gap-[2px] p-[2px]", style: { gridTemplateColumns: "repeat(auto-fill, minmax(5.25rem, 1fr))" } }, items.map((it, i) => {
+                const r = rarityOf(it.rarity);
+                const sel = value === it.id;
+                const hov = hover === it.id;
+                const pul = pulse === it.id;
+                return (React.createElement("div", { key: it.id, onPointerEnter: () => setHover(it.id), onPointerLeave: () => setHover((h) => (h === it.id ? null : h)), onPointerDown: () => onChange(it.id), onDoubleClick: () => fire(it.id), className: "group relative select-none cursor-pointer rounded-sm border bg-gradient-to-b " +
+                        r.bg +
+                        " to-neutral-950/90 transition-all duration-200 ease-out active:scale-[0.97] active:brightness-125 " +
+                        (sel ? r.border + " ring-1 ring-cyan-400/60 " : "border-cyan-400/20 "), style: {
+                        minHeight: "4.6rem",
+                        boxShadow: sel || hov ? r.glow : "none",
+                        animationDuration: "0.4s",
+                    } },
+                    React.createElement("span", { className: "pointer-events-none absolute left-0 top-0 h-2 w-2 border-l border-t transition-all duration-200 " + (sel ? r.border : "border-cyan-400/25") }),
+                    React.createElement("span", { className: "pointer-events-none absolute right-0 bottom-0 h-2 w-2 border-r border-b transition-all duration-200 " + (sel ? r.border : "border-cyan-400/25") }),
+                    React.createElement("span", { className: "pointer-events-none absolute left-0 top-0 bottom-0 w-[2px] transition-all duration-200 " + (sel || hov ? "opacity-100" : "opacity-50"), style: { background: "currentColor" } }),
+                    React.createElement("div", { className: "absolute inset-0 " + r.text, style: { pointerEvents: "none" } },
+                        React.createElement("span", { className: "absolute left-0 top-0 bottom-0 w-[2px] bg-current", style: { boxShadow: sel || hov ? r.glow : "none" } })),
+                    React.createElement("span", { className: "pointer-events-none absolute inset-0 overflow-hidden rounded-sm transition-opacity duration-200 " + (hov ? "opacity-100" : "opacity-0") },
+                        React.createElement("span", { className: "absolute -inset-y-2 w-1/3 bg-gradient-to-r from-transparent via-cyan-300/15 to-transparent", style: { animation: hov ? "itemgridsweep 1.4s linear infinite" : "none" } })),
+                    React.createElement("div", { className: "relative h-full w-full flex flex-col p-2 gap-1" },
+                        React.createElement("div", { className: "relative flex-1 min-h-0 min-w-0 flex items-center justify-center" },
+                            React.createElement("div", { className: "absolute inset-[8%]" },
+                                React.createElement(FitText, { wrap: false, className: "font-mono font-bold tracking-widest uppercase transition-all duration-200 " + r.text + (pul ? " brightness-150" : "") }, it.icon && it.icon.length > 0 ? it.icon : it.label.slice(0, 2)))),
+                        React.createElement("div", { className: "min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.15em] leading-tight transition-colors duration-150 " + (sel ? "text-cyan-100" : "text-cyan-200/70") }, it.label),
+                        it.stats && it.stats.length > 0 ? (React.createElement("div", { className: "flex flex-wrap gap-x-2 gap-y-[1px] overflow-hidden", style: { maxHeight: "1.6rem" } }, it.stats.slice(0, 2).map((s, k) => (React.createElement("span", { key: "s-" + k, className: "min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.1em] leading-tight text-neutral-400" },
+                            React.createElement("span", { className: "text-neutral-500" }, s.label),
+                            " ",
+                            React.createElement("span", { className: r.text }, s.value)))))) : null),
+                    typeof it.quantity === "number" ? (React.createElement("span", { className: "absolute right-1 top-1 rounded-sm border border-cyan-400/30 bg-black/70 px-1 text-[10px] font-semibold leading-tight tracking-[0.1em] text-cyan-200/80" }, "x" + it.quantity)) : null,
+                    it.equipped ? (React.createElement("span", { className: "absolute right-1 bottom-1 rounded-full border border-fuchsia-400/40 bg-fuchsia-500/25 px-2 text-[10px] font-semibold uppercase leading-tight tracking-[0.15em] text-fuchsia-200 shadow-[0_0_12px_rgba(232,121,249,0.5)] animate-pulse" }, "EQ")) : null,
+                    pul ? (React.createElement("span", { className: "pointer-events-none absolute inset-0 rounded-sm bg-cyan-300/25", style: { animation: "itemgridflash 0.42s ease-out forwards" } })) : null));
+            }))))),
+        React.createElement("style", null, "@keyframes itemgridsweep{0%{transform:translateX(-120%)}100%{transform:translateX(420%)}}" +
+            "@keyframes itemgridflash{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(1.06)}}"),
+        React.createElement("span", { className: "hidden" }, uid)));
+}
+
+const ZoomControl_MIN = { "base": [2.25, 7.5] };
+function ZoomControl(props) {
+    const { value, min, max, step, onChange, onReset } = props;
+    const uid = useRef("zoomcontrol-" + Math.random().toString(36).slice(2)).current;
+    const trackRef = useRef(null);
+    const [drag, setDrag] = useState(false);
+    const [pulse, setPulse] = useState(0);
+    const span = Math.max(1e-6, max - min);
+    const clamp = (v) => Math.min(max, Math.max(min, v));
+    const snap = (v) => {
+        if (!step || step <= 0)
+            return clamp(v);
+        const n = Math.round((v - min) / step);
+        return clamp(min + n * step);
+    };
+    const frac = Math.min(1, Math.max(0, (clamp(value) - min) / span));
+    useEffect(() => { setPulse((p) => p + 1); }, [value]);
+    const emit = (v) => { const nv = snap(v); if (nv !== value)
+        onChange(nv); };
+    const stepAmt = step && step > 0 ? step : span / 8;
+    const fromPointer = (e) => {
+        const el = trackRef.current;
+        if (!el)
+            return;
+        const r = el.getBoundingClientRect();
+        if (r.height <= 0)
+            return;
+        const f = 1 - (e.clientY - r.top) / r.height;
+        emit(min + Math.min(1, Math.max(0, f)) * span);
+    };
+    const ticks = [];
+    if (step && step > 0) {
+        const n = Math.round(span / step);
+        if (n > 1 && n <= 24)
+            for (let i = 0; i <= n; i++)
+                ticks.push(i / n);
+    }
+    const btn = "relative w-full flex items-center justify-center border border-cyan-300/40 bg-neutral-800/80 text-cyan-300 " +
+        "transition-all duration-200 ease-out hover:bg-cyan-300 hover:text-black hover:border-cyan-200 " +
+        "hover:shadow-[0_0_16px_rgba(34,211,238,0.5)] active:scale-[0.94] active:brightness-110 " +
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:opacity-40 disabled:grayscale";
+    const Glyph = (p) => (React.createElement("svg", { viewBox: "0 0 24 24", preserveAspectRatio: "xMidYMid meet", className: "h-[70%] w-[70%]", fill: "none", stroke: "currentColor", strokeWidth: "2.2", strokeLinecap: "square" },
+        p.kind === "plus" ? React.createElement("g", null,
+            React.createElement("path", { d: "M12 5.5v13" }),
+            React.createElement("path", { d: "M5.5 12h13" })) : null,
+        p.kind === "minus" ? React.createElement("path", { d: "M5.5 12h13" }) : null,
+        p.kind === "reset" ? React.createElement("g", null,
+            React.createElement("path", { d: "M12 6.5a5.5 5.5 0 1 1-5.2 3.7" }),
+            React.createElement("path", { d: "M6.2 5.2v5h5" })) : null));
+    return (React.createElement("div", { className: "h-full w-full flex flex-col items-center justify-stretch", style: { minWidth: ZoomControl_MIN.base[0] + "rem", minHeight: ZoomControl_MIN.base[1] + "rem" } },
+        React.createElement("div", { className: "h-full flex flex-col items-stretch gap-[2%] w-full", style: { maxWidth: "3.25rem" } },
+            React.createElement("button", { type: "button", "aria-label": "zoom in", disabled: value >= max - 1e-9, onClick: () => emit(value + stepAmt), className: btn, style: { height: "1.6rem", flex: "0 0 auto" } },
+                React.createElement(Glyph, { kind: "plus" })),
+            React.createElement("div", { ref: trackRef, onPointerDown: (e) => { e.target.setPointerCapture?.(e.pointerId); setDrag(true); fromPointer(e); }, onPointerMove: (e) => { if (drag)
+                    fromPointer(e); }, onPointerUp: () => setDrag(false), onPointerCancel: () => setDrag(false), className: "relative flex-1 min-h-0 w-full touch-none cursor-pointer bg-black/60 border border-cyan-400/25 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)] ring-1 ring-cyan-400/10 overflow-hidden" },
+                React.createElement("div", { className: "absolute inset-0 opacity-40", style: { backgroundImage: "repeating-linear-gradient(to bottom, rgba(34,211,238,0.10) 0px, rgba(34,211,238,0.10) 1px, transparent 1px, transparent 6px)" } }),
+                React.createElement("div", { className: "absolute left-0 right-0 bottom-0 bg-gradient-to-t from-cyan-400 to-cyan-200 shadow-[0_0_8px_rgba(34,211,238,0.6)] transition-all duration-200 ease-out", style: { height: (frac * 100) + "%", opacity: 0.85 } }),
+                ticks.map((t, i) => (React.createElement("div", { key: "tk-" + uid + "-" + i, className: "absolute right-0 bg-cyan-200/50", style: { bottom: (t * 100) + "%", height: "1px", width: i % 2 === 0 ? "45%" : "25%" } }))),
+                React.createElement("div", { className: "absolute left-0 right-0 transition-all duration-150 ease-out", style: { bottom: "calc(" + (frac * 100) + "% - 0.3rem)", height: "0.6rem" } },
+                    React.createElement("div", { className: "absolute inset-0 border bg-neutral-900/90 " +
+                            (drag ? "border-fuchsia-300 shadow-[0_0_12px_rgba(232,121,249,0.5)]" : "border-cyan-300/70 shadow-[0_0_10px_rgba(34,211,238,0.45)]") },
+                        React.createElement("div", { className: "absolute left-[12%] right-[12%] top-1/2 h-[2px] -translate-y-1/2 " + (drag ? "bg-fuchsia-400" : "bg-cyan-300") }))),
+                React.createElement("div", { key: "pl-" + uid + "-" + pulse, className: "absolute left-0 right-0 h-[2px] bg-cyan-100/80 pointer-events-none", style: { bottom: (frac * 100) + "%", animation: "none", opacity: drag ? 0.9 : 0.35 } })),
+            React.createElement("button", { type: "button", "aria-label": "zoom out", disabled: value <= min + 1e-9, onClick: () => emit(value - stepAmt), className: btn, style: { height: "1.6rem", flex: "0 0 auto" } },
+                React.createElement(Glyph, { kind: "minus" })),
+            onReset ? (React.createElement("button", { type: "button", "aria-label": "reset zoom", onClick: () => onReset(), className: "relative w-full flex items-center justify-center border border-fuchsia-400/40 bg-neutral-800/70 text-fuchsia-400 " +
+                    "transition-all duration-150 ease-out hover:bg-fuchsia-500/25 hover:border-fuchsia-300 hover:text-fuchsia-200 " +
+                    "hover:shadow-[0_0_12px_rgba(232,121,249,0.5)] active:scale-[0.94] " +
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70", style: { height: "1.4rem", flex: "0 0 auto" } },
+                React.createElement(Glyph, { kind: "reset" }))) : null)));
+}
+
+const EquipmentSlot_MIN = { "base": [5, 3.5] };
+const EquipmentSlotRarity = {
+    common: { text: "text-neutral-300", border: "border-neutral-500/60", glow: "rgba(163,163,163,0.35)", rgb: "163,163,163" },
+    uncommon: { text: "text-emerald-400", border: "border-emerald-400/60", glow: "rgba(52,211,153,0.45)", rgb: "52,211,153" },
+    rare: { text: "text-cyan-300", border: "border-cyan-400/60", glow: "rgba(34,211,238,0.5)", rgb: "34,211,238" },
+    epic: { text: "text-fuchsia-400", border: "border-fuchsia-400/60", glow: "rgba(232,121,249,0.5)", rgb: "232,121,249" },
+    legendary: { text: "text-amber-300", border: "border-amber-300/60", glow: "rgba(252,211,77,0.5)", rgb: "252,211,77" },
+};
+function EquipmentSlot(props) {
+    const { item, slotId, onSelect, onClear, accepts } = props;
+    const uid = useRef("eqslot-" + Math.random().toString(36).slice(2)).current;
+    const [press, setPress] = useState(false);
+    const [flash, setFlash] = useState(false);
+    const prevId = useRef(item ? item.id : null);
+    useEffect(() => {
+        const cur = item ? item.id : null;
+        if (cur !== prevId.current) {
+            prevId.current = cur;
+            if (cur) {
+                setFlash(true);
+                const t = setTimeout(() => setFlash(false), 500);
+                return () => clearTimeout(t);
+            }
+        }
+    }, [item]);
+    const rar = (item && item.rarity && EquipmentSlotRarity[item.rarity.toLowerCase()]) || null;
+    const accent = rar || { text: "text-cyan-300", border: "border-cyan-400/40", glow: "rgba(34,211,238,0.4)", rgb: "34,211,238" };
+    const floor = EquipmentSlot_MIN.base;
+    const clip = "polygon(0 0, calc(100% - 0.55rem) 0, 100% 0.55rem, 100% 100%, 0.55rem 100%, 0 calc(100% - 0.55rem))";
+    return (React.createElement("div", { className: "relative h-full w-full", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" } },
+        React.createElement("button", { type: "button", onClick: () => onSelect(slotId), onPointerDown: () => setPress(true), onPointerUp: () => setPress(false), onPointerLeave: () => setPress(false), className: "group absolute inset-0 block touch-none overflow-hidden border text-left transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 " +
+                (item
+                    ? accent.border + " bg-neutral-900/85 "
+                    : "border-cyan-400/20 bg-black/60 ") +
+                (press ? "brightness-125 scale-[0.975] " : ""), style: {
+                clipPath: clip,
+                boxShadow: item
+                    ? "inset 0 0 14px rgba(0,0,0,0.85), 0 0 " + (press ? "18px " : "10px ") + accent.glow
+                    : "inset 0 0 12px rgba(0,0,0,0.8)",
+            } },
+            React.createElement("span", { className: "pointer-events-none absolute inset-0 transition-opacity duration-200", style: {
+                    background: item
+                        ? "linear-gradient(140deg, rgba(" + accent.rgb + ",0.16) 0%, rgba(10,10,12,0.9) 55%, rgba(0,0,0,0.95) 100%)"
+                        : "repeating-linear-gradient(135deg, rgba(34,211,238,0.06) 0 2px, rgba(0,0,0,0) 2px 9px)",
+                } }),
+            React.createElement("span", { className: "pointer-events-none absolute inset-0 opacity-30", style: { background: "repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1px, rgba(0,0,0,0) 1px 4px)" } }),
+            React.createElement("span", { className: "pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 opacity-0 transition-all duration-500 ease-out group-hover:left-[110%] group-hover:opacity-100", style: { background: "linear-gradient(90deg, rgba(0,0,0,0), rgba(" + accent.rgb + ",0.28), rgba(0,0,0,0))" } }),
+            flash && (React.createElement("span", { className: "pointer-events-none absolute inset-0 animate-ping", style: { background: "rgba(" + accent.rgb + ",0.18)" } })),
+            React.createElement("svg", { className: "pointer-events-none absolute inset-0 h-full w-full", viewBox: "0 0 100 100", preserveAspectRatio: "none" },
+                React.createElement("defs", null,
+                    React.createElement("linearGradient", { id: uid + "-edge", x1: "0", y1: "0", x2: "1", y2: "1" },
+                        React.createElement("stop", { offset: "0%", stopColor: "rgba(" + accent.rgb + ",0.9)" }),
+                        React.createElement("stop", { offset: "100%", stopColor: "rgba(" + accent.rgb + ",0.25)" }))),
+                React.createElement("path", { d: "M0 0 H16 M0 0 V18", stroke: "url(#" + uid + "-edge)", strokeWidth: "3", fill: "none", vectorEffect: "non-scaling-stroke" }),
+                React.createElement("path", { d: "M100 100 H84 M100 100 V82", stroke: "url(#" + uid + "-edge)", strokeWidth: "3", fill: "none", vectorEffect: "non-scaling-stroke" })),
+            React.createElement("span", { className: "absolute inset-0 flex items-stretch gap-2 p-2" },
+                React.createElement("span", { className: "relative aspect-square h-full max-w-[42%] shrink" },
+                    React.createElement("span", { className: "absolute inset-0 border transition-all duration-200 " +
+                            (item ? accent.border : "border-cyan-400/20 border-dashed"), style: {
+                            clipPath: "polygon(18% 0, 100% 0, 100% 82%, 82% 100%, 0 100%, 0 18%)",
+                            background: item ? "rgba(" + accent.rgb + ",0.10)" : "rgba(0,0,0,0.4)",
+                        } }),
+                    item ? (item.icon ? (React.createElement("span", { className: "absolute inset-[16%]" },
+                        React.createElement(FitText, { className: "font-mono font-bold tracking-widest uppercase " + accent.text, wrap: false }, item.icon))) : (React.createElement("svg", { className: "absolute inset-[22%] h-auto w-auto", viewBox: "0 0 24 24", preserveAspectRatio: "xMidYMid meet", style: { width: "56%", height: "56%", left: "22%", top: "22%" } },
+                        React.createElement("path", { d: "M12 2 L21 7 V17 L12 22 L3 17 V7 Z", fill: "none", stroke: "rgba(" + accent.rgb + ",0.85)", strokeWidth: "1.6" }),
+                        React.createElement("path", { d: "M12 7 L16.5 9.5 V14.5 L12 17 L7.5 14.5 V9.5 Z", fill: "rgba(" + accent.rgb + ",0.35)" })))) : (React.createElement("svg", { className: "absolute left-[25%] top-[25%]", style: { width: "50%", height: "50%" }, viewBox: "0 0 24 24", preserveAspectRatio: "xMidYMid meet" },
+                        React.createElement("path", { d: "M12 4 V20 M4 12 H20", stroke: "rgba(34,211,238,0.5)", strokeWidth: "2", strokeLinecap: "square", className: "transition-all duration-200 group-hover:stroke-[rgba(34,211,238,0.95)]" })))),
+                React.createElement("span", { className: "relative flex min-w-0 flex-1 flex-col justify-center overflow-hidden" },
+                    item ? (React.createElement("span", { className: "relative min-h-0 min-w-0 flex-1" },
+                        React.createElement("span", { className: "absolute inset-0 flex items-center" },
+                            React.createElement("span", { className: "relative h-full w-full" },
+                                React.createElement(FitText, { className: "font-mono font-bold uppercase tracking-widest transition-colors duration-200 " + accent.text, align: "start" }, item.label))))) : accepts ? (React.createElement("span", { className: "min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.15em] leading-tight text-neutral-500 transition-colors duration-200 group-hover:text-cyan-300/80" }, accepts)) : (React.createElement("span", { className: "h-px w-full bg-cyan-400/20" })),
+                    item && accepts ? (React.createElement("span", { className: "min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.15em] leading-tight text-neutral-500" }, accepts)) : null))),
+        item && onClear ? (React.createElement("button", { type: "button", onClick: (e) => { e.stopPropagation(); onClear(slotId); }, className: "absolute right-0 top-0 z-10 flex h-4 w-4 items-center justify-center border border-rose-400/50 bg-black/70 text-rose-500 transition-all duration-200 ease-out hover:bg-rose-600 hover:text-white hover:shadow-[0_0_12px_rgba(244,63,94,0.6)] active:scale-[0.9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70" },
+            React.createElement("svg", { viewBox: "0 0 12 12", className: "h-2.5 w-2.5", preserveAspectRatio: "xMidYMid meet" },
+                React.createElement("path", { d: "M2 2 L10 10 M10 2 L2 10", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "square" })))) : null));
+}
+
+function MapCanvas(props) {
+    const { regions, center, zoom, onViewChange, children } = props;
+    const uid = useRef("mapcanvas-" + Math.random().toString(36).slice(2)).current;
+    const floor = MapCanvas_MIN.base;
+    const S = 1000;
+    const z = Math.max(0.5, Math.min(8, zoom || 1));
+    const half = (S * 0.5) / z;
+    const cx = Math.max(0, Math.min(1, center ? center.x : 0.5));
+    const cy = Math.max(0, Math.min(1, center ? center.y : 0.5));
+    const vb = (cx * S - half) + " " + (cy * S - half) + " " + half * 2 + " " + half * 2;
+    const hostRef = useRef(null);
+    const drag = useRef(null);
+    const pinch = useRef(new Map());
+    const pinchStart = useRef(null);
+    const [active, setActive] = useState(false);
+    const [hover, setHover] = useState(null);
+    const clamp01 = (v) => Math.max(0, Math.min(1, v));
+    const emit = (nx, ny, nz) => {
+        onViewChange({ center: { x: clamp01(nx), y: clamp01(ny) }, zoom: Math.max(0.5, Math.min(8, nz)) });
+    };
+    const onDown = (e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        pinch.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pinch.current.size === 2) {
+            const pts = Array.from(pinch.current.values());
+            const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+            pinchStart.current = { dist: d || 1, zoom: z };
+            drag.current = null;
+        }
+        else {
+            drag.current = { id: e.pointerId, px: e.clientX, py: e.clientY, cx: cx, cy: cy };
+        }
+        setActive(true);
+    };
+    const onMove = (e) => {
+        if (pinch.current.has(e.pointerId))
+            pinch.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        const host = hostRef.current;
+        if (!host)
+            return;
+        const r = host.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0)
+            return;
+        if (pinch.current.size >= 2 && pinchStart.current) {
+            const pts = Array.from(pinch.current.values());
+            const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+            emit(cx, cy, pinchStart.current.zoom * (d / pinchStart.current.dist));
+            return;
+        }
+        const d0 = drag.current;
+        if (!d0 || d0.id !== e.pointerId)
+            return;
+        const span = Math.min(r.width, r.height);
+        const dx = (e.clientX - d0.px) / span / z;
+        const dy = (e.clientY - d0.py) / span / z;
+        emit(d0.cx - dx, d0.cy - dy, z);
+    };
+    const onUp = (e) => {
+        pinch.current.delete(e.pointerId);
+        if (pinch.current.size < 2)
+            pinchStart.current = null;
+        if (drag.current && drag.current.id === e.pointerId)
+            drag.current = null;
+        if (pinch.current.size === 0)
+            setActive(false);
+    };
+    const onDouble = (e) => {
+        const host = hostRef.current;
+        if (!host)
+            return;
+        const r = host.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0)
+            return;
+        const span = Math.min(r.width, r.height);
+        const ux = (e.clientX - r.left - r.width / 2) / span / z;
+        const uy = (e.clientY - r.top - r.height / 2) / span / z;
+        const nz = z >= 6 ? 1 : z * 1.6;
+        emit(cx + ux * (1 - z / nz), cy + uy * (1 - z / nz), nz);
+    };
+    const strokeW = 2.2 / z;
+    const labelSize = 26 / z;
+    const palette = ["#22d3ee", "#e879f9", "#fcd34d", "#34d399", "#fb7185"];
+    return (React.createElement("div", { ref: hostRef, className: "relative h-full w-full overflow-hidden touch-none select-none bg-black/60 ring-1 ring-cyan-400/10 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)] " + (active ? "cursor-grabbing" : "cursor-grab"), style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" }, onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp, onDoubleClick: onDouble },
+        React.createElement("svg", { className: "absolute inset-0 h-full w-full", viewBox: vb, preserveAspectRatio: "xMidYMid slice" },
+            React.createElement("defs", null,
+                React.createElement("pattern", { id: uid + "-grid", width: "50", height: "50", patternUnits: "userSpaceOnUse" },
+                    React.createElement("path", { d: "M50 0 L0 0 0 50", fill: "none", stroke: "rgba(34,211,238,0.14)", strokeWidth: 0.9 / z })),
+                React.createElement("pattern", { id: uid + "-grid2", width: "250", height: "250", patternUnits: "userSpaceOnUse" },
+                    React.createElement("path", { d: "M250 0 L0 0 0 250", fill: "none", stroke: "rgba(34,211,238,0.28)", strokeWidth: 1.4 / z })),
+                React.createElement("radialGradient", { id: uid + "-vig", cx: "50%", cy: "50%", r: "72%" },
+                    React.createElement("stop", { offset: "55%", stopColor: "#000", stopOpacity: "0" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#000", stopOpacity: "0.85" })),
+                React.createElement("filter", { id: uid + "-glow", x: "-40%", y: "-40%", width: "180%", height: "180%" },
+                    React.createElement("feGaussianBlur", { stdDeviation: 5 / z, result: "b" }),
+                    React.createElement("feMerge", null,
+                        React.createElement("feMergeNode", { in: "b" }),
+                        React.createElement("feMergeNode", { in: "SourceGraphic" }))),
+                React.createElement("linearGradient", { id: uid + "-sweep", x1: "0", y1: "0", x2: "1", y2: "0" },
+                    React.createElement("stop", { offset: "0%", stopColor: "#22d3ee", stopOpacity: "0" }),
+                    React.createElement("stop", { offset: "100%", stopColor: "#22d3ee", stopOpacity: "0.5" }))),
+            React.createElement("rect", { x: -S, y: -S, width: S * 3, height: S * 3, fill: "#05070a" }),
+            React.createElement("rect", { x: -S, y: -S, width: S * 3, height: S * 3, fill: "url(#" + uid + "-grid)" }),
+            React.createElement("rect", { x: -S, y: -S, width: S * 3, height: S * 3, fill: "url(#" + uid + "-grid2)" }),
+            regions.map((r, i) => {
+                const col = palette[i % palette.length];
+                const isHot = hover === r.id;
+                const common = {
+                    fill: col,
+                    fillOpacity: isHot ? 0.28 : 0.13,
+                    stroke: col,
+                    strokeWidth: isHot ? strokeW * 1.8 : strokeW,
+                    strokeLinejoin: "round",
+                    onPointerEnter: () => setHover(r.id),
+                    onPointerLeave: () => setHover((h) => (h === r.id ? null : h)),
+                    style: { transition: "fill-opacity 200ms ease-out, stroke-width 200ms ease-out" },
+                    filter: isHot ? "url(#" + uid + "-glow)" : undefined,
+                };
+                if (r.path) {
+                    return (React.createElement("g", { key: r.id },
+                        React.createElement("path", { d: r.path, transform: "scale(" + S + ")", vectorEffect: "non-scaling-stroke", ...common })));
+                }
+                const b = r.bounds;
+                if (!b)
+                    return null;
+                return (React.createElement("g", { key: r.id },
+                    React.createElement("rect", { x: b.x * S, y: b.y * S, width: b.w * S, height: b.h * S, ...common }),
+                    React.createElement("path", { d: "M" + (b.x * S + 6 / z) + "," + (b.y * S + 22 / z) +
+                            " L" + (b.x * S + 6 / z) + "," + (b.y * S + 6 / z) +
+                            " L" + (b.x * S + 22 / z) + "," + (b.y * S + 6 / z), fill: "none", stroke: col, strokeOpacity: "0.9", strokeWidth: strokeW })));
+            }),
+            regions.map((r, i) => {
+                const col = palette[i % palette.length];
+                let lx = 0.5;
+                let ly = 0.5;
+                if (r.bounds) {
+                    lx = r.bounds.x + r.bounds.w / 2;
+                    ly = r.bounds.y + r.bounds.h / 2;
+                }
+                else if (r.path) {
+                    const nums = r.path.match(/-?\d*\.?\d+/g);
+                    if (nums && nums.length >= 2) {
+                        const xs = [];
+                        const ys = [];
+                        for (let k = 0; k + 1 < nums.length; k += 2) {
+                            xs.push(parseFloat(nums[k]));
+                            ys.push(parseFloat(nums[k + 1]));
+                        }
+                        lx = (Math.min(...xs) + Math.max(...xs)) / 2;
+                        ly = (Math.min(...ys) + Math.max(...ys)) / 2;
+                    }
+                }
+                return (React.createElement("text", { key: "lbl-" + r.id, x: lx * S, y: ly * S, textAnchor: "middle", dominantBaseline: "middle", fontFamily: "ui-monospace, monospace", fontWeight: "700", fontSize: labelSize, letterSpacing: labelSize * 0.16, fill: hover === r.id ? "#ffffff" : col, opacity: hover === r.id ? 1 : 0.85, style: { pointerEvents: "none", transition: "opacity 200ms ease-out" } }, (r.label || "").toUpperCase()));
+            }),
+            React.createElement("g", { opacity: "0.55", style: { pointerEvents: "none" } },
+                React.createElement("line", { x1: cx * S - half, y1: cy * S, x2: cx * S + half, y2: cy * S, stroke: "rgba(34,211,238,0.25)", strokeWidth: 0.8 / z, strokeDasharray: 6 / z + " " + 10 / z }),
+                React.createElement("line", { x1: cx * S, y1: cy * S - half, x2: cx * S, y2: cy * S + half, stroke: "rgba(34,211,238,0.25)", strokeWidth: 0.8 / z, strokeDasharray: 6 / z + " " + 10 / z }),
+                React.createElement("circle", { cx: cx * S, cy: cy * S, r: 9 / z, fill: "none", stroke: "#22d3ee", strokeWidth: 1.4 / z }),
+                React.createElement("circle", { cx: cx * S, cy: cy * S, r: 2.5 / z, fill: "#22d3ee" })),
+            React.createElement("rect", { x: cx * S - half, y: cy * S - half, width: half * 2, height: half * 2, fill: "url(#" + uid + "-vig)", style: { pointerEvents: "none" } })),
+        React.createElement("div", { className: "absolute inset-0 opacity-[0.16] mix-blend-screen", style: {
+                backgroundImage: "repeating-linear-gradient(0deg, rgba(34,211,238,0.35) 0px, rgba(34,211,238,0.35) 1px, transparent 1px, transparent 3px)",
+                pointerEvents: "none",
+            } }),
+        React.createElement("div", { className: "absolute inset-y-0 w-1/3 animate-pulse", style: {
+                left: "0%",
+                background: "linear-gradient(90deg, rgba(34,211,238,0) 0%, rgba(34,211,238,0.07) 70%, rgba(34,211,238,0) 100%)",
+                pointerEvents: "none",
+            } }),
+        React.createElement("div", { className: "absolute inset-0 pointer-events-none" },
+            React.createElement("div", { className: "absolute left-0 top-0 h-5 w-5 border-l border-t border-cyan-300/60" }),
+            React.createElement("div", { className: "absolute right-0 top-0 h-5 w-5 border-r border-t border-cyan-300/60" }),
+            React.createElement("div", { className: "absolute left-0 bottom-0 h-5 w-5 border-l border-b border-cyan-300/60" }),
+            React.createElement("div", { className: "absolute right-0 bottom-0 h-5 w-5 border-r border-b border-cyan-300/60" })),
+        React.createElement("div", { className: "absolute inset-0 transition-all duration-200 ease-out " + (active ? "ring-1 ring-cyan-300/40 shadow-[inset_0_0_26px_rgba(34,211,238,0.18)]" : ""), style: { pointerEvents: "none" } }, children)));
+}
+const MapCanvas_MIN = { "base": [12, 9] };
+
+const ItemDetailsRarityMap = {
+    common: { text: "text-neutral-300", border: "border-neutral-500", bg: "bg-neutral-400", glow: "rgba(163,163,163,0.45)" },
+    uncommon: { text: "text-emerald-400", border: "border-emerald-400", bg: "bg-emerald-400", glow: "rgba(52,211,153,0.5)" },
+    rare: { text: "text-cyan-300", border: "border-cyan-400", bg: "bg-cyan-400", glow: "rgba(34,211,238,0.55)" },
+    epic: { text: "text-fuchsia-400", border: "border-fuchsia-400", bg: "bg-fuchsia-500", glow: "rgba(232,121,249,0.55)" },
+    legendary: { text: "text-amber-300", border: "border-amber-300", bg: "bg-amber-400", glow: "rgba(252,211,77,0.55)" },
+};
+const ItemDetails_MIN = { "base": [11, 8] };
+function ItemDetails(props) {
+    const uid = useRef("itemdetails-" + Math.random().toString(36).slice(2)).current;
+    const item = props.item;
+    const key = (item && item.rarity ? item.rarity : "common").toLowerCase();
+    const r = ItemDetailsRarityMap[key] || ItemDetailsRarityMap.common;
+    const stats = (item && item.stats) || [];
+    const [pulse, setPulse] = useState(0);
+    useEffect(() => { setPulse((p) => p + 1); }, [item ? item.id : "none"]);
+    return (React.createElement("div", { className: "h-full w-full", style: { minWidth: ItemDetails_MIN.base[0] + "rem", minHeight: ItemDetails_MIN.base[1] + "rem" } },
+        React.createElement("div", { key: pulse, className: "relative h-full w-full flex flex-col overflow-hidden border " + (item ? r.border : "border-cyan-400/20") + " bg-gradient-to-b from-neutral-900/90 to-neutral-950/95 backdrop-blur-md transition-all duration-200 ease-out", style: item ? { boxShadow: "0 0 18px " + r.glow.replace("0.5", "0.18").replace("0.55", "0.18").replace("0.45", "0.15") + ", inset 0 0 24px rgba(0,0,0,0.75)" } : { boxShadow: "inset 0 0 24px rgba(0,0,0,0.75)" } },
+            React.createElement("div", { className: "pointer-events-none absolute inset-0 opacity-[0.18]", style: { backgroundImage: "repeating-linear-gradient(0deg, rgba(34,211,238,0.35) 0px, rgba(34,211,238,0.35) 1px, transparent 1px, transparent 4px)" } }),
+            React.createElement("svg", { className: "pointer-events-none absolute inset-0 h-full w-full", viewBox: "0 0 100 100", preserveAspectRatio: "none", "aria-hidden": "true" },
+                React.createElement("defs", null,
+                    React.createElement("linearGradient", { id: uid + "-edge", x1: "0", y1: "0", x2: "1", y2: "0" },
+                        React.createElement("stop", { offset: "0%", stopColor: "currentColor", stopOpacity: "0.9" }),
+                        React.createElement("stop", { offset: "100%", stopColor: "currentColor", stopOpacity: "0" }))),
+                React.createElement("g", { className: item ? r.text : "text-cyan-400/30", stroke: "currentColor", strokeWidth: "0.6", fill: "none", opacity: "0.7" },
+                    React.createElement("path", { d: "M0.5 8 L0.5 0.5 L10 0.5", vectorEffect: "non-scaling-stroke" }),
+                    React.createElement("path", { d: "M90 0.5 L99.5 0.5 L99.5 8", vectorEffect: "non-scaling-stroke" }),
+                    React.createElement("path", { d: "M0.5 92 L0.5 99.5 L10 99.5", vectorEffect: "non-scaling-stroke" }),
+                    React.createElement("path", { d: "M90 99.5 L99.5 99.5 L99.5 92", vectorEffect: "non-scaling-stroke" }))),
+            item === null ? (React.createElement("div", { className: "relative flex h-full w-full items-center justify-center" },
+                React.createElement("div", { className: "absolute inset-[18%] border border-dashed border-cyan-400/20" }),
+                React.createElement("div", { className: "absolute inset-[26%] flex items-center justify-center" },
+                    React.createElement(FitText, { className: "font-mono font-bold uppercase tracking-widest text-neutral-500" }, "NO ITEM SELECTED")))) : (React.createElement("div", { className: "relative flex h-full w-full min-h-0 flex-col" },
+                React.createElement("div", { className: "relative flex items-center gap-2 border-b " + r.border + " bg-gradient-to-r from-cyan-500/10 via-neutral-900/70 to-transparent px-2 py-1" },
+                    React.createElement("span", { className: "inline-block h-2 w-2 rounded-full " + r.bg + " animate-pulse", style: { boxShadow: "0 0 10px " + r.glow } }),
+                    React.createElement("span", { className: "min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.15em] leading-tight " + r.text }, item.rarity ? item.rarity : "UNRANKED"),
+                    React.createElement("span", { className: "ml-auto min-w-0 truncate text-[10px] font-medium uppercase tracking-[0.15em] leading-tight text-neutral-500" }, item.id)),
+                React.createElement("div", { className: "relative h-[26%] min-h-0 w-full" },
+                    React.createElement("div", { className: "absolute inset-[8%] left-[3%] right-[3%]" },
+                        React.createElement(FitText, { align: "start", className: "font-mono font-bold uppercase tracking-widest " + r.text }, item.label)),
+                    React.createElement("div", { className: "absolute bottom-0 left-0 h-px w-full " + r.bg, style: { opacity: 0.35 } })),
+                React.createElement("div", { className: "relative flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" },
+                    item.description ? (React.createElement("p", { className: "text-[11px] font-normal leading-relaxed tracking-normal text-cyan-100/80" }, item.description)) : null,
+                    stats.length > 0 ? (React.createElement("div", { className: "mt-auto flex flex-col border border-cyan-400/15 bg-black/60 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)]" }, stats.map((s, i) => (React.createElement("div", { key: "st-" + i, className: "flex items-center justify-between gap-2 border-b border-cyan-400/10 px-2 py-[3px] last:border-b-0 transition-colors duration-150 hover:bg-cyan-400/10", style: { animation: "none" } },
+                        React.createElement("span", { className: "min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.15em] leading-none text-cyan-300/70" }, s.label),
+                        React.createElement("span", { className: "min-w-0 truncate text-[11px] font-mono font-bold tracking-widest " + r.text }, String(s.value))))))) : null))))));
+}
+
+const PerkNode_MIN = { "base": [3.5, 3.5] };
+function PerkNodeHexPath(r) {
+    let d = "";
+    for (let i = 0; i < 6; i++) {
+        const a = (Math.PI / 180) * (60 * i - 90);
+        const x = 50 + r * Math.cos(a);
+        const y = 50 + r * Math.sin(a);
+        d += (i === 0 ? "M" : "L") + x.toFixed(2) + " " + y.toFixed(2) + " ";
+    }
+    return d + "Z";
+}
+function PerkNode(props) {
+    const { state, rank, maxRank, onSpend, id, hover, children } = props;
+    const uid = useRef("perknode-" + Math.random().toString(36).slice(2)).current;
+    const [press, setPress] = useState(false);
+    const [hot, setHot] = useState(false);
+    const floor = PerkNode_MIN.base;
+    const interactive = state === 'available';
+    const locked = state === 'locked';
+    const unlocked = state === 'unlocked';
+    const stroke = locked ? "#525252" : unlocked ? "#fbbf24" : "#e879f9";
+    const glow = locked ? "rgba(0,0,0,0)" : unlocked ? "rgba(251,191,36,0.55)" : "rgba(232,121,249,0.55)";
+    const textCls = locked
+        ? "font-mono font-bold tracking-widest uppercase text-neutral-500 transition-all duration-200 ease-out"
+        : unlocked
+            ? "font-mono font-bold tracking-widest uppercase text-amber-300 transition-all duration-200 ease-out"
+            : "font-mono font-bold tracking-widest uppercase text-fuchsia-300 transition-all duration-200 ease-out";
+    const pips = Math.max(0, Math.min(maxRank || 0, 12));
+    const filled = Math.max(0, Math.min(rank, pips));
+    const handleDown = () => { if (interactive)
+        setPress(true); };
+    const handleUp = () => setPress(false);
+    const handleClick = () => { if (interactive)
+        onSpend(id); };
+    return (React.createElement("div", { className: "relative h-full w-full select-none", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" }, onPointerEnter: () => { setHot(true); if (hover)
+            hover(id); }, onPointerLeave: () => { setHot(false); setPress(false); if (hover)
+            hover(null); }, onPointerDown: handleDown, onPointerUp: handleUp, onPointerCancel: handleUp, onClick: handleClick, role: interactive ? "button" : undefined, tabIndex: interactive ? 0 : undefined, onKeyDown: (e) => { if (interactive && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            onSpend(id);
+        } } },
+        React.createElement("div", { className: "absolute inset-0 transition-all duration-200 ease-out focus-visible:outline-none " +
+                (locked ? "opacity-40 grayscale " : "") +
+                (interactive ? "cursor-pointer " : "") +
+                (press ? "scale-[0.94] brightness-125 " : hot && interactive ? "scale-[1.04] " : "scale-100 ") },
+            React.createElement("svg", { viewBox: "0 0 100 100", preserveAspectRatio: "xMidYMid meet", className: "h-full w-full overflow-visible" },
+                React.createElement("defs", null,
+                    React.createElement("radialGradient", { id: uid + "-core", cx: "50%", cy: "38%", r: "70%" },
+                        React.createElement("stop", { offset: "0%", stopColor: unlocked ? "#4a3a12" : locked ? "#1a1a1a" : "#3a1240" }),
+                        React.createElement("stop", { offset: "100%", stopColor: "#050505" })),
+                    React.createElement("linearGradient", { id: uid + "-rim", x1: "0%", y1: "0%", x2: "100%", y2: "100%" },
+                        React.createElement("stop", { offset: "0%", stopColor: stroke, stopOpacity: "0.95" }),
+                        React.createElement("stop", { offset: "60%", stopColor: stroke, stopOpacity: "0.45" }),
+                        React.createElement("stop", { offset: "100%", stopColor: stroke, stopOpacity: "0.9" })),
+                    React.createElement("filter", { id: uid + "-blur", x: "-60%", y: "-60%", width: "220%", height: "220%" },
+                        React.createElement("feGaussianBlur", { stdDeviation: "3.5" }))),
+                !locked ? (React.createElement("path", { d: PerkNodeHexPath(46), fill: "none", stroke: stroke, strokeOpacity: unlocked ? 0.75 : hot ? 0.8 : 0.45, strokeWidth: 6, filter: "url(#" + uid + "-blur)" })) : null,
+                React.createElement("path", { d: PerkNodeHexPath(42), fill: "url(#" + uid + "-core)" }),
+                React.createElement("path", { d: PerkNodeHexPath(42), fill: "none", stroke: "url(#" + uid + "-rim)", strokeWidth: hot && interactive ? 3.4 : 2.4, className: "transition-all duration-200 ease-out" }),
+                React.createElement("path", { d: PerkNodeHexPath(34), fill: "none", stroke: stroke, strokeOpacity: 0.22, strokeWidth: 0.8, strokeDasharray: "4 5" }, interactive ? (React.createElement("animateTransform", { attributeName: "transform", type: "rotate", from: "0 50 50", to: "360 50 50", dur: "14s", repeatCount: "indefinite" })) : null),
+                unlocked ? (React.createElement("path", { d: PerkNodeHexPath(42), fill: "#fbbf24", opacity: "0.07" })) : null,
+                locked ? (React.createElement("g", { stroke: "#737373", strokeWidth: "2.4", fill: "none", opacity: "0.7" },
+                    React.createElement("path", { d: "M42 68 L58 32" }))) : null,
+                pips > 0
+                    ? Array.from({ length: pips }).map((_, i) => {
+                        const spread = 54;
+                        const step = pips > 1 ? spread / (pips - 1) : 0;
+                        const a = (Math.PI / 180) * (90 - spread / 2 + i * step);
+                        const x = 50 + 46 * Math.cos(a);
+                        const y = 50 + 46 * Math.sin(a);
+                        const on = i < filled;
+                        return (React.createElement("circle", { key: "pip-" + i, cx: x, cy: y, r: on ? 3.6 : 2.4, fill: on ? stroke : "#0a0a0a", stroke: stroke, strokeOpacity: on ? 1 : 0.35, strokeWidth: "1", style: { filter: on ? "drop-shadow(0 0 3px " + glow + ")" : "none" }, className: "transition-all duration-200 ease-out" }));
+                    })
+                    : null),
+            children ? (React.createElement("div", { className: "absolute inset-[26%] flex items-center justify-center" },
+                React.createElement(FitText, { className: textCls }, children))) : null),
+        interactive ? (React.createElement("div", { className: "pointer-events-none absolute inset-[6%] animate-pulse", style: { boxShadow: "0 0 12px rgba(232,121,249,0.5)", clipPath: "polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)", opacity: hot ? 0.35 : 0.15 } })) : null));
+}
+
+const LEAVES = [(function(){ function GeneratedComponent() {
+    // BUDGET height: header 2.25 + colHeader 2 + 4 tiers x 4.5 + 3 gaps x 0.75 + labels 4x1 + pad 1.5 + footer 1.75 = 35.75 <= 41.6
+    // BUDGET width: 5 branches x 10.5 + 4 gaps x 0.5 + rail 20 + pad 1.5 = 76 <= 104.0
+    const ATTRS = useMemo(() => [
+        {
+            id: "body",
+            name: "BODY",
+            level: 11,
+            text: "text-rose-400",
+            ring: "border-rose-400/40",
+            glow: "rgba(244,63,94,0.55)",
+            perks: [
+                [
+                    { id: "b1", label: "PAINKILLER", req: 3, max: 3, desc: "Health regen +50% out of combat.", bonus: "+12 HEALTH" },
+                    { id: "b2", label: "GRUNT", req: 3, max: 2, desc: "Damage with LMGs increased.", bonus: "+8% DMG" },
+                ],
+                [
+                    { id: "b3", label: "STEEL SKIN", req: 6, max: 3, desc: "Increases total armor.", bonus: "+15 ARMOR" },
+                    { id: "b4", label: "DIVIDED ATT.", req: 6, max: 1, desc: "Reload while sprinting.", bonus: "UTILITY" },
+                ],
+                [
+                    { id: "b5", label: "JUGGERNAUT", req: 9, max: 2, desc: "Reduced damage while Berserk.", bonus: "-20% DMG TAKEN" },
+                    { id: "b6", label: "WOLVERINE", req: 9, max: 3, desc: "Health regen during combat.", bonus: "+6 HP/S" },
+                ],
+                [
+                    { id: "b7", label: "UNSHAKABLE", req: 14, max: 1, desc: "Immune to stagger effects.", bonus: "STATUS IMMUNE" },
+                    { id: "b8", label: "TITANIUM", req: 14, max: 2, desc: "Max stamina massively raised.", bonus: "+30 STAM" },
+                ],
+            ],
+        },
+        {
+            id: "reflex",
+            name: "REFLEXES",
+            level: 14,
+            text: "text-cyan-300",
+            ring: "border-cyan-400/40",
+            glow: "rgba(34,211,238,0.55)",
+            perks: [
+                [
+                    { id: "r1", label: "SLIPPERY", req: 3, max: 2, desc: "Evasion while dodging.", bonus: "+10% EVADE" },
+                    { id: "r2", label: "SPRINT+", req: 3, max: 3, desc: "Increases sprint speed.", bonus: "+12% SPEED" },
+                ],
+                [
+                    { id: "r3", label: "CRIT EDGE", req: 6, max: 3, desc: "Raises critical hit chance.", bonus: "+9% CRIT" },
+                    { id: "r4", label: "AIR DASH", req: 6, max: 1, desc: "Dodge mid-air.", bonus: "MOBILITY" },
+                ],
+                [
+                    { id: "r5", label: "BLADERUNNER", req: 10, max: 2, desc: "Mantis blade damage up.", bonus: "+18% BLADE" },
+                    { id: "r6", label: "TRICK SHOT", req: 10, max: 3, desc: "Pistol crit damage up.", bonus: "+25% CRIT DMG" },
+                ],
+                [
+                    { id: "r7", label: "FLASH STEP", req: 15, max: 1, desc: "Dash leaves afterimage decoy.", bonus: "PHANTOM" },
+                    { id: "r8", label: "KEREZNIKOV", req: 15, max: 2, desc: "Time slows while aiming.", bonus: "-40% TIME" },
+                ],
+            ],
+        },
+        {
+            id: "tech",
+            name: "TECHNICAL",
+            level: 8,
+            text: "text-amber-300",
+            ring: "border-amber-300/40",
+            glow: "rgba(252,211,77,0.55)",
+            perks: [
+                [
+                    { id: "t1", label: "MECHANIC", req: 3, max: 3, desc: "More components from disassembly.", bonus: "+30% SALVAGE" },
+                    { id: "t2", label: "FIELD TECH", req: 3, max: 2, desc: "Tech weapon charge faster.", bonus: "+15% CHARGE" },
+                ],
+                [
+                    { id: "t3", label: "ARMORER", req: 6, max: 2, desc: "Armor mods more effective.", bonus: "+10 ARMOR" },
+                    { id: "t4", label: "GREASE MNKY", req: 6, max: 1, desc: "Craft higher rarity gear.", bonus: "EPIC CRAFT" },
+                ],
+                [
+                    { id: "t5", label: "EDGERUNNER", req: 11, max: 2, desc: "Cyberware capacity raised.", bonus: "+4 SLOT CAP" },
+                    { id: "t6", label: "OVERCLOCK", req: 11, max: 3, desc: "Cyberware cooldowns reduced.", bonus: "-12% CD" },
+                ],
+                [
+                    { id: "t7", label: "CHROME GOD", req: 16, max: 1, desc: "Unlock legendary implants.", bonus: "LEGENDARY" },
+                    { id: "t8", label: "SELF-REPAIR", req: 16, max: 2, desc: "Implants auto-repair damage.", bonus: "AUTO HEAL" },
+                ],
+            ],
+        },
+        {
+            id: "intel",
+            name: "INTELLIGENCE",
+            level: 12,
+            text: "text-fuchsia-400",
+            ring: "border-fuchsia-400/40",
+            glow: "rgba(232,121,249,0.55)",
+            perks: [
+                [
+                    { id: "i1", label: "BUFFER", req: 3, max: 3, desc: "Increases RAM capacity.", bonus: "+3 RAM" },
+                    { id: "i2", label: "EXTENDED", req: 3, max: 2, desc: "Quickhack duration extended.", bonus: "+20% DURATION" },
+                ],
+                [
+                    { id: "i3", label: "BIOCONDUCT", req: 6, max: 2, desc: "RAM recovery accelerated.", bonus: "+2 RAM/S" },
+                    { id: "i4", label: "DAEMON", req: 6, max: 1, desc: "Upload daemons instantly.", bonus: "INSTANT" },
+                ],
+                [
+                    { id: "i5", label: "OVERCLOCK", req: 10, max: 3, desc: "Spend health as RAM.", bonus: "HP>RAM" },
+                    { id: "i6", label: "CONTAGION", req: 10, max: 2, desc: "Hacks spread to targets.", bonus: "+2 SPREAD" },
+                ],
+                [
+                    { id: "i7", label: "SUBLIMINAL", req: 14, max: 1, desc: "Hacks cost zero while hidden.", bonus: "0 RAM" },
+                    { id: "i8", label: "BLACKWALL", req: 14, max: 2, desc: "Forbidden ICE-breaker daemon.", bonus: "+45% HACK" },
+                ],
+            ],
+        },
+        {
+            id: "cool",
+            name: "COOL",
+            level: 6,
+            text: "text-emerald-400",
+            ring: "border-emerald-400/40",
+            glow: "rgba(52,211,153,0.55)",
+            perks: [
+                [
+                    { id: "c1", label: "COLD BLOOD", req: 3, max: 3, desc: "Buff after defeating an enemy.", bonus: "+10% SPEED" },
+                    { id: "c2", label: "GHOST", req: 3, max: 2, desc: "Reduced detection speed.", bonus: "-15% DETECT" },
+                ],
+                [
+                    { id: "c3", label: "SILENT RUN", req: 7, max: 2, desc: "Silent while crouch-sprinting.", bonus: "STEALTH" },
+                    { id: "c4", label: "DEADEYE", req: 7, max: 3, desc: "Headshot damage raised.", bonus: "+22% HEADSHOT" },
+                ],
+                [
+                    { id: "c5", label: "NINJUTSU", req: 11, max: 2, desc: "Stealth attack damage up.", bonus: "+35% STEALTH" },
+                    { id: "c6", label: "FROSTY SYN", req: 11, max: 3, desc: "Cold Blood stacks doubled.", bonus: "x2 STACKS" },
+                ],
+                [
+                    { id: "c7", label: "MERCILESS", req: 15, max: 1, desc: "Crits ignore enemy armor.", bonus: "ARMOR PIERCE" },
+                    { id: "c8", label: "IMMUNITY", req: 15, max: 2, desc: "Immune to bleed & poison.", bonus: "RESIST 100%" },
+                ],
+            ],
+        },
+    ], []);
+    const TOTAL_POINTS = 18;
+    const [ranks, setRanks] = useState({});
+    const [hovered, setHovered] = useState(null);
+    const [pending, setPending] = useState(null);
+    const [cyber, setCyber] = useState({
+        frontal: { id: "kereznikov", label: "KEREZNIKOV MK.4", rarity: "legendary" },
+        ocular: { id: "kiroshi", label: "KIROSHI OPTICS", rarity: "epic" },
+        arms: null,
+        skeleton: { id: "titanium", label: "TITANIUM BONES", rarity: "rare" },
+        nervous: null,
+        circulatory: { id: "biomon", label: "BIOMONITOR", rarity: "uncommon" },
+    });
+    const spent = useMemo(() => Object.values(ranks).reduce((a, b) => a + b, 0), [ranks]);
+    const available = TOTAL_POINTS - spent;
+    const allPerks = useMemo(() => {
+        const m = {};
+        ATTRS.forEach((a) => a.perks.forEach((tier) => tier.forEach((p) => (m[p.id] = { ...p, attr: a }))));
+        return m;
+    }, [ATTRS]);
+    const stateOf = (attr, perk) => {
+        const r = ranks[perk.id] || 0;
+        if (r > 0)
+            return "unlocked";
+        if (attr.level >= perk.req && available > 0)
+            return "available";
+        return "locked";
+    };
+    const spend = (id) => {
+        const p = allPerks[id];
+        if (!p)
+            return;
+        if (p.attr.level < p.req)
+            return;
+        const r = ranks[id] || 0;
+        if (r >= p.max || available <= 0)
+            return;
+        setRanks((prev) => ({ ...prev, [id]: r + 1 }));
+        setPending(id);
+        setTimeout(() => setPending(null), 600);
+    };
+    const hoverPerk = hovered ? allPerks[hovered] : null;
+    const slots = [
+        { id: "frontal", label: "FRONTAL CORTEX" },
+        { id: "ocular", label: "OCULAR SYS" },
+        { id: "arms", label: "ARMS" },
+        { id: "skeleton", label: "SKELETON" },
+        { id: "nervous", label: "NERVOUS SYS" },
+        { id: "circulatory", label: "CIRCULATORY" },
+    ];
+    return (React.createElement("div", { className: "h-full w-full flex flex-col overflow-hidden rounded-none bg-neutral-950 bg-gradient-to-br from-neutral-950 via-black to-neutral-900 text-cyan-50 font-mono" },
+        React.createElement("div", { className: "flex-none h-9 px-3 flex items-center justify-between border-b border-cyan-400/25 bg-gradient-to-r from-cyan-500/15 via-neutral-900/80 to-transparent" },
+            React.createElement("div", { className: "flex items-center gap-3" },
+                React.createElement("span", { className: "text-xs font-bold uppercase tracking-[0.22em] text-cyan-200" }, "PERK / CYBERWARE MATRIX"),
+                React.createElement("span", { className: "h-1.5 w-1.5 rounded-full bg-fuchsia-400 animate-pulse shadow-[0_0_12px_rgba(232,121,249,0.8)]" })),
+            React.createElement("span", { className: "text-[10px] font-medium uppercase tracking-[0.15em] text-neutral-400" }, "V // NIGHT CITY MERC \u00B7 BUILD REV 2.077")),
+        React.createElement("div", { className: "flex-1 flex gap-3 p-3 min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" },
+            React.createElement("div", { className: "flex-1 flex gap-2" }, ATTRS.map((attr) => (React.createElement("div", { key: attr.id, className: "flex-1 relative flex flex-col bg-neutral-900/85 backdrop-blur-md border " +
+                    attr.ring +
+                    " rounded-none overflow-clip" },
+                React.createElement("div", { className: "pointer-events-none absolute inset-y-8 left-1/2 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-cyan-300/25 to-transparent" }),
+                React.createElement("div", { className: "pointer-events-none absolute inset-0 opacity-[0.07] bg-[repeating-linear-gradient(0deg,transparent_0px,transparent_3px,#fff_3px,#fff_4px)]" }),
+                React.createElement("div", { className: "flex-none px-2 py-1.5 border-b border-cyan-400/20 bg-black/40 flex items-center justify-between" },
+                    React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-[0.16em] truncate " + attr.text }, attr.name),
+                    React.createElement("span", { className: "text-[10px] font-medium tracking-[0.1em] text-neutral-400" },
+                        "LV",
+                        attr.level)),
+                React.createElement("div", { className: "flex-1 flex flex-col justify-around py-2" }, attr.perks.map((tier, ti) => {
+                    const gated = attr.level < tier[0].req;
+                    return (React.createElement("div", { key: ti, className: "flex flex-col items-center gap-1" },
+                        React.createElement("div", { className: "flex items-center gap-1.5" },
+                            React.createElement("span", { className: "text-[9px] font-semibold uppercase tracking-[0.18em] " +
+                                    (gated ? "text-neutral-600" : "text-cyan-300/70") },
+                                "TIER ",
+                                ti + 1),
+                            React.createElement("span", { className: "text-[9px] tracking-[0.1em] " +
+                                    (gated ? "text-rose-500/80" : "text-neutral-500") }, gated ? "LOCK·" + tier[0].req : "OPEN")),
+                        React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, tier.map((p) => {
+                            const st = stateOf(attr, p);
+                            return (React.createElement("div", { key: p.id, className: "w-[3.9rem] h-[3.9rem] transition-all duration-200 ease-out " +
+                                    (pending === p.id ? "scale-110" : "scale-100") },
+                                React.createElement(PerkNode, { id: p.id, state: st, rank: ranks[p.id] || 0, maxRank: p.max, onSpend: spend, hover: setHovered },
+                                    React.createElement("span", { className: "font-bold tracking-widest uppercase" }, p.label.slice(0, 5)))));
+                        }))));
+                })))))),
+            React.createElement("div", { className: "w-[21rem] flex flex-col gap-2" },
+                React.createElement("div", { className: "flex-none bg-neutral-900/85 backdrop-blur-md border border-yellow-300/40 rounded-none p-3 flex flex-col gap-2 shadow-[0_0_20px_rgba(34,211,238,0.15)]" },
+                    React.createElement("div", { className: "flex items-center justify-between" },
+                        React.createElement("span", { className: "text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/80" }, "POINT POOL"),
+                        React.createElement("span", { className: "text-[10px] uppercase tracking-[0.15em] text-amber-300/70" },
+                            spent,
+                            "/",
+                            TOTAL_POINTS,
+                            " ALLOC")),
+                    React.createElement("div", { className: "flex gap-2" },
+                        React.createElement("div", { className: "w-[6.5rem] h-[2.6rem]" },
+                            React.createElement(StatReadout, { value: available, tone: available > 0 ? "accent" : "danger" },
+                                React.createElement("span", { className: "flex flex-col" },
+                                    React.createElement("span", { className: "text-[0.62em] tracking-[0.2em] text-cyan-300/70" }, "FREE")))),
+                        React.createElement("div", { className: "w-[6.5rem] h-[2.6rem]" },
+                            React.createElement(StatReadout, { value: spent, tone: "neutral" },
+                                React.createElement("span", { className: "flex flex-col" },
+                                    React.createElement("span", { className: "text-[0.62em] tracking-[0.2em] text-cyan-300/70" }, "SPENT")))),
+                        React.createElement("div", { className: "flex-1 h-[2.6rem]" },
+                            React.createElement(ActionButton, { tone: "accent", disabled: !hoverPerk || available <= 0, onPress: () => hoverPerk && spend(hoverPerk.id) },
+                                React.createElement("span", { className: "font-bold tracking-widest uppercase" }, "SPEND"))))),
+                React.createElement("div", { className: "flex-none bg-black/60 ring-1 ring-cyan-400/10 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)] p-2" },
+                    React.createElement("div", { className: "w-full h-[4.5rem]" },
+                        React.createElement(Tooltip, { open: !!hoverPerk, content: hoverPerk ? (React.createElement("div", { className: "flex flex-col gap-0.5" },
+                                React.createElement("span", { className: "text-xs font-bold uppercase tracking-[0.18em] text-cyan-100" }, hoverPerk.label),
+                                React.createElement("span", { className: "text-[11px] leading-snug text-cyan-100/80" }, hoverPerk.desc),
+                                React.createElement("span", { className: "text-[10px] uppercase tracking-[0.15em] text-fuchsia-400" },
+                                    hoverPerk.bonus,
+                                    " \u00B7 RANK ",
+                                    (ranks[hoverPerk.id] || 0),
+                                    "/",
+                                    hoverPerk.max,
+                                    " \u00B7 REQ",
+                                    " ",
+                                    hoverPerk.attr.name,
+                                    " ",
+                                    hoverPerk.req))) : (React.createElement("span", { className: "text-[10px] uppercase tracking-[0.15em] text-neutral-400" }, "HOVER A NODE")) },
+                            React.createElement("div", { className: "flex items-center px-1" },
+                                React.createElement("span", { className: "uppercase tracking-[0.15em] text-neutral-500" }, hoverPerk ? "SCANNING NODE…" : "NODE INSPECTOR // IDLE"))))),
+                React.createElement("div", { className: "flex-1 bg-neutral-900/85 backdrop-blur-md border border-cyan-400/25 p-2 flex flex-col gap-1.5" },
+                    React.createElement("span", { className: "text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300/80" }, "CYBERWARE SLOTS"),
+                    React.createElement("div", { className: "flex-1 grid grid-cols-2 grid-rows-3 gap-1.5" }, slots.map((s) => (React.createElement("div", { key: s.id, className: "w-full h-full" },
+                        React.createElement(EquipmentSlot, { slotId: s.id, item: cyber[s.id], accepts: s.label, onSelect: (id) => setCyber((p) => ({
+                                ...p,
+                                [id]: p[id] || { id: "blank-" + id, label: "SHARD SLOT", rarity: "common" },
+                            })), onClear: (id) => setCyber((p) => ({ ...p, [id]: null })) })))))),
+                React.createElement("div", { className: "flex-none h-[2.4rem]" },
+                    React.createElement(ActionButton, { tone: "danger", disabled: spent === 0, onPress: () => {
+                            setRanks({});
+                            setHovered(null);
+                        } },
+                        React.createElement("span", { className: "font-bold tracking-widest uppercase" }, "RESET ALL POINTS"))))),
+        React.createElement("div", { className: "flex-none h-7 px-3 flex items-center justify-between border-t border-cyan-400/20 bg-black/70" },
+            React.createElement("span", { className: "text-[10px] font-medium uppercase tracking-[0.15em] text-amber-300/70 truncate" }, "\u25E4 RIPPERDOC LINK STABLE \u00B7 BONUSES SYNCED TO HUD"),
+            React.createElement("span", { className: "text-[10px] font-medium uppercase tracking-[0.15em] text-neutral-400" }, hoverPerk ? hoverPerk.attr.name + " // " + hoverPerk.label : "AWAITING INPUT"))));
+}
+
+ return GeneratedComponent; })()];
+const META = [{"leaf":"Cyberpunk: Perk & Cyberware Skill Tree","box":{"x":1664.6666666666665,"y":665.8666666666667}}];
+const h = React.createElement;
+class Guard extends React.Component { constructor(p){super(p);this.state={e:null};} static getDerivedStateFromError(e){return {e};} render(){ return this.state.e ? h("pre",{"data-err":"1",style:{color:"#f55"}},String(this.state.e.message||this.state.e)) : this.props.children; } }
+function App(){ return h("div",null, META.map((m,i)=> h("div",{key:i,style:{marginBottom:14}},
+  h("div",{style:{marginBottom:3}}, m.leaf + " — " + Math.round(m.box.x) + "x" + Math.round(m.box.y)),
+  h("div",{"data-box":i,className:"bg-zinc-950",style:{width:m.box.x,height:m.box.y,outline:"1px solid #333",overflow:"hidden",position:"relative"}},
+    LEAVES[i] ? h(Guard,null,h(LEAVES[i])) : h("i",null,"missing"))))); }
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+setTimeout(()=>{ const out=[]; document.querySelectorAll("[data-box]").forEach((b)=>{ const root=b.firstElementChild; if(!root){out.push({i:+b.dataset.box,missing:true});return;}
+  const err=!!b.querySelector("[data-err]");
+  const scrollers=[root,...root.children];
+  const v=Math.max(0,...scrollers.map((el)=>el.scrollHeight-el.clientHeight));
+  const hz=Math.max(0,root.scrollWidth-root.clientWidth);
+  out.push({i:+b.dataset.box,err,vOverflowRem:+(v/16).toFixed(1),hOverflowRem:+(hz/16).toFixed(1)}); });
+  const p=document.createElement("pre"); p.id="probe"; p.textContent=JSON.stringify(out); document.body.appendChild(p); }, 900);
+</script>

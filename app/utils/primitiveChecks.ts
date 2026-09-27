@@ -3,6 +3,7 @@
 import ts from "typescript";
 import { PrimitiveType, PrimitiveFloor } from "./spec";
 import { parsePrimitiveFloor } from "./helpers";
+import { checkPlacement } from "./placementCheck";
 
 // Primitive code: first fenced block if any, else from the first top-level declaration
 // (a primitive starts with "type <Type>Props", which extractComponentCode would cut).
@@ -20,7 +21,8 @@ export function extractPrimitiveCode(raw: string): string {
 // Every rule a primitive must meet to be shared safely (one file per UI, many instances,
 // scaled by the host). Returns every violation (the first is fed back on retry) plus the
 // parsed FLOOR when it is valid.
-export function checkPrimitive(prim: PrimitiveType, code: string): { errors: string[]; floor?: PrimitiveFloor } {
+// library: the UI's whole library, for the held-placement render check (checkPlacement).
+export function checkPrimitive(prim: PrimitiveType, code: string, library: PrimitiveType[] = []): { errors: string[]; floor?: PrimitiveFloor } {
   const type = prim.type;
   const errors: string[] = [];
   const r = ts.transpileModule(code, {
@@ -50,5 +52,6 @@ export function checkPrimitive(prim: PrimitiveType, code: string): { errors: str
   if (pctPad) errors.push(`uses percentage padding/margin "${pctPad[2]}": it is measured from the WIDTH, so in a short, wide slot it can take the whole height — use "inset-[x%]" on an absolute region, flex/grid gaps, or SVG viewBox coordinates instead`);
   const f = parsePrimitiveFloor(prim, code);
   if (f.error) errors.push("floor: " + f.error);
+  if (!errors.length) errors.push(...checkPlacement(prim, code, library));
   return { errors, floor: f.floor };
 }

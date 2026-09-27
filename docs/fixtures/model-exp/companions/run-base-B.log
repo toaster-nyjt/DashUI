@@ -1,0 +1,12 @@
+config: claude-opus-5 thinking=adaptive effort=low max_tokens=64000 companions=false -> C:\Users\realy\OneDrive\Documents\Work\DashUI\docs\fixtures\model-exp\companions\base-B
+wall 92s  first-try 10/10  passed 10/10  attempts 10  out 37805  $1.32
+  StatReadout      30s  x1    2531 out  ok  
+  PerkNode         62s  x1    5385 out  ok  
+  EquipmentSlot    37s  x1    3759 out  ok  
+  ActionButton     28s  x1    2758 out  ok  
+  ToggleSwitch     28s  x1    2568 out  ok  
+  Tooltip          24s  x1    2157 out  ok  
+  ItemGrid         34s  x1    3621 out  ok  
+  MapCanvas        92s  x1    8375 out  ok  
+  MapMarker        42s  x1    4024 out  ok  
+  RouteOverlay     27s  x1    2627 out  ok  

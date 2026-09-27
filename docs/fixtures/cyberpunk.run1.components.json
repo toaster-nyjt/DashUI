@@ -1,0 +1,145 @@
+[
+  {
+    "name": "Cyberpunk: V Character HUD Panel",
+    "genInstructions": "Build a neon-drenched character status panel for V showing portrait, level, Street Cred bar, health/armor bars, current attribute levels (Body, Reflexes, Technical Ability, Intelligence, Cool), and available attribute/perk points. It is the central status readout that reflects equipped gear and allocated perks.",
+    "role": "The central character-state hub that aggregates V's live stats and feeds attribute/point data to the skill tree while receiving stat modifiers from inventory and perks.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "Cyberpunk: Loadout & Inventory Grid",
+          "description": "When the user equips or unequips a weapon, clothing piece, or cyberware from the inventory, that component emits the item's stat modifiers (armor value, damage, resistances, carry weight); the HUD recomputes and re-renders the affected health/armor and derived stat displays."
+        },
+        {
+          "name": "Cyberpunk: Perk & Cyberware Skill Tree",
+          "description": "When perks are unlocked in the skill tree, it emits the resulting stat bonuses (bonus health, crit, stamina, hacking mods); the HUD applies these bonuses to its stat bars and numeric readouts."
+        }
+      ],
+      "targets": [
+        {
+          "name": "Cyberpunk: Perk & Cyberware Skill Tree",
+          "description": "The HUD emits current attribute levels (Body/Reflexes/Technical/Intelligence/Cool) and the count of available perk points; the skill tree uses these to gate which perk tiers are unlockable and to display the spendable-point budget."
+        }
+      ]
+    },
+    "features": [
+      "Character Portrait",
+      "Level Badge",
+      "Street Cred Bar",
+      "Health Bar",
+      "Armor Bar",
+      "Attribute Levels",
+      "Available Points",
+      "Stat Readouts"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "Cyberpunk: Perk & Cyberware Skill Tree",
+    "genInstructions": "Build an interactive branching skill/perk tree grouped by the five attributes with unlockable nodes, spend-point interaction, tier gating, and cyberware slots. Users allocate perk points to boost V's capabilities.",
+    "role": "The character-progression surface where perk points are spent, gated by attribute levels from the HUD and pushing resulting stat bonuses back to it.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "Cyberpunk: V Character HUD Panel",
+          "description": "Receives V's current attribute levels and available perk-point count from the HUD; uses attribute levels to lock/unlock perk tiers and displays the remaining spendable points as the allocation budget."
+        }
+      ],
+      "targets": [
+        {
+          "name": "Cyberpunk: V Character HUD Panel",
+          "description": "When the user unlocks a perk node, emits the perk's stat bonuses (e.g. +health, +crit chance, +hack duration) and decrements the point pool; the HUD applies the bonuses to its stat displays and updates available points."
+        }
+      ]
+    },
+    "features": [
+      "Attribute Branches",
+      "Perk Nodes",
+      "Tier Gating",
+      "Point Spend Control",
+      "Cyberware Slots",
+      "Node Tooltips",
+      "Reset Points"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "Cyberpunk: Loadout & Inventory Grid",
+    "genInstructions": "Build a grid-based inventory with equipment slots (weapons, clothing, cyberdeck), item rarity coloring, filters/tabs by category, and equip/unequip actions. Users manage V's gear and loadout.",
+    "role": "The gear-management component where the player equips items, driving V's stat changes in the HUD.",
+    "connectivity": {
+      "effectors": [],
+      "targets": [
+        {
+          "name": "Cyberpunk: V Character HUD Panel",
+          "description": "When the user equips or unequips an item in a loadout slot, emits that item's stat modifiers (armor, damage, resistances, carry weight); the HUD recalculates and re-renders the affected stat bars and readouts."
+        }
+      ]
+    },
+    "features": [
+      "Equipment Slots",
+      "Item Grid",
+      "Category Tabs",
+      "Rarity Coloring",
+      "Item Details",
+      "Equip Action",
+      "Search Filter"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "Cyberpunk: Quest Journal Panel",
+    "genInstructions": "Build a mission log listing main jobs, side gigs, and NCPD hustles with descriptions, objectives, reward preview, and a 'track quest' toggle. Users browse and select which quest to actively track.",
+    "role": "The mission-management list that lets the player choose a tracked quest, driving the map's highlighted objective and syncing with map marker selection.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "Cyberpunk: Night City Map",
+          "description": "When the user selects a quest marker on the map, the map emits that quest's id; the journal scrolls to and highlights the corresponding quest entry and expands its objectives."
+        }
+      ],
+      "targets": [
+        {
+          "name": "Cyberpunk: Night City Map",
+          "description": "When the user toggles 'track' on a quest, emits the quest's id and objective location coordinates; the map highlights that marker, centers on it, and draws a route to the objective."
+        }
+      ]
+    },
+    "features": [
+      "Quest Categories",
+      "Quest List",
+      "Objective Steps",
+      "Reward Preview",
+      "Track Toggle",
+      "Quest Search"
+    ],
+    "excludedFeatures": []
+  },
+  {
+    "name": "Cyberpunk: Night City Map",
+    "genInstructions": "Build a stylized dark-neon interactive map of Night City with district labels, quest/gig markers, fast-travel points, and a route/objective overlay. Users explore markers and set navigation.",
+    "role": "The spatial navigation surface that visualizes quest markers and routes, exchanging selection and tracking state with the quest journal.",
+    "connectivity": {
+      "effectors": [
+        {
+          "name": "Cyberpunk: Quest Journal Panel",
+          "description": "When a quest is tracked in the journal, receives its id and objective coordinates; centers the view on that marker, emphasizes it, and renders a navigation route to it."
+        }
+      ],
+      "targets": [
+        {
+          "name": "Cyberpunk: Quest Journal Panel",
+          "description": "When the user clicks a quest marker on the map, emits that quest's id; the journal selects and expands the matching quest entry."
+        }
+      ]
+    },
+    "features": [
+      "District Overlay",
+      "Quest Markers",
+      "Fast Travel Points",
+      "Route Overlay",
+      "Zoom Controls",
+      "Marker Tooltips"
+    ],
+    "excludedFeatures": []
+  }
+]

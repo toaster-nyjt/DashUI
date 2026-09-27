@@ -1,0 +1,15 @@
+hoist 24s  2470 out  valid=true  types=14
+  SearchInput      {"value":"string","onChange":"(v: string) => void","placeholder?":"string"}
+  TreeSelector     {"nodes":"{ id: string; label: string; children?: any[] }[]","value":"string","onChange":"(id: string) => void"}
+  TrackList        {"tracks":"{ id: string; title: string; artist: string; bpm: number; key: string; duration: string }[]","value":"string","onChange":"(id: string) => void","onActivate?":"(id: string) => void"}
+  SortHeader       {"columns":"{ id: string; label: string }[]","value":"string","direction":"'asc' | 'desc'","onChange":"(id: string, direction: 'asc' | 'desc') => void"}
+  PushButton       {"onPress":"() => void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  ToggleButton     {"on":"boolean","onChange":"(on: boolean) => void","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  WaveformDisplay  {"peaks":"number[]","duration":"number","playhead":"number","beatGrid?":"number[]","zoom?":"number","mode?":"'overview' | 'scrolling'","onScrub?":"(seconds: number) => void"}
+  Readout          {"value":"string | number","unit?":"string"}
+  Knob             {"min":"number","max":"number","value":"number","onChange":"(v: number) => void","mode?":"'continuous' | 'stepped'","steps?":"number[]","detents?":"number[]"}
+  Fader            {"min":"number","max":"number","value":"number","onChange":"(v: number) => void","orientation?":"'vertical' | 'horizontal'","detents?":"number[]","center?":"boolean"}
+  JogWheel         {"angle":"number","onRotate":"(deltaRevolutions: number) => void","onTouchChange?":"(touching: boolean) => void"}
+  Pad              {"active":"boolean","onPress":"() => void","onClear?":"() => void","children?":"React.ReactNode"}
+  LevelMeter       {"level":"number","peak?":"number","orientation?":"'vertical' | 'horizontal'"}
+  OptionSelector   {"options":"{ id: string; label: string }[]","value":"string","onChange":"(id: string) => void"}

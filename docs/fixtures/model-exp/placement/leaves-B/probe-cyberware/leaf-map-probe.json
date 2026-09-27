@@ -1,0 +1,68 @@
+{
+  "summary": {
+    "leaf": "docs\\fixtures\\model-exp\\placement\\leaves-B\\0.tsx",
+    "renderError": null,
+    "markers": 9,
+    "visibleOnTop": 3,
+    "inBoxButCovered": 0,
+    "outOfBox": 6,
+    "click": {
+      "marker": "arm-r",
+      "onSelectCalls": [
+        "arm-r"
+      ],
+      "stateBefore": "{\"selected\":false}",
+      "stateAfter": "{\"selected\":true}"
+    }
+  },
+  "before": [
+    {
+      "id": "cortex",
+      "error": "no position prop"
+    },
+    {
+      "id": "ocular",
+      "error": "no position prop"
+    },
+    {
+      "id": "nervous",
+      "error": "no position prop"
+    },
+    {
+      "id": "circ",
+      "error": "no position prop"
+    },
+    {
+      "id": "arm-l",
+      "error": "no position prop"
+    },
+    {
+      "id": "arm-r",
+      "x": 251,
+      "y": 271,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"selected\":false}"
+    },
+    {
+      "id": "skel",
+      "error": "no position prop"
+    },
+    {
+      "id": "leg-l",
+      "x": 94,
+      "y": 448,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"selected\":false}"
+    },
+    {
+      "id": "leg-r",
+      "x": 202,
+      "y": 448,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"selected\":false}"
+    }
+  ]
+}

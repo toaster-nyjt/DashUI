@@ -1,0 +1,92 @@
+{
+  "summary": {
+    "leaf": "docs\\fixtures\\model-exp\\placement\\leaves-A\\0.tsx",
+    "renderError": null,
+    "markers": 12,
+    "visibleOnTop": 6,
+    "inBoxButCovered": 0,
+    "outOfBox": 6,
+    "click": {
+      "marker": "cortex",
+      "onSelectCalls": [
+        "cortex"
+      ],
+      "stateBefore": "{\"selected\":false}",
+      "stateAfter": "{\"selected\":true}"
+    }
+  },
+  "before": [
+    {
+      "id": "cortex",
+      "x": 132,
+      "y": 118,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"selected\":false}"
+    },
+    {
+      "id": "ocular",
+      "x": 74,
+      "y": 169,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"selected\":false}"
+    },
+    {
+      "id": "nervous",
+      "x": 194,
+      "y": 216,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"selected\":true}"
+    },
+    {
+      "id": "circulatory",
+      "x": 132,
+      "y": 272,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"selected\":false}"
+    },
+    {
+      "id": "skeleton",
+      "x": 65,
+      "y": 344,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"selected\":false}"
+    },
+    {
+      "id": "legs",
+      "x": 159,
+      "y": 434,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"selected\":false}"
+    },
+    {
+      "id": "arms",
+      "error": "no position prop"
+    },
+    {
+      "id": "hands",
+      "error": "no position prop"
+    },
+    {
+      "id": "integumentary",
+      "error": "no position prop"
+    },
+    {
+      "id": "immune",
+      "error": "no position prop"
+    },
+    {
+      "id": "face",
+      "error": "no position prop"
+    },
+    {
+      "id": "aux",
+      "error": "no position prop"
+    }
+  ]
+}

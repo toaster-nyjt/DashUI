@@ -1,4 +1,4 @@
-import { ComponentInstance, ComponentDef, Placement, Connectivity, HoistResult, PrimitiveType, PrimitiveUse, PrimitiveFloor, PrimitiveSet, LeafFeatures } from "./spec";
+import { ComponentInstance, ComponentDef, Placement, Connectivity, HoistResult, PrimitiveType, PrimitiveUse, PrimitiveCompanions, PrimitiveFloor, PrimitiveSet, LeafFeatures } from "./spec";
 
 // One directed runtime link between two leaves of a UI, derived DETERMINISTICALLY
 // (app-side, not by the LLM) from the planner's connectivity so the emit/subscribe
@@ -235,6 +235,51 @@ const RESERVED_TYPE_NAMES = new Set([
   "WebSocket", "AudioContext", "Animation",
 ]);
 
+// The library types a holder draws on its surface: its "children" prop typed as a union of
+// type names (HELD TYPES) rather than React.ReactNode. [] for every other type.
+export function heldTypeNames(prim: PrimitiveType): string[] {
+  const t = prim.props["children?"] ?? prim.props["children"];
+  if (!t || /React|JSX|string|number/.test(t)) return [];
+  return t.split("|").map((s) => s.trim().replace(/^['"]|['"]$/g, "")).filter(Boolean);
+}
+
+// True when a contract carries its own coordinates: x and y props, or a prop typed with x/y
+// (a position, or a list of points).
+export const hasCoordinates = (prim: PrimitiveType): boolean =>
+  ("x" in prim.props || "x?" in prim.props) && ("y" in prim.props || "y?" in prim.props)
+  || Object.entries(prim.props).some(([k, t]) => !k.startsWith("children") && /\bx\s*:\s*number/.test(t) && /\by\s*:\s*number/.test(t));
+
+// Who places each held type, decided from the contracts alone so the holder and the held
+// type always agree: "self" when the held type has its own coordinates, else "surface".
+export const heldPlacement = (holder: PrimitiveType, library: PrimitiveType[]): Record<string, "self" | "surface"> =>
+  Object.fromEntries(heldTypeNames(holder).map((n) => {
+    const t = library.find((x) => x.type === n);
+    return [n, t && hasCoordinates(t) ? "self" : "surface"];
+  }));
+
+// A holder's coordinate unit, from its description: normalized 0-1 or 0-100.
+export const surfaceUnit = (holder: PrimitiveType): "fraction" | "percent" | undefined =>
+  /normali[sz]ed|\b0\s*[-–]\s*1\b(?!\d)/i.test(holder.description) ? "fraction"
+    : /\b0\s*[-–]\s*100\b|percent/i.test(holder.description) ? "percent" : undefined;
+
+// A surface data prop listing each placed element's id with its x/y.
+const hasPlacementData = (holder: PrimitiveType): boolean =>
+  Object.values(holder.props).some((t) => /\[\]\s*$/.test(t.trim()) && /\bid\b/.test(t) && /\bx\s*:\s*number/.test(t) && /\by\s*:\s*number/.test(t));
+
+// The primitive prompt switches for one type (buildPrimitiveSystemPrompt): companions present,
+// holds other types (HELD LAYERS) and which of them it places itself, the holders that draw it
+// (HELD), and whether it places itself on them.
+export const primitivePromptSwitches = (prim: PrimitiveType, companions: PrimitiveCompanions[], library: PrimitiveType[]) => {
+  const mode = heldPlacement(prim, library);
+  return {
+    companions: companions.length > 0,
+    holds: heldTypeNames(prim).length > 0,
+    places: Object.keys(mode).filter((n) => mode[n] === "surface"),
+    heldBy: library.filter((t) => heldTypeNames(t).includes(prim.type)).map((t) => t.type),
+    selfPlaced: hasCoordinates(prim),
+  };
+};
+
 // Validates a hoist-route result against the resolved components it was given: every
 // component and every feature key present verbatim, every assigned type in the library,
 // no unused or duplicate type, valid JSX identifiers. [] (structural) is allowed. Returns
@@ -250,6 +295,16 @@ export function validateHoist(result: HoistResult, components: { name: string; f
     if (!/^[A-Z][A-Za-z0-9]*$/.test(t.type)) return { ok: false, error: `Library type "${t.type}" is not a PascalCase JSX identifier.` };
     if (RESERVED_TYPE_NAMES.has(t.type)) return { ok: false, error: `Library type "${t.type}" shadows a React/host/global name; rename it.` };
     types.add(t.type);
+  }
+  for (const t of result.library)
+    for (const n of heldTypeNames(t))
+      if (n === t.type || !types.has(n)) return { ok: false, error: `Library type "${t.type}" holds "${n}" in "children", which is not another library type; name only other library types there, or use React.ReactNode for face content.` };
+  for (const t of result.library) {
+    if (!heldTypeNames(t).length) continue;
+    if (!surfaceUnit(t)) return { ok: false, error: `Library type "${t.type}" holds other types but its description doesn't state its coordinate unit; say "normalized 0-1" (or "0-100").` };
+    const mode = heldPlacement(t, result.library);
+    for (const n of Object.keys(mode))
+      if (mode[n] === "surface" && !hasPlacementData(t)) return { ok: false, error: `"${n}" is held by "${t.type}" but nothing places it: give "${n}" its own position prop in the surface's coordinates, or give "${t.type}" a data prop listing each element's id with its x and y.` };
   }
   const used = new Set<string>();
   for (const c of components) {
@@ -284,6 +339,22 @@ export function derivePrimitiveUsage(hoist: HoistResult): Record<string, Primiti
     for (const [feature, types] of Object.entries(c.features))
       for (const t of types) usage[t]?.push({ component: c.name, feature });
   return usage;
+}
+
+// Per type, the other types each of its using components builds from (derived like
+// derivePrimitiveUsage, never stored), so a primitive knows what it sits beside or holds.
+export function derivePrimitiveCompanions(hoist: HoistResult): Record<string, PrimitiveCompanions[]> {
+  const byName = new Map(hoist.library.map((t) => [t.type, t]));
+  const out: Record<string, PrimitiveCompanions[]> = {};
+  for (const t of hoist.library) out[t.type] = [];
+  for (const c of hoist.components) {
+    const used = [...new Set(Object.values(c.features).flat())];
+    for (const t of used) {
+      const types = used.filter((o) => o !== t).map((o) => byName.get(o)).filter((o): o is PrimitiveType => !!o);
+      if (types.length) out[t]?.push({ component: c.name, types });
+    }
+  }
+  return out;
 }
 
 // Parse + check a generated primitive's floor (primitive route, validate-and-retry).

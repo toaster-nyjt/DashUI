@@ -3,8 +3,9 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { XY, LeafPrimitives } from "@/app/utils/spec";
-import { extractComponentCode, LEAF_REPLACE_MARKER } from "@/app/utils/helpers";
+import { extractComponentCode, LEAF_REPLACE_MARKER, heldTypeNames } from "@/app/utils/helpers";
 import { sanitizeLeaf } from "@/app/utils/leafSanitizer";
+import { repairSyntax, syntaxIssues } from "@/app/utils/syntaxRepair";
 import { buildLeafSystem } from "@/app/utils/leafPrompt";
 import { runLog, usageOf } from "@/app/utils/runLog";
 
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
   runLog(taskID, "leaf:start", `${leaf} — ${hasLibrary ? (handBuilt ? "primitives + hand-built" : "primitives only") : "hand-built (base prompt)"}, ${boxSize ? Math.round(boxSize.x) + "x" + Math.round(boxSize.y) + "px" : "no box size"}`, {
     leaf, leafKey, spec, hasLibrary, handBuilt, boxSize, historyTurns: history?.length ?? 0,
     library: primitives?.library.map((t) => t.type), floors: primitives?.floors,
+    held: Object.fromEntries((primitives?.library ?? []).filter((t) => heldTypeNames(t).length).map((t) => [t.type, heldTypeNames(t)])),
     styleChars: style?.length ?? 0, systemChars: system.length, system,
   });
 
@@ -75,6 +77,21 @@ export async function POST(req: Request) {
     if (!hasLibrary) return code;
     try { return sanitizeLeaf(code, primitives!.library.map((t) => t.type)); }
     catch (e) { console.error("[generate] post-processor failed; using raw code", e); return code; }
+  };
+
+  // Every leaf must compile: deterministic repair first (repairSyntax), and only when that can't
+  // fix it, one regeneration with the compile error fed back.
+  const ensureCompiles = async (code: string): Promise<{ code: string; syntax: Record<string, unknown> }> => {
+    const r = repairSyntax(code);
+    if (r) return { code: r.code, syntax: r.repairs.length ? { syntaxRepairs: r.repairs } : {} };
+    const issue = syntaxIssues(code)[0];
+    console.error("[generate] leaf does not compile; regenerating once:", issue);
+    const retry = await anthropic.messages.stream({ ...LEAF_MODEL, system, messages: [...messages,
+      { role: "assistant", content: code },
+      { role: "user", content: "Your component does not compile: " + issue.message + " at line " + issue.line + ": " + issue.snippet + "\nReturn the full corrected component." }] }).finalMessage();
+    const code2 = extractComponentCode(retry.content.map((b) => (b.type === "text" ? b.text : "")).join(""));
+    const r2 = repairSyntax(code2);
+    return { code: r2 ? r2.code : code2, syntax: { syntaxError: issue, syntaxRegenerated: true, syntaxStillBroken: !r2, syntaxRepairs: r2?.repairs, syntaxRetry: usageOf(retry) } };
   };
 
   const encoder = new TextEncoder();
@@ -111,21 +128,24 @@ export async function POST(req: Request) {
         console.error("[generate] refusal; regenerating on " + REFUSAL_FALLBACK.model, final.stop_details ?? "");
         const retry = await anthropic.messages.stream({ ...REFUSAL_FALLBACK, system, messages }).finalMessage();
         const code = extractComponentCode(retry.content.map((b) => (b.type === "text" ? b.text : "")).join(""));
-        const clean = finish(code);
+        const { code: compiled, syntax } = await ensureCompiles(code);
+        const clean = finish(compiled);
         controller.enqueue(encoder.encode(LEAF_REPLACE_MARKER + clean));
         runLog(taskID, "leaf:done", `${leaf} — REFUSAL on ${LEAF_MODEL.model}, regenerated on ${REFUSAL_FALLBACK.model}`, {
           leaf, leafKey, stop_details: final.stop_details, partial: text, first: usageOf(final), ...usageOf(retry),
-          ...postProcessed(code, clean), code: clean, secs: (Date.now() - t0) / 1000,
+          ...postProcessed(compiled, clean), ...syntax, code: clean, secs: (Date.now() - t0) / 1000,
         });
       } else {
         if (final.stop_reason === "max_tokens") console.error("[generate] hit max_tokens; the leaf may be incomplete");
         const code = extractComponentCode(text);
-        const clean = finish(code);
+        const { code: compiled, syntax } = await ensureCompiles(code);
+        const clean = finish(compiled);
         // Only when something changed, so an already-clean leaf never re-renders.
         if (clean !== code) controller.enqueue(encoder.encode(LEAF_REPLACE_MARKER + clean));
-        const pp = postProcessed(code, clean);
-        runLog(taskID, "leaf:done", `${leaf} — ${final.stop_reason}, ${final.usage.output_tokens} out, ${((Date.now() - t0) / 1000).toFixed(0)}s${hasLibrary ? ", post-processor " + (pp.postProcessed ? "changed " + pp.classesRemoved.length + " class(es)" : "no change") : ""}`, {
-          leaf, leafKey, raw: text, code: clean, ...pp, ...usageOf(final), secs: (Date.now() - t0) / 1000,
+        const pp = postProcessed(compiled, clean);
+        const syn = syntax.syntaxRegenerated ? (syntax.syntaxStillBroken ? ", DOES NOT COMPILE after regeneration" : ", regenerated to compile") : syntax.syntaxRepairs ? ", syntax repaired" : "";
+        runLog(taskID, "leaf:done", `${leaf} — ${final.stop_reason}, ${final.usage.output_tokens} out, ${((Date.now() - t0) / 1000).toFixed(0)}s${hasLibrary ? ", post-processor " + (pp.postProcessed ? "changed " + pp.classesRemoved.length + " class(es)" : "no change") : ""}${syn}`, {
+          leaf, leafKey, raw: text, code: clean, ...pp, ...syntax, ...usageOf(final), secs: (Date.now() - t0) / 1000,
         });
       }
       controller.close();

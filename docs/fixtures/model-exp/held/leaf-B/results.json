@@ -1,0 +1,29 @@
+{
+  "config": {
+    "budget": true,
+    "MODEL": "claude-opus-5",
+    "THINKING": "adaptive",
+    "EFFORT": "low"
+  },
+  "wall": 44.39,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "Cyberpunk: Night City Map",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 610.3777777777777
+      },
+      "secs": 44.204,
+      "outTok": 4538,
+      "codeTok": 4218,
+      "thinkTok": 320,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.25 + body(MapCanvas 33.1 ≥ 8) + footer 1.75 + padding 1.0 = 38.1 ≤ 38.1",
+        "// BUDGET width: padding 1.0 + MapCanvas 47.9 + gap 0.75 + ZoomControl 2.35 = 52.0 ≤ 52.0"
+      ],
+      "postProcessed": true
+    }
+  ]
+}

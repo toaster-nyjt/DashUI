@@ -1,0 +1,251 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000,
+      "COMPANIONS": false,
+      "LOG": "cyberpunk.run1.jsonl"
+    },
+    "wall": 92.434,
+    "passedFirstTry": 10,
+    "passed": 10,
+    "types": 10,
+    "totalAttempts": 10,
+    "outTokens": 37805,
+    "cost": 1.32
+  },
+  "results": [
+    {
+      "type": "StatReadout",
+      "attempts": [
+        {
+          "secs": 30.403,
+          "out": 2531,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 30.404,
+      "inTok": 7573,
+      "outTok": 2531,
+      "floor": {
+        "base": [
+          3.5,
+          2.4
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "PerkNode",
+      "attempts": [
+        {
+          "secs": 61.868,
+          "out": 5385,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 61.869,
+      "inTok": 7524,
+      "outTok": 5385,
+      "floor": {
+        "base": [
+          3.5,
+          3.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "EquipmentSlot",
+      "attempts": [
+        {
+          "secs": 37.259,
+          "out": 3759,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 37.26,
+      "inTok": 7501,
+      "outTok": 3759,
+      "floor": {
+        "base": [
+          4.5,
+          4.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "ActionButton",
+      "attempts": [
+        {
+          "secs": 27.906,
+          "out": 2758,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 27.907,
+      "inTok": 7494,
+      "outTok": 2758,
+      "floor": {
+        "base": [
+          4,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "ToggleSwitch",
+      "attempts": [
+        {
+          "secs": 27.638,
+          "out": 2568,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 27.64,
+      "inTok": 7411,
+      "outTok": 2568,
+      "floor": {
+        "base": [
+          4.5,
+          1.75
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Tooltip",
+      "attempts": [
+        {
+          "secs": 24.159,
+          "out": 2157,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 24.16,
+      "inTok": 7448,
+      "outTok": 2157,
+      "floor": {
+        "base": [
+          6,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "ItemGrid",
+      "attempts": [
+        {
+          "secs": 34.35,
+          "out": 3621,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 34.351,
+      "inTok": 7540,
+      "outTok": 3621,
+      "floor": {
+        "base": [
+          9,
+          6
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "MapCanvas",
+      "attempts": [
+        {
+          "secs": 92.341,
+          "out": 8375,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 92.342,
+      "inTok": 7509,
+      "outTok": 8375,
+      "floor": {
+        "base": [
+          10,
+          8
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "MapMarker",
+      "attempts": [
+        {
+          "secs": 42.46,
+          "out": 4024,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 42.461,
+      "inTok": 7489,
+      "outTok": 4024,
+      "floor": {
+        "base": [
+          2.5,
+          2.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "RouteOverlay",
+      "attempts": [
+        {
+          "secs": 27.452,
+          "out": 2627,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 27.453,
+      "inTok": 7403,
+      "outTok": 2627,
+      "floor": {
+        "base": [
+          6,
+          5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

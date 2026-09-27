@@ -1,0 +1,328 @@
+{
+  "library": [
+    {
+      "type": "SearchInput",
+      "description": "Single-line text entry for filtering; emits the current query string on every edit.",
+      "props": {
+        "value": "string",
+        "onChange": "(q: string) => void",
+        "placeholder?": "string"
+      }
+    },
+    {
+      "type": "TreeSelector",
+      "description": "Hierarchical list of nested nodes; one node is selected at a time, branches expand/collapse. Selection emits the node id.",
+      "props": {
+        "nodes": "{ id: string; label: string; children?: any[] }[]",
+        "value": "string",
+        "onChange": "(id: string) => void"
+      }
+    },
+    {
+      "type": "TrackList",
+      "description": "Multi-column row list of items with sortable column headers; one row selected at a time, emitting its id; double activation emits onActivate. Sort state is a column key plus direction.",
+      "props": {
+        "columns": "{ key: string; label: string }[]",
+        "rows": "{ id: string; [key: string]: string | number }[]",
+        "value": "string",
+        "onChange": "(id: string) => void",
+        "onActivate?": "(id: string) => void",
+        "sortKey?": "string",
+        "sortDir?": "'asc' | 'desc'",
+        "onSortChange?": "(key: string, dir: 'asc' | 'desc') => void"
+      }
+    },
+    {
+      "type": "PushButton",
+      "description": "Momentary button; fires onPress on each press. Face content supplied by the component.",
+      "props": {
+        "onPress": "() => void",
+        "disabled?": "boolean",
+        "tone?": "'neutral' | 'accent' | 'danger'",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "ToggleButton",
+      "description": "Latching two-state button; 'on' is the current state and onChange emits the new boolean state.",
+      "props": {
+        "on": "boolean",
+        "onChange": "(on: boolean) => void",
+        "tone?": "'neutral' | 'accent' | 'danger'",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "Knob",
+      "description": "Rotary control; vertical drag maps to a value within min..max, optionally snapping to the supplied step values. Emits the numeric value in the caller's units.",
+      "props": {
+        "min": "number",
+        "max": "number",
+        "value": "number",
+        "onChange": "(v: number) => void",
+        "mode?": "'continuous' | 'stepped'",
+        "steps?": "number[]",
+        "detents?": "number[]"
+      }
+    },
+    {
+      "type": "Fader",
+      "description": "Linear throw control in either orientation; handle position maps linearly to a value within min..max, emitted in the caller's units.",
+      "props": {
+        "min": "number",
+        "max": "number",
+        "value": "number",
+        "onChange": "(v: number) => void",
+        "orientation?": "'vertical' | 'horizontal'",
+        "center?": "number",
+        "steps?": "number[]"
+      }
+    },
+    {
+      "type": "JogWheel",
+      "description": "Large circular platter; drag rotation emits incremental angular delta in revolutions (positive = forward) for scratch/nudge, and shows the current rotation angle in degrees.",
+      "props": {
+        "angle": "number",
+        "onScrub": "(deltaRevolutions: number) => void",
+        "mode?": "'vinyl' | 'cdj'",
+        "spinning?": "boolean"
+      }
+    },
+    {
+      "type": "WaveformDisplay",
+      "description": "Scrolling or overview waveform surface rendering amplitude peaks (normalized 0-1) with optional beat-grid markers (positions in seconds) and a playhead at a position in seconds; drag may emit a seek position in seconds. Zoom is seconds of visible window.",
+      "props": {
+        "peaks": "number[]",
+        "duration": "number",
+        "playhead": "number",
+        "beatGrid?": "number[]",
+        "zoom?": "number",
+        "mode?": "'scrolling' | 'overview'",
+        "onSeek?": "(seconds: number) => void"
+      }
+    },
+    {
+      "type": "LevelMeter",
+      "description": "Segmented level indicator showing a normalized 0-1 signal level, with optional peak-hold value in the same scale.",
+      "props": {
+        "level": "number",
+        "peak?": "number",
+        "orientation?": "'vertical' | 'horizontal'"
+      }
+    },
+    {
+      "type": "Readout",
+      "description": "Passive alphanumeric display of supplied values (times, BPM, names, loop lengths) in the caller's units; renders given lines of text or numbers.",
+      "props": {
+        "value": "string | number",
+        "lines?": "(string | number)[]",
+        "emphasis?": "'primary' | 'secondary'"
+      }
+    },
+    {
+      "type": "CuePad",
+      "description": "Square trigger pad; onPress fires on hit, and 'set' indicates whether a cue point is stored on it. Long/alt press emits onClear.",
+      "props": {
+        "set": "boolean",
+        "onPress": "() => void",
+        "onClear?": "() => void",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "OptionSelector",
+      "description": "Compact selector presenting a list of single-label options; the chosen option's id is emitted on change.",
+      "props": {
+        "options": "{ id: string; label: string }[]",
+        "value": "string",
+        "onChange": "(id: string) => void"
+      }
+    }
+  ],
+  "components": [
+    {
+      "name": "DJ Table: Track Library Browser",
+      "features": {
+        "Search Bar": [
+          "SearchInput"
+        ],
+        "Folder Crate Tree": [
+          "TreeSelector"
+        ],
+        "Track List": [
+          "TrackList"
+        ],
+        "Sort Headers": [
+          "TrackList"
+        ],
+        "BPM Key Columns": [
+          "TrackList"
+        ],
+        "Preview Button": [
+          "PushButton"
+        ],
+        "Load To Deck A": [
+          "PushButton"
+        ],
+        "Load To Deck B": [
+          "PushButton"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Master Waveform Display",
+      "features": {
+        "Dual Waveform Lanes": [
+          "WaveformDisplay"
+        ],
+        "Playhead Markers": [
+          "WaveformDisplay"
+        ],
+        "Beat Grid": [
+          "WaveformDisplay"
+        ],
+        "Time Display": [
+          "Readout"
+        ],
+        "Zoom Control": [
+          "Knob"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Deck A (Left)",
+      "features": {
+        "Jog Wheel": [
+          "JogWheel"
+        ],
+        "Play Pause Button": [
+          "ToggleButton"
+        ],
+        "Cue Button": [
+          "PushButton"
+        ],
+        "Pitch Fader": [
+          "Fader"
+        ],
+        "Waveform Strip": [
+          "WaveformDisplay"
+        ],
+        "Hot Cue Pads": [
+          "CuePad"
+        ],
+        "Loop Controls": [
+          "PushButton",
+          "Readout"
+        ],
+        "Sync Button": [
+          "PushButton"
+        ],
+        "Track Info Display": [
+          "Readout"
+        ],
+        "BPM Display": [
+          "Readout"
+        ],
+        "Keylock Toggle": [
+          "ToggleButton"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Central Mixer",
+      "features": {
+        "Channel Faders": [
+          "Fader"
+        ],
+        "Crossfader": [
+          "Fader"
+        ],
+        "EQ Knobs": [
+          "Knob"
+        ],
+        "Gain Trim": [
+          "Knob"
+        ],
+        "Channel VU Meters": [
+          "LevelMeter"
+        ],
+        "Cue PFL Buttons": [
+          "ToggleButton"
+        ],
+        "Master Volume": [
+          "Knob"
+        ],
+        "Headphone Mix": [
+          "Knob"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Deck B (Right)",
+      "features": {
+        "Jog Wheel": [
+          "JogWheel"
+        ],
+        "Play Pause Button": [
+          "ToggleButton"
+        ],
+        "Cue Button": [
+          "PushButton"
+        ],
+        "Pitch Fader": [
+          "Fader"
+        ],
+        "Waveform Strip": [
+          "WaveformDisplay"
+        ],
+        "Hot Cue Pads": [
+          "CuePad"
+        ],
+        "Loop Controls": [
+          "PushButton",
+          "Readout"
+        ],
+        "Sync Button": [
+          "PushButton"
+        ],
+        "Track Info Display": [
+          "Readout"
+        ],
+        "BPM Display": [
+          "Readout"
+        ],
+        "Keylock Toggle": [
+          "ToggleButton"
+        ]
+      }
+    },
+    {
+      "name": "DJ Table: Effects Rack",
+      "features": {
+        "FX Unit Slots": [],
+        "Effect Selector": [
+          "OptionSelector"
+        ],
+        "Dry Wet Knob": [
+          "Knob"
+        ],
+        "Beat Multiplier": [
+          "OptionSelector"
+        ],
+        "Assign Deck Buttons": [
+          "ToggleButton"
+        ],
+        "On Off Toggle": [
+          "ToggleButton"
+        ]
+      }
+    }
+  ],
+  "_meta": {
+    "model": "claude-opus-5",
+    "secs": 32.654,
+    "outTok": 3124,
+    "inTok": 8421,
+    "stop": "end_turn"
+  }
+}

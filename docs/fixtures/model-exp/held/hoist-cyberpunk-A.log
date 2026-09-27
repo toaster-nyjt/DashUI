@@ -1,0 +1,20 @@
+hoist 47s  4113 out  valid=true  types=19
+  CharacterPortrait {"src":"string","alt?":"string"}
+  StatBar          {"value":"number","min?":"number","max":"number","secondaryValue?":"number","tone?":"'neutral' | 'accent' | 'danger' | 'warning'"}
+  StatReadout      {"value":"string | number","tone?":"'neutral' | 'accent' | 'danger'"}
+  StatList         {"entries":"{ id: string; label: string; value: string | number; delta?: 'positive' | 'negative' }[]"}
+  PerkNode         {"rank":"number","maxRank":"number","state":"'locked' | 'available' | 'unlocked'","onRankChange":"(rank: number) => void","onHover?":"(hovered: boolean) => void","children?":"React.ReactNode"}
+  PointSpendControl {"available":"number","spent":"number","max?":"number","onSpend":"(delta: number) => void"}
+  EquipmentSlot    {"item":"{ id: string; name: string; icon?: string; rarity?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' } | null","accepts?":"string[]","onEquip":"(itemId: string) => void","onUnequip":"() => void","onSelect?":"(itemId: string | null) => void"}
+  ItemGrid         {"items":"{ id: string; name: string; icon?: string; quantity?: number; rarity?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'; equipped?: boolean; category?: string }[]","value":"string | null","onChange":"(id: string | null) => void","onActivate?":"(id: string) => void"}
+  TabSelector      {"options":"{ id: string; label: string; count?: number }[]","value":"string","onChange":"(id: string) => void"}
+  SearchInput      {"value":"string","onChange":"(query: string) => void","placeholder?":"string"}
+  QuestList        {"items":"{ id: string; title: string; category?: string; subtitle?: string; level?: string | number; status?: 'active' | 'completed' | 'failed' | 'new'; tracked?: boolean }[]","value":"string | null","onChange":"(id: string | null) => void","onActivate?":"(id: string) => void"}
+  ObjectiveChecklist {"steps":"{ id: string; text: string; state: 'pending' | 'active' | 'done' | 'failed'; optional?: boolean }[]","onSelectStep?":"(id: string) => void"}
+  ToggleSwitch     {"on":"boolean","onChange":"(on: boolean) => void","disabled?":"boolean"}
+  ActionButton     {"onPress":"() => void","disabled?":"boolean","tone?":"'neutral' | 'accent' | 'danger'","children?":"React.ReactNode"}
+  InfoTooltip      {"visible":"boolean","title?":"string","body?":"React.ReactNode","anchor?":"{ x: number; y: number }"}
+  MapCanvas        {"regions?":"{ id: string; label: string; path: string }[]","imageSrc?":"string","zoom":"number","center":"{ x: number; y: number }","onViewChange":"(view: { zoom: number; center: { x: number; y: number } }) => void","onSelectRegion?":"(id: string) => void","children?":"MapMarker | RouteOverlay"}
+  MapMarker        {"id":"string","position":"{ x: number; y: number }","kind":"string","state?":"'default' | 'selected' | 'tracked' | 'locked'","onSelect":"(id: string) => void","onHover?":"(id: string | null) => void"}
+  RouteOverlay     {"points":"{ x: number; y: number }[]","destination?":"{ x: number; y: number }","active?":"boolean"}
+  ZoomControl      {"zoom":"number","min":"number","max":"number","step?":"number","onChange":"(zoom: number) => void"}

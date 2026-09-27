@@ -101,6 +101,9 @@ export type HoistResult = {
 // One use of a primitive type: the component + feature built from it.
 export type PrimitiveUse = { component: string; feature: string };
 
+// The other library types one using component builds from, beside this type.
+export type PrimitiveCompanions = { component: string; types: PrimitiveType[] };
+
 // A primitive's declared floor, parsed from its generated "<Type>_MIN" constant:
 // "base" plus "<prop>:<value>" overrides, each [width, height] in rem.
 export type PrimitiveFloor = Record<string, [number, number]>;

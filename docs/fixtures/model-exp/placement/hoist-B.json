@@ -1,0 +1,386 @@
+{
+  "library": [
+    {
+      "type": "CharacterPortrait",
+      "description": "Framed character image surface showing a figure; optional animated/glitch state flag. Content (image source) is supplied at runtime.",
+      "props": {
+        "imageSrc?": "string",
+        "state?": "'idle' | 'alert' | 'damaged'",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "StatBar",
+      "description": "Horizontal filled bar showing value within 0..max; fill fraction is value/max clamped to 0-1. Optional segmentation renders the bar as discrete cells, optional numeric overlay shows value/max.",
+      "props": {
+        "value": "number",
+        "max": "number",
+        "segments?": "number",
+        "tone?": "'neutral' | 'accent' | 'danger' | 'warning'",
+        "showValue?": "boolean",
+        "animate?": "boolean"
+      }
+    },
+    {
+      "type": "StatusEffectStrip",
+      "description": "Strip of active status-effect indicators; each effect has an id, label, optional kind and optional remaining duration in seconds. Emits the effect id when one is picked.",
+      "props": {
+        "effects": "{ id: string; label: string; kind?: 'buff' | 'debuff' | 'neutral'; remaining?: number }[]",
+        "onSelect?": "(id: string) => void"
+      }
+    },
+    {
+      "type": "LevelBadge",
+      "description": "Compact numeric rank/level indicator; displays an integer level with an optional short rank caption supplied as data.",
+      "props": {
+        "level": "number",
+        "rank?": "string"
+      }
+    },
+    {
+      "type": "NumericReadout",
+      "description": "Numeric value display; when animate is set the displayed number tweens from the previous value to the new one. Unit/prefix strings are data supplied at runtime.",
+      "props": {
+        "value": "number",
+        "unit?": "string",
+        "prefix?": "string",
+        "precision?": "number",
+        "animate?": "boolean"
+      }
+    },
+    {
+      "type": "RecordListSelector",
+      "description": "Scrollable list of multi-field records (label plus optional detail text, numeric/text value and availability status); one record can be selected, emitting its id. onActivate fires for a separate confirm/open action.",
+      "props": {
+        "options": "{ id: string; label: string; detail?: string; value?: string | number; status?: 'available' | 'locked' | 'active' }[]",
+        "value?": "string",
+        "onChange": "(id: string) => void",
+        "onActivate?": "(id: string) => void"
+      }
+    },
+    {
+      "type": "ExpandableEntryList",
+      "description": "List of collapsible entries, each with a title, optional subtitle and nested objective and reward data; one entry may be expanded and one marked active/highlighted. Emits ids on expand and select.",
+      "props": {
+        "entries": "{ id: string; title: string; subtitle?: string; objectives?: { id: string; label: string; done: boolean }[]; rewards?: { label: string; value: string | number }[] }[]",
+        "expandedId?": "string",
+        "onExpand": "(id: string) => void",
+        "activeId?": "string",
+        "onSelect?": "(id: string) => void"
+      }
+    },
+    {
+      "type": "ObjectiveChecklist",
+      "description": "Vertical checklist of objectives, each with a done flag and optional optional-marker; emits the objective id when an item is toggled.",
+      "props": {
+        "items": "{ id: string; label: string; done: boolean; optional?: boolean }[]",
+        "onToggle?": "(id: string) => void"
+      }
+    },
+    {
+      "type": "StatDetailList",
+      "description": "Read-only list of label/value stat lines with optional signed delta styling; can render inline or as a floating tooltip when visible is controlled.",
+      "props": {
+        "items": "{ label: string; value: string | number; delta?: number }[]",
+        "title?": "string",
+        "visible?": "boolean"
+      }
+    },
+    {
+      "type": "ActionButton",
+      "description": "Momentary push button; fires onPress on activation. Face content is supplied via children.",
+      "props": {
+        "onPress": "() => void",
+        "disabled?": "boolean",
+        "tone?": "'neutral' | 'accent' | 'danger'",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "ToggleButton",
+      "description": "Latching two-state button; emits the new boolean state on activation. Face content is supplied via children.",
+      "props": {
+        "on": "boolean",
+        "onChange": "(on: boolean) => void",
+        "disabled?": "boolean",
+        "tone?": "'neutral' | 'accent' | 'danger'",
+        "children?": "React.ReactNode"
+      }
+    },
+    {
+      "type": "EquipmentSlot",
+      "description": "Single equipment socket showing its occupying item (name, rarity tier, optional icon and stat summary) or an empty state; selectable and clearable, emitting its slot id.",
+      "props": {
+        "id": "string",
+        "item?": "{ id: string; name: string; rarity?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'; iconSrc?: string; stat?: string | number }",
+        "selected?": "boolean",
+        "locked?": "boolean",
+        "onSelect?": "(id: string) => void",
+        "onClear?": "(id: string) => void"
+      }
+    },
+    {
+      "type": "ImplantSlot",
+      "description": "Single cyberware socket placed either in a grid or on a body surface at normalized 0-1 coordinates; shows its installed implant, empty, or locked state and emits its id on selection.",
+      "props": {
+        "id": "string",
+        "implant?": "{ id: string; name: string; tier?: string | number }",
+        "locked?": "boolean",
+        "lockReason?": "string",
+        "selected?": "boolean",
+        "x?": "number",
+        "y?": "number",
+        "onSelect?": "(id: string) => void"
+      }
+    },
+    {
+      "type": "BodyDiagramSurface",
+      "description": "Anatomical body-diagram surface in normalized 0-1 coordinates; holds ImplantSlot elements positioned by their own x/y props.",
+      "props": {
+        "highlightedRegion?": "string",
+        "children?": "ImplantSlot"
+      }
+    },
+    {
+      "type": "MapCanvas",
+      "description": "Pannable/zoomable map surface using normalized 0-1 world coordinates; holds MapMarker and MapRoute elements placed by their own coordinate props. Emits view changes as center plus zoom factor.",
+      "props": {
+        "imageSrc?": "string",
+        "center": "{ x: number; y: number }",
+        "zoom": "number",
+        "onViewChange": "(view: { center: { x: number; y: number }; zoom: number }) => void",
+        "children?": "MapMarker | MapRoute"
+      }
+    },
+    {
+      "type": "MapMarker",
+      "description": "Point marker drawn on a map surface at normalized 0-1 coordinates; kind distinguishes quest/POI/player/waypoint forms, emits its id when clicked.",
+      "props": {
+        "id": "string",
+        "x": "number",
+        "y": "number",
+        "kind?": "'quest' | 'poi' | 'player' | 'waypoint'",
+        "label?": "string",
+        "selected?": "boolean",
+        "onSelect?": "(id: string) => void"
+      }
+    },
+    {
+      "type": "MapRoute",
+      "description": "Polyline path drawn on a map surface through a sequence of normalized 0-1 points, optionally animated as a flowing route.",
+      "props": {
+        "points": "{ x: number; y: number }[]",
+        "animated?": "boolean"
+      }
+    },
+    {
+      "type": "ZoomPanControls",
+      "description": "Cluster of zoom in/out and recenter controls; emits the requested zoom factor within min..max and pan deltas in normalized 0-1 units.",
+      "props": {
+        "zoom": "number",
+        "min": "number",
+        "max": "number",
+        "onZoomChange": "(zoom: number) => void",
+        "onPan?": "(delta: { x: number; y: number }) => void",
+        "onRecenter?": "() => void"
+      }
+    },
+    {
+      "type": "LegendKey",
+      "description": "Read-only key listing marker/symbol kinds with their meanings.",
+      "props": {
+        "items": "{ id: string; label: string; kind?: string }[]"
+      }
+    },
+    {
+      "type": "TabSelector",
+      "description": "Horizontal segmented tab control; one option selected at a time, emits the option id.",
+      "props": {
+        "options": "{ id: string; label: string; count?: number }[]",
+        "value": "string",
+        "onChange": "(id: string) => void"
+      }
+    }
+  ],
+  "components": [
+    {
+      "name": "Cyberpunk 2077: Character Vitals HUD",
+      "features": {
+        "Character Portrait": [
+          "CharacterPortrait"
+        ],
+        "Health Bar": [
+          "StatBar"
+        ],
+        "Armor Bar": [
+          "StatBar"
+        ],
+        "Stamina Bar": [
+          "StatBar"
+        ],
+        "RAM Meter": [
+          "StatBar"
+        ],
+        "Status Effect Strip": [
+          "StatusEffectStrip"
+        ],
+        "Level Badge": [
+          "LevelBadge"
+        ],
+        "Glitch Frame": []
+      }
+    },
+    {
+      "name": "Cyberpunk 2077: Attributes & Perks Panel",
+      "features": {
+        "Attribute List": [
+          "RecordListSelector"
+        ],
+        "Point Spend Buttons": [
+          "ActionButton"
+        ],
+        "Point Refund Buttons": [
+          "ActionButton"
+        ],
+        "Remaining Points Counter": [
+          "NumericReadout"
+        ],
+        "Perk Point Counter": [
+          "NumericReadout"
+        ],
+        "Perk Allocation List": [
+          "RecordListSelector",
+          "ActionButton"
+        ],
+        "Attribute Progress Bars": [
+          "StatBar"
+        ]
+      }
+    },
+    {
+      "name": "Cyberpunk 2077: Cyberware Augmentation Grid",
+      "features": {
+        "Body Slot Diagram": [
+          "BodyDiagramSurface"
+        ],
+        "Slot Grid": [
+          "ImplantSlot"
+        ],
+        "Implant Cards": [
+          "RecordListSelector"
+        ],
+        "Install Remove Toggle": [
+          "ToggleButton"
+        ],
+        "Capacity Meter": [
+          "StatBar"
+        ],
+        "Implant Stat Tooltip": [
+          "StatDetailList"
+        ],
+        "Locked Slot Overlay": [
+          "ImplantSlot"
+        ]
+      }
+    },
+    {
+      "name": "Cyberpunk 2077: Weapon & Gear Loadout",
+      "features": {
+        "Weapon Slots": [
+          "EquipmentSlot"
+        ],
+        "Armor Clothing Slots": [
+          "EquipmentSlot"
+        ],
+        "Item Rarity Frames": [
+          "EquipmentSlot"
+        ],
+        "Item Stat Panel": [
+          "StatDetailList"
+        ],
+        "Buy Sell Buttons": [
+          "ActionButton"
+        ],
+        "Loadout Preview": [
+          "CharacterPortrait"
+        ]
+      }
+    },
+    {
+      "name": "Cyberpunk 2077: Night City Map",
+      "features": {
+        "Map Canvas": [
+          "MapCanvas"
+        ],
+        "District Labels": [],
+        "Quest Markers": [
+          "MapMarker"
+        ],
+        "Player Marker": [
+          "MapMarker"
+        ],
+        "Waypoint Route": [
+          "MapRoute",
+          "MapMarker"
+        ],
+        "Zoom Pan Controls": [
+          "ZoomPanControls"
+        ],
+        "Legend": [
+          "LegendKey"
+        ]
+      }
+    },
+    {
+      "name": "Cyberpunk 2077: Quest Journal Tracker",
+      "features": {
+        "Quest Category Tabs": [
+          "TabSelector"
+        ],
+        "Quest List": [
+          "ExpandableEntryList"
+        ],
+        "Expandable Entries": [
+          "ExpandableEntryList"
+        ],
+        "Objective Checklist": [
+          "ObjectiveChecklist"
+        ],
+        "Reward Preview": [
+          "StatDetailList"
+        ],
+        "Track Quest Button": [
+          "ToggleButton"
+        ],
+        "Active Quest Highlight": [
+          "ExpandableEntryList"
+        ]
+      }
+    },
+    {
+      "name": "Cyberpunk 2077: Eddies & Street Cred Bar",
+      "features": {
+        "Eddies Balance": [
+          "NumericReadout"
+        ],
+        "Count Animation": [
+          "NumericReadout"
+        ],
+        "Street Cred Level": [
+          "LevelBadge"
+        ],
+        "Cred Progress Bar": [
+          "StatBar"
+        ],
+        "Currency Icon": []
+      }
+    }
+  ],
+  "_meta": {
+    "model": "claude-opus-5",
+    "secs": 76.253,
+    "outTok": 7119,
+    "inTok": 8137,
+    "stop": "end_turn"
+  }
+}

@@ -1,5 +1,5 @@
 // One hoist run through the REAL app code (HOIST_SYSTEM_PROMPT + COMPONENT_PROTOCOL, validateHoist),
-// with the hoist route's config. Usage: node hoist-check.cjs --out=<json>
+// with the hoist route's config. Usage: node hoist-check.cjs --out=<json> [--in=<components json>] [--task=<task>]
 const fs = require("fs"), path = require("path");
 const { load, ROOT } = require("./lib/load.cjs");
 const SK = load(ROOT + "/app/api/SKILLS.ts");
@@ -16,7 +16,7 @@ const client = new Anthropic({ apiKey: env.match(/^\s*CLAUDE_API_KEY\s*=\s*["']?
   const msg = await client.messages.stream({
     model: MODEL, max_tokens: 64000, thinking: { type: "adaptive" }, output_config: { effort: EFFORT },
     system: SK.HOIST_SYSTEM_PROMPT + SK.COMPONENT_PROTOCOL,
-    messages: [{ role: "user", content: `Task: DJ Table\nComponents: ${JSON.stringify(components)}` }],
+    messages: [{ role: "user", content: `Task: ${arg("task", "DJ Table")}\nComponents: ${JSON.stringify(components)}` }],
   }).finalMessage();
   const raw = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("");
   fs.writeFileSync(out + ".raw.txt", raw);

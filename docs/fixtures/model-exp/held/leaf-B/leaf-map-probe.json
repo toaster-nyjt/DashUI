@@ -1,0 +1,92 @@
+{
+  "summary": {
+    "leaf": "docs\\fixtures\\model-exp\\held\\leaf-B\\0.tsx",
+    "renderError": null,
+    "markers": 9,
+    "visibleOnTop": 7,
+    "inBoxButCovered": 2,
+    "outOfBox": 0,
+    "click": {
+      "marker": "q-ripper",
+      "onSelectCalls": [
+        "q-ripper"
+      ],
+      "stateBefore": "{\"state\":\"default\"}",
+      "stateAfter": "{\"state\":\"tracked\"}"
+    }
+  },
+  "before": [
+    {
+      "id": "q-heist",
+      "x": 263,
+      "y": 284,
+      "inBox": true,
+      "onTop": false,
+      "state": "{\"state\":\"tracked\"}"
+    },
+    {
+      "id": "q-ripper",
+      "x": 98,
+      "y": 144,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "q-voodoo",
+      "x": 116,
+      "y": 531,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "q-convoy",
+      "x": 611,
+      "y": 537,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "q-tower",
+      "x": 520,
+      "y": 106,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "ft-1",
+      "x": 189,
+      "y": 81,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "ft-2",
+      "x": 391,
+      "y": 341,
+      "inBox": true,
+      "onTop": false,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "ft-3",
+      "x": 43,
+      "y": 385,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "ft-4",
+      "x": 685,
+      "y": 385,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"locked\"}"
+    }
+  ]
+}

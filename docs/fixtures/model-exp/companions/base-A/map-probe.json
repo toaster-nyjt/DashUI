@@ -1,0 +1,186 @@
+{
+  "dir": "base-A",
+  "renderError": null,
+  "drift": [
+    {
+      "view": "v1-default",
+      "px": [
+        504.2,
+        951.2,
+        1333.2
+      ]
+    },
+    {
+      "view": "v2-zoomed",
+      "px": [
+        510.7,
+        999,
+        987.8
+      ]
+    },
+    {
+      "view": "v3-dragged",
+      "px": [
+        571.6,
+        1010.2,
+        1025.6
+      ]
+    }
+  ],
+  "click": null,
+  "views": [
+    {
+      "name": "v1-default",
+      "view": "{\"center\":{\"x\":0.5,\"y\":0.5},\"zoom\":1}",
+      "markers": [
+        {
+          "id": "m-r1",
+          "region": {
+            "x": 236,
+            "y": 127.5999984741211,
+            "tag": "g"
+          },
+          "marker": {
+            "x": 236,
+            "y": 631.796875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 504.2
+        },
+        {
+          "id": "m-r2",
+          "region": {
+            "x": 488,
+            "y": 163.5999984741211,
+            "tag": "g"
+          },
+          "marker": {
+            "x": 488,
+            "y": 1114.796875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 951.2
+        },
+        {
+          "id": "m-r3",
+          "region": {
+            "x": 358.3999938964844,
+            "y": 379.6000061035156,
+            "tag": "g"
+          },
+          "marker": {
+            "x": 358.390625,
+            "y": 1712.796875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 1333.2
+        }
+      ]
+    },
+    {
+      "name": "v2-zoomed",
+      "view": "{\"center\":{\"x\":0.35,\"y\":0.4},\"zoom\":2.5}",
+      "markers": [
+        {
+          "id": "m-r1",
+          "region": {
+            "x": 290,
+            "y": 124,
+            "tag": "g"
+          },
+          "marker": {
+            "x": 236,
+            "y": 631.796875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 510.7
+        },
+        {
+          "id": "m-r2",
+          "region": {
+            "x": 920,
+            "y": 214,
+            "tag": "g"
+          },
+          "marker": {
+            "x": 488,
+            "y": 1114.796875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 999
+        },
+        {
+          "id": "m-r3",
+          "region": {
+            "x": 596,
+            "y": 754,
+            "tag": "g"
+          },
+          "marker": {
+            "x": 358.390625,
+            "y": 1712.796875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 987.8
+        }
+      ]
+    },
+    {
+      "name": "v3-dragged",
+      "view": "{\"center\":{\"x\":0.41666666666666663,\"y\":0.43333333333333335},\"zoom\":2.5}",
+      "markers": [
+        {
+          "id": "m-r1",
+          "region": {
+            "x": 169.99999046325684,
+            "y": 64.00000762939453,
+            "tag": "g"
+          },
+          "marker": {
+            "x": 236,
+            "y": 631.796875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 571.6
+        },
+        {
+          "id": "m-r2",
+          "region": {
+            "x": 800,
+            "y": 154.00000953674316,
+            "tag": "g"
+          },
+          "marker": {
+            "x": 488,
+            "y": 1114.796875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 1010.2
+        },
+        {
+          "id": "m-r3",
+          "region": {
+            "x": 476,
+            "y": 694,
+            "tag": "g"
+          },
+          "marker": {
+            "x": 358.390625,
+            "y": 1712.796875,
+            "onTop": false,
+            "hitTag": null
+          },
+          "dist": 1025.6
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000,
+      "COMPANIONS": true,
+      "LOG": "cyberpunk.run1.jsonl"
+    },
+    "wall": 57.088,
+    "passedFirstTry": 6,
+    "passed": 6,
+    "types": 6,
+    "totalAttempts": 6,
+    "outTokens": 20656,
+    "cost": 0.753
+  },
+  "results": [
+    {
+      "type": "ActionButton",
+      "attempts": [
+        {
+          "secs": 21.234,
+          "out": 2347,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 21.236,
+      "inTok": 8063,
+      "outTok": 2347,
+      "floor": {
+        "base": [
+          4,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "Tooltip",
+      "attempts": [
+        {
+          "secs": 20.671,
+          "out": 1799,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 20.672,
+      "inTok": 7976,
+      "outTok": 1799,
+      "floor": {
+        "base": [
+          6,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "MapCanvas",
+      "attempts": [
+        {
+          "secs": 39.758,
+          "out": 4139,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 39.759,
+      "inTok": 7869,
+      "outTok": 4139,
+      "floor": {
+        "base": [
+          9,
+          7
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "MapMarker",
+      "attempts": [
+        {
+          "secs": 32.168,
+          "out": 3412,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 32.172,
+      "inTok": 7901,
+      "outTok": 3412,
+      "floor": {
+        "base": [
+          2,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "RouteOverlay",
+      "attempts": [
+        {
+          "secs": 31.389,
+          "out": 3414,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 31.391,
+      "inTok": 7811,
+      "outTok": 3414,
+      "floor": {
+        "base": [
+          6,
+          4
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "ZoomControl",
+      "attempts": [
+        {
+          "secs": 57.01,
+          "out": 5545,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 57.011,
+      "inTok": 7701,
+      "outTok": 5545,
+      "floor": {
+        "base": [
+          2.25,
+          6.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

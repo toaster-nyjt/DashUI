@@ -1,0 +1,100 @@
+{
+  "summary": {
+    "leaf": "docs\\fixtures\\model-exp\\held\\leaf-A\\0.tsx",
+    "renderError": null,
+    "markers": 10,
+    "visibleOnTop": 10,
+    "inBoxButCovered": 0,
+    "outOfBox": 0,
+    "click": {
+      "marker": "q-heist",
+      "onSelectCalls": [
+        "q-heist"
+      ],
+      "stateBefore": "{\"state\":\"tracked\"}",
+      "stateAfter": "{\"state\":\"tracked\"}"
+    }
+  },
+  "before": [
+    {
+      "id": "q-heist",
+      "x": 410,
+      "y": 190,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"tracked\"}"
+    },
+    {
+      "id": "q-ghost",
+      "x": 110,
+      "y": 122,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "q-riptide",
+      "x": 46,
+      "y": 453,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "q-chrome",
+      "x": 337,
+      "y": 428,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "q-blackwall",
+      "x": 656,
+      "y": 409,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "q-jade",
+      "x": 683,
+      "y": 128,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "ft-01",
+      "x": 219,
+      "y": 72,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "ft-02",
+      "x": 510,
+      "y": 272,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "ft-03",
+      "x": 256,
+      "y": 509,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    },
+    {
+      "id": "ft-04",
+      "x": 756,
+      "y": 272,
+      "inBox": true,
+      "onTop": true,
+      "state": "{\"state\":\"default\"}"
+    }
+  ]
+}
