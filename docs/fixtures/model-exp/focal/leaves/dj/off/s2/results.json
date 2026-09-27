@@ -1,0 +1,65 @@
+{
+  "config": {
+    "budget": true,
+    "MODEL": "claude-opus-5",
+    "THINKING": "adaptive",
+    "EFFORT": "low"
+  },
+  "wall": 64.356,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "DJ Table: Deck A Player (Left)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 61.119,
+      "outTok": 5938,
+      "codeTok": 4361,
+      "thinkTok": 1577,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.5 + readouts 2.5 + gap .75 + jog 17 + gap .75 + transport 3 + gap .75 + pads 4 + gap .5 + loop 2.25 + padding 1.5 = 35.5 ≤ 41.6",
+        "// BUDGET width: pad 0.75 + deck column 34 + gap .75 + rail 11 + pad .75 = 47.25 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 1,
+      "leaf": "DJ Table: Central Mixer",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 55.224,
+      "outTok": 5223,
+      "codeTok": 3912,
+      "thinkTok": 1311,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.5 + [title 1.5 + gain 3.25 + eq 9.75 + filter 3.25 + faderRow 8.0 + cue 1.75 + gaps 2.4 = 29.9] + crossfader strip 5.0 + padding 1.0 = 38.4 ≤ 41.6",
+        "// BUDGET width: pad 0.75 + chA (fader 2.25 + meter 1.5 + gap 0.5 = 11 flex) + gap 0.75 + center 12 + gap 0.75 + chB 11 + pad 0.75 = 37 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 2,
+      "leaf": "DJ Table: Deck B Player (Right)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 64.177,
+      "outTok": 6017,
+      "codeTok": 4269,
+      "thinkTok": 1748,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 3 + strip 2.25 + gap .5 + body(jog 16 / fader 16) + gap .5 + pads 3 + gap .5 + loop 2.5 + padding 1 = 29.25 ≤ 41.6",
+        "// BUDGET width: pad .75 + pitch col 5 + gap .75 + jog 16 + gap .75 + transport 9 + pad .75 = 33 ≤ 52.0"
+      ],
+      "postProcessed": true
+    }
+  ]
+}

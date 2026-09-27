@@ -1,0 +1,24 @@
+{
+  "Fader": {
+    "base": [
+      2,
+      6
+    ],
+    "orientation:horizontal": [
+      6,
+      2
+    ]
+  },
+  "JogWheel": {
+    "base": [
+      6,
+      6
+    ]
+  },
+  "WaveformLane": {
+    "base": [
+      12,
+      3
+    ]
+  }
+}

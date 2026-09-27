@@ -35,12 +35,13 @@ Both flows converge on the same endpoint: a box's component is resolved to JSON 
   | layout | `claude-opus-4-8` | default | 16000 | — |
   | style | `claude-opus-4-8` | default | 4000 | — |
   | hoist | `claude-opus-5` | adaptive / `low` | 64000 | once on Opus 4.8, adaptive / `low` |
+  | focal | `claude-opus-5` | adaptive / `low` | 8000 | once on Opus 4.8, adaptive / `low` |
   | primitives | `claude-opus-5` | adaptive / `low` | 64000 | once on Opus 4.8, thinking off / `max` |
   | generate (leaves) | `claude-opus-5` | adaptive / `low` | 64000 | once on Opus 4.8, thinking off / `max` |
   | path | `claude-opus-4-8` | thinking off / `max` | 32000 | — |
   | spec | `claude-sonnet-4-6` | default | 16000 | — |
 
-  generate streams to the client; hoist, primitives and path stream internally (`finalMessage()`); plan, layout, style and spec are non-streaming. Every route reads **text blocks only**; thinking blocks are never parsed as output.
+  generate streams to the client; hoist, primitives and path stream internally (`finalMessage()`); plan, layout, style, focal and spec are non-streaming. Every route reads **text blocks only**; thinking blocks are never parsed as output.
 - **Primitive pipeline is the latest major feature — see §14.** A generated UI now hoists a shared library of primitive components, generates each once, and builds its leaves from them. Dev runs log every stage to `logs/task-<taskID>.jsonl` (§13).
 - **Comment style.** Keep code comments only as long as necessary; put rationale,
   background, and design context in this doc, not in long inline comments.
@@ -83,16 +84,18 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
    - **HOIST** — `fetchValidHoist` → `POST /api/hoist` → `HoistResult`: the UI's shared
      primitive library plus each feature's primitive types (§14). Validated by
      `validateHoist` and retried. `null` after the retries → this UI is built without
-     primitives (hand-built leaves); the UI is never aborted.
+     primitives (hand-built leaves); the UI is never aborted. As soon as the hoist returns,
+     **FOCAL** (`fetchValidFocal` → `POST /api/focal`) picks the 1 or 2 library types the whole UI
+     is recognized by (§14), still inside this parallel stage.
    - **LAYOUT** — tile the region interior `w × h`. A single component skips the route and
      fills the box; multiple components go through `fetchValidLayout` → `POST /api/layout`
      → `Placement[]` (LOCAL coords), validated and retried.
 3. **REGISTER** — `setComponentRegistry(prev => [...prev, ...defs])` and
    `setStyleSpec(prev => ({ ...prev, [taskRequest.id]: style }))`. The await in step 4 lets
    both commit *before* any box is created.
-4. **PRIMITIVES** — `fetchValidPrimitives` → ONE `POST /api/primitives {task, hoist, style}`,
+4. **PRIMITIVES** — `fetchValidPrimitives` → ONE `POST /api/primitives {task, hoist, style, focal}`,
    which generates every library type in parallel on the server, each checked and retried
-   (§14). Result stored as `primitiveSpec[taskID]` (`PrimitiveSet`: hoist, code, floors). A
+   (§14). Result stored as `primitiveSpec[taskID]` (`PrimitiveSet`: hoist, code, floors, focal). A
    type that never passes is left out, and its features are hand-built.
 5. **PLACE** — `runUIGeneration` *returns* ONE parent group box (placements become its
    `children`, carrying local coords + `autoName`); the effect appends it to `elementArr`,
@@ -109,6 +112,7 @@ User submits task in Taskbar → `page.tsx` sets `taskRequest {prompt, id}` →
 | plan | `validateConnectivity` (every connection names a real sibling, never itself) | 3 (`PLAN_RETRIES`) | UI aborted (no boxes) |
 | style | `validateStyleSheet` (appearance only; chrome height is the only size) | 3 (`STYLE_RETRIES`) | last sheet used anyway |
 | hoist | `validateHoist` (every component/feature covered verbatim, types valid/unique/used, JSX-safe names, held names real, holder states its unit, every held type has a placer) | 3 (`HOIST_RETRIES`); refusal → once on Opus 4.8 | UI built by hand (no primitives) |
+| focal | `validateFocal` (1 or 2 distinct library type names); a held type is repaired to its holder | 3 (`FOCAL_RETRIES`); refusal → once on Opus 4.8 | no focal types; every prompt as without them |
 | layout | `validateLayout` (exact tiling: no gaps, overlaps, out-of-bounds) | 3 (`LAYOUT_RETRIES`) | UI aborted |
 | primitives (each type) | `repairSyntax` first, then `checkPrimitive`: compiles, one `export function <Type>`, no imports/default export, prefixed names, no hard-coded SVG ids / ResizeObserver / redefined FitText / unanchored cq units / % padding, valid floor (`parsePrimitiveFloor`), and `checkPlacement` for holders and held types | 3 (`PRIMITIVE_RETRIES`); refusal → once on Opus 4.8 | type dropped; its features become `null` (hand-built) |
 | leaves | `repairSyntax` (compile guarantee), then `sanitizeLeaf` (post-processor) | 1 + one regeneration if repair can't make it compile; refusal → once on Opus 4.8 | logged `syntaxStillBroken` |
@@ -193,6 +197,7 @@ which must **never render in any form**. This is what enforces `GENERATE_SYSTEM_
 
 **Primitive pipeline (most recent work, §14)**
 - `app/api/hoist/route.ts` — `POST /api/hoist`: resolved components → `HoistResult`.
+- `app/api/focal/route.ts` — `POST /api/focal`: task + component roles + hoist → `{ focal }`, the 1–2 types the UI is recognized by.
 - `app/api/primitives/route.ts` — `POST /api/primitives`: every library type generated in
   parallel on the server; returns `{ code, floors }` for the types that passed.
 - `app/api/log/route.ts` — `POST /api/log` (dev only): client verdicts into the run log (§13).
@@ -931,9 +936,10 @@ Every generated UI writes one file, `logs/task-<taskID>.jsonl` (gitignored), wit
 |---|---|
 | `run:start` / `run:plan` / `run:style\|hoist\|layout` / `run:primitives` / `run:boxes` | Task, bounds, elapsed time per stage, resolved defs, placements, leaf keys |
 | `plan`, `layout`, `style`, `hoist` | Full model output (defs, placements, sheet, library + feature map); raw text when it didn't parse; tokens, time |
-| `primitive` | Per type per attempt (written by `/api/primitives`): contract, used-by, companions, `syntaxRepairs`, `holds` (types it holds) / `heldBy` (its holders), check errors, parsed floor, code, model (shows a refusal fallback), tokens, time |
-| `primitives:done` | Usable and dropped types, `held` (holder → held types), attempts per type, all floors, stage time |
-| `leaf:start` | Resolved spec (mapped features, `[]` structural, `null` hand-built), prompt mode (primitives only / + hand-built / base), library types, `held` (its library's holders), floors, box size, the full system prompt |
+| `primitive` | Per type per attempt (written by `/api/primitives`): contract, used-by, companions, `focal` (true for a focal type), `syntaxRepairs`, `holds` (types it holds) / `heldBy` (its holders), check errors, parsed floor, code, model (shows a refusal fallback), tokens, time |
+| `focal` / `focal:valid|rejected|exhausted` | The picks (and held-type repairs), model, tokens, time |
+| `primitives:done` | Usable and dropped types, `focal`, `held` (holder → held types), attempts per type, all floors, stage time |
+| `leaf:start` | Resolved spec (mapped features, `[]` structural, `null` hand-built), prompt mode (primitives only / + hand-built / base), library types, `held` (its library's holders), `focal` (the UI's focal types this leaf uses), floors, box size, the full system prompt |
 | `leaf:done` | Raw output, final code, what the post-processor removed and added, syntax repairs / regeneration (`syntaxRepairs`, `syntaxRegenerated`, `syntaxStillBroken`), stop reason, refusal fallback, tokens, time |
 | `path` | Channels, input code, wired output |
 
@@ -973,9 +979,28 @@ Built 2026-09-24/25 from `docs/PRIMITIVE_HOIST_PLAN (1).md` (Feature 1). The pla
    - the holder gets **HELD LAYERS**: one layer inside its pan/zoom transform that grid-stacks each child as a full-size layer, and is never pointer-events-none;
    - each held type gets **HELD**: its outermost element is pointer-events-none, and operable parts set `pointerEvents: "auto"` and stop propagation on pointerdown;
    - the leaf's prompt gets **HELD LAYERS** too: pass held children directly, with no wrapper.
+     - **Known tension, kept on purpose (2026-09-27):** HELD LAYERS says held types "need no slot of their own", while PRIMITIVE SLOTS says every primitive needs a definite box, and the SIZE BUDGET still lists held types' floors. Held-ness belongs to a holder's contract, not to the type: a type can be held on a surface in one component and used on its own in another. So its floor stays in the budget, and the slot rule still covers it outside a surface. Leaves follow HELD LAYERS in practice: none of the 9 map leaves since the held-type change wrapped markers or budgeted them.
    - the holder's description states its coordinate unit (e.g. normalized 0-1) and how children are placed: by their own position prop, or matched by id to the surface's data. `heldPlacement` decides who places each held type from the contracts alone (`hasCoordinates`: its own coordinates → self; else the surface, which then needs a data prop of ids with x/y). The holder and the held type get the matching sentence as a switch, so they can't disagree. `validateHoist` rejects a holder with no stated unit (`surfaceUnit` reads it from the description), or a held type nothing places. `checkPlacement` (`app/utils/placementCheck.ts`, run by `checkPrimitive`) renders the primitive with stub hooks at a probe position and rejects one whose children or position don't land where the unit says, or whose children sit under pointer-events-none.
 
    Why: in-flow `h-full w-full` roots stacked the map's markers out of view, and the map's pan handler captured their clicks. Without a holder, every prompt is unchanged. Evidence: `docs/fixtures/model-exp/HELD_PRIMITIVES_COMPARISON.md`.
+
+   **Focal types.** As soon as the hoist returns, the focal route picks the 1 or 2 library types that pass two tests:
+   - PURPOSE: the UI's main job is done through it or shown on it.
+   - IDENTITY: it is visually central to the UI's core identity, the element that would be in the UI's icon.
+
+   The route uses `FOCAL_SYSTEM_PROMPT` on Opus 5 `low` and takes about 1.5s. `validateFocal` accepts 1–2 exact type names and repairs a held type to its holder. The picks are switches, so with none, every prompt is byte-identical:
+   - A focal primitive gets `PRIM_INTRO_FOCAL` at the end of the opening paragraph: it's a focal point, it fills a large space, build it at the highest detail.
+   - A leaf that uses a focal type gets three lines:
+     - at the end of its opening: "X is a FOCAL POINT of the whole UI: render the other parts smaller and make X the largest element in this component — its size dominates the layout, make it MASSIVE" (reworded 2026-09-27 from "X as big as possible"; not yet measured);
+     - a PRIMITIVE FLOORS clause: X is never the one compacted, reduced or dropped;
+     - a SIZE BUDGET line: budget everything else first; X takes what remains.
+
+   What to expect:
+   - The model always uses both picks. It picks the JogWheel every time on DJ and the map on Cyberpunk, but the second pick is often a plain control (Fader, StatBar).
+   - Focal primitives write 12–54% more code and take 13–126% longer (a Fader, with one retry), so a focal type that was already slow lengthens the primitive stage: 44s → 92s on DJ, 44s → 62s on Cyberpunk. Leaves are unaffected (−29% to +4% code).
+   - Focal JogWheels render at about 2× their area in the decks.
+
+   Evidence: `docs/fixtures/model-exp/FOCAL_PRIMITIVES.md`.
 3. **Leaves** (`/api/generate`, built by `buildLeafSystem`). `resolveComponent(…, primitiveSpec[taskID])` sends `features` as `{ feature: types | [] | null }` via `leafFeatures`:
    - **`null`** = build it yourself. That covers a feature the hoist never saw (toggled on later, user-added) or one whose type was dropped.
    - `needsHandBuiltRules` is true only when some feature is `null` (or the list is plain), and only then does the prompt include the hand-built-only rules and `sizeNote` sentences.
@@ -988,10 +1013,12 @@ Built 2026-09-24/25 from `docs/PRIMITIVE_HOIST_PLAN (1).md` (Feature 1). The pla
    - **PRIMITIVE SLOTS:** every primitive gets a definite box of at least its floor, and there's no min-zero or overflow on any box around a primitive (`overflow-clip` for rounded corners).
    - **PRIMITIVE FLOORS:** budget first; if it doesn't fit, compact → fewer copies → scroll a run of repeated items → drop (never a connectivity-critical control).
 
+   A leaf sees only its **own types**: the types its features map to, plus the types its own surfaces hold. Both the PRIMITIVE LIBRARY block and the SIZE BUDGET are limited to them (`buildLeafSystem`). They used to list the whole library, with an invitation to reuse other types for incidental elements; 9 of 136 logged leaves did, all for small status lamps or meters.
+
    With `LEAF_SIZE_BUDGET` on (current), a **SIZE BUDGET** block ends the prompt, holding:
    - the box in rem;
    - the chrome heights from the style sheet (`parseChromeHeights`);
-   - this leaf's own types' floors, then the rest of the library;
+   - the floors of this leaf's own types.
    - a request to write the sum as `// BUDGET height: … ≤ H` / `// BUDGET width: … ≤ W` comments.
 4. **Compile guarantee** (`app/utils/syntaxRepair.ts`, after the stream ends, before the post-processor). A leaf that doesn't compile is repaired deterministically (misquoted `url(#id)` references, or one missing/stray token at the first error, kept only if the whole file then compiles). If that fails, it is regenerated once with the compile error fed back. Primitives get the same repair before `checkPrimitive`, so these slips no longer cost a retry. Evidence: `docs/fixtures/model-exp/SYNTAX_REPAIR.md`.
 

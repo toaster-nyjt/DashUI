@@ -186,11 +186,11 @@ export default function GeneratedBox({ props, path, selectionPath, setSelectionP
     taskID !== undefined ? styleSpec[taskID] : undefined;
 
   // This box's UI primitives (undefined for manual boxes and UIs without primitives), and
-  // the part of them the generate route needs: the usable library + floors.
+  // the part of them the generate route needs: the usable library, floors and focal types.
   const resolvePrims = (taskID? : number) =>
     taskID !== undefined ? primitiveSpec[taskID] : undefined;
   const leafPrims = (prims? : PrimitiveSet) : LeafPrimitives | undefined =>
-    prims && { library: leafLibrary(prims), floors: prims.floors };
+    prims && { library: leafLibrary(prims), floors: prims.floors, focal: prims.focal };
 
   // Finds and generates existing component in the registry or generates the ComponentDef for a custom component, sets the instance
   const handleUpdateNameAndSend = async (name : string, taskID? : number) => {

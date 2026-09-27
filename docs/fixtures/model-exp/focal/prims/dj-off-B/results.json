@@ -1,0 +1,95 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000,
+      "COMPANIONS": true,
+      "FOCAL": [],
+      "LOG": "../../logs/task-1790494291391.jsonl"
+    },
+    "wall": 44.605,
+    "passedFirstTry": 3,
+    "passed": 3,
+    "types": 3,
+    "totalAttempts": 3,
+    "outTokens": 11513,
+    "cost": 0.41
+  },
+  "results": [
+    {
+      "type": "Fader",
+      "attempts": [
+        {
+          "secs": 44.604,
+          "out": 4187,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 44.605,
+      "inTok": 8438,
+      "outTok": 4187,
+      "floor": {
+        "base": [
+          2,
+          6
+        ],
+        "orientation:horizontal": [
+          6,
+          2
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "JogWheel",
+      "attempts": [
+        {
+          "secs": 27.443,
+          "out": 3021,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 27.443,
+      "inTok": 8187,
+      "outTok": 3021,
+      "floor": {
+        "base": [
+          6,
+          6
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "WaveformLane",
+      "attempts": [
+        {
+          "secs": 42.385,
+          "out": 4305,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 42.386,
+      "inTok": 7779,
+      "outTok": 4305,
+      "floor": {
+        "base": [
+          10,
+          2.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000,
+      "COMPANIONS": true,
+      "FOCAL": [],
+      "LOG": "../../logs/task-1790493337400.jsonl"
+    },
+    "wall": 45.312,
+    "passedFirstTry": 2,
+    "passed": 2,
+    "types": 2,
+    "totalAttempts": 2,
+    "outTokens": 6790,
+    "cost": 0.249
+  },
+  "results": [
+    {
+      "type": "StatBar",
+      "attempts": [
+        {
+          "secs": 21.355,
+          "out": 2107,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 21.356,
+      "inTok": 8029,
+      "outTok": 2107,
+      "floor": {
+        "base": [
+          7,
+          1.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "MapCanvas",
+      "attempts": [
+        {
+          "secs": 45.276,
+          "out": 4683,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 45.276,
+      "inTok": 7796,
+      "outTok": 4683,
+      "floor": {
+        "base": [
+          12,
+          9
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+s5off  1790347489002   DJ Table       [JogWheel, Waveform] hit 1/1 1.6s
+s5off  1790351266686   DJ Table       [WaveformLane, Fader] hit 0/1 EXTRA Fader 1.6s
+s5off  1790347489002   DJ Table       [Waveform, Fader] hit 0/1 EXTRA Fader 1.7s
+s5off  1790347150340   DJ Table       [JogWheel, WaveformDisplay] hit 1/1 1.7s
+s5off  1790351266686   DJ Table       [WaveformLane, Fader] hit 0/1 EXTRA Fader 1.7s
+s5off  1790347150340   DJ Table       [JogWheel, WaveformDisplay] hit 1/1 1.8s
+s5off  1790351266686b  DJ Table       [JogWheel, WaveformLane] hit 1/1 1.3s
+s5off  1790351266686b  DJ Table       [JogWheel, Fader] hit 1/1 EXTRA Fader 1.4s
+s5off  1790356815842   DJ TABLE       [JogWheel, Fader] hit 1/1 EXTRA Fader 1.4s
+s5off  1790357285132   aerospace dash [AttitudeIndicator] hit 1/1 1.7s
+s5off  1790357285132   aerospace dash [AttitudeIndicator] hit 1/1 1.7s
+s5off  1790357767270   DJ Table       [JogWheel, WaveformLane] hit 1/1 1.3s
+s5off  1790359648823   DJ Table       [JogWheel, Fader] hit 1/1 EXTRA Fader 1.4s
+s5off  1790357767270   DJ Table       [JogWheel, WaveformLane] hit 1/1 1.5s
+s5off  1790356815842   DJ TABLE       [JogWheel, Fader] hit 1/1 EXTRA Fader 2.9s
+s5off  1790359648823   DJ Table       [JogWheel, Fader] hit 1/1 EXTRA Fader 1.3s
+s5off  1790360963510   Radio          [RotaryDial, TextReadout] hit 1/1 EXTRA TextReadout 1.7s
+s5off  1790365640105   Cyberpunk 2077 [MapCanvas, ItemGrid] hit 1/2 EXTRA ItemGrid 1.4s
+s5off  1790365640105   Cyberpunk 2077 [MapCanvas, MapMarker] hit 1/2 EXTRA MapMarker 1.3s
+s5off  1790475795579   Cyberpunk 2077 [MapCanvas, CharacterPortrait] hit 2/2 1.3s
+s5off  1790475795579   Cyberpunk 2077 [MapCanvas, CharacterPortrait] hit 2/2 1.3s
+s5off  1790360963510   Radio          [RotaryDial, FrequencyScale] hit 1/1 1.8s
+s5off  1790475795579b  Cyberpunk 2077 [MapCanvas, StatBar] hit 1/2 EXTRA StatBar 1.3s
+s5off  1790488443585   Cyberpunk 2077 [MapCanvas, StatBar] hit 1/2 EXTRA StatBar 1.3s
+s5off  1790488443585   Cyberpunk 2077 [StatBar, PortraitDisplay] hit 1/2 EXTRA StatBar 1.3s
+s5off  1790475795579b  Cyberpunk 2077 [MapCanvas, StatBar] hit 1/2 EXTRA StatBar 1.4s
+s5off  1790488443585b  Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.4s
+s5off  1790488443585b  Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.3s
+s5off  1790491861915   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/1 EXTRA StatBar 1.4s
+s5off  1790492653239   Cyberpunk 2077 [StatBar, MapSurface] hit 1/1 EXTRA StatBar 1.2s
+s5off  1790491861915   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/1 EXTRA StatBar repair MapMarker->MapCanvas 1.3s
+s5off  1790493003572   Cyberpunk 2077 [EquipmentSlot, MapCanvas] hit 1/1 EXTRA EquipmentSlot 1.3s
+s5off  1790492653239   Cyberpunk 2077 [StatBar, MapSurface] hit 1/1 EXTRA StatBar 1.6s
+s5off  1790493003572   Cyberpunk 2077 [EquipmentSlot, MapCanvas] hit 1/1 EXTRA EquipmentSlot 1.4s
+s5off  1790493337400   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.2s
+s5off  1790494291391   DJ Table       [JogWheel, WaveformLane] hit 1/1 1.2s
+s5off  1790493337400   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.3s
+s5off  1790494291391   DJ Table       [JogWheel, WaveformLane] hit 1/1 1.3s
+o5low  1790347150340   DJ Table       [JogWheel, WaveformDisplay] hit 1/1 1.5s
+o5low  1790347489002   DJ Table       [JogWheel, Waveform] hit 1/1 1.3s
+o5low  1790347150340   DJ Table       [JogWheel, WaveformDisplay] hit 1/1 1.8s
+o5low  1790347489002   DJ Table       [JogWheel, Waveform] hit 1/1 1.3s
+o5low  1790351266686   DJ Table       [JogWheel, WaveformLane] hit 1/1 1.4s
+o5low  1790351266686   DJ Table       [JogWheel, WaveformLane] hit 1/1 1.9s
+o5low  1790356815842   DJ TABLE       [JogWheel, Fader] hit 1/1 EXTRA Fader 1.9s
+o5low  1790351266686b  DJ Table       [JogWheel, Fader] hit 1/1 EXTRA Fader 2.2s
+o5low  1790357285132   aerospace dash [AttitudeIndicator, VerticalTape] hit 1/1 EXTRA VerticalTape 1.4s
+o5low  1790351266686b  DJ Table       [JogWheel, Fader] hit 1/1 EXTRA Fader 2.6s
+o5low  1790356815842   DJ TABLE       [JogWheel, Fader] hit 1/1 EXTRA Fader 2.0s
+o5low  1790357285132   aerospace dash [AttitudeIndicator, VerticalTape] hit 1/1 EXTRA VerticalTape 1.5s
+o5low  1790359648823   DJ Table       [JogWheel, Fader] hit 1/1 EXTRA Fader 1.2s
+o5low  1790359648823   DJ Table       [JogWheel, Fader] hit 1/1 EXTRA Fader 1.3s
+o5low  1790357767270   DJ Table       [JogWheel, WaveformLane] hit 1/1 1.6s
+o5low  1790357767270   DJ Table       [JogWheel, WaveformLane] hit 1/1 1.8s
+o5low  1790360963510   Radio          [FrequencyScale, RotaryDial] hit 1/1 1.4s
+o5low  1790360963510   Radio          [FrequencyScale, RotaryDial] hit 1/1 1.4s
+o5low  1790365640105   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.3s
+o5low  1790365640105   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.4s
+o5low  1790475795579   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.4s
+o5low  1790475795579   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.3s
+o5low  1790475795579b  Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.4s
+o5low  1790475795579b  Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.4s
+o5low  1790488443585   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.3s
+o5low  1790488443585b  Cyberpunk 2077 [StatBar, BodyDiagram] hit 1/2 EXTRA StatBar repair EquipSlot->BodyDiagram 1.3s
+o5low  1790488443585   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 1.3s
+o5low  1790488443585b  Cyberpunk 2077 [StatBar, BodyDiagram] hit 1/2 EXTRA StatBar repair EquipSlot->BodyDiagram 1.3s
+o5low  1790491861915   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/1 EXTRA StatBar 1.3s
+o5low  1790491861915   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/1 EXTRA StatBar 1.4s
+o5low  1790493003572   Cyberpunk 2077 [MapCanvas, StatBar] hit 1/1 EXTRA StatBar 1.3s
+o5low  1790492653239   Cyberpunk 2077 [StatBar, MapSurface] hit 1/1 EXTRA StatBar 1.7s
+o5low  1790492653239   Cyberpunk 2077 [StatBar, MapSurface] hit 1/1 EXTRA StatBar 1.5s
+o5low  1790493003572   Cyberpunk 2077 [MapCanvas, StatBar] hit 1/1 EXTRA StatBar 1.6s
+o5low  1790493337400   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 2.0s
+o5low  1790494291391   DJ Table       [JogWheel, Fader] hit 1/1 EXTRA Fader 1.3s
+o5low  1790493337400   Cyberpunk 2077 [StatBar, MapCanvas] hit 1/2 EXTRA StatBar 2.8s
+o5low  1790494291391   DJ Table       [JogWheel, Fader] hit 1/1 EXTRA Fader 2.0s
+
+cfg     n  valid  fullHit  withExtras  borderline  meanPicks  meanSecs  p90Secs  maxSecs  retries
+s5off  38     38       25          25          11       1.95       1.5      1.7      2.9  1
+o5low  38     38       26          28           8       2.00       1.6      2.0      2.8  0

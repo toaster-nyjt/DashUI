@@ -6,6 +6,7 @@
 //   [--log=<task jsonl> [--run=<n>]: task, hoist and style from one logged run instead of the DJ fixtures]
 //   [--hoist=<json>: use this hoist instead (e.g. a patched one)]
 //   [--companions=1: USED WITH + prompt switches, as the route sends them; 0 = the old request]
+//   [--focal=Type,Type: these types get the FOCAL switch (needs --companions=1)]
 const fs = require("fs"), path = require("path");
 const { load, ROOT } = require("./lib/load.cjs");
 const SK = load(ROOT + "/app/api/SKILLS.ts");
@@ -21,7 +22,7 @@ const MAX_TOKENS = +arg("max-tokens", "16000");
 const RETRIES = 3;
 const PRICE = { in: 5 / 1e6, out: 25 / 1e6 }; // Opus 4.8 and Opus 5: $5 / $25 per MTok
 
-const LOG = arg("log"), COMPANIONS = arg("companions", "0") === "1";
+const LOG = arg("log"), COMPANIONS = arg("companions", "0") === "1", FOCAL = arg("focal", "").split(",").filter(Boolean);
 // One log can hold several runs of a taskID; --run=<n> (1-based, default last) picks one.
 const runs = LOG ? fs.readFileSync(LOG, "utf8").trim().split("\n").map(JSON.parse)
   .reduce((a, e) => (e.stage === "run:start" ? a.push([e]) : a.at(-1)?.push(e), a), []) : [];
@@ -34,7 +35,7 @@ const style = logged ? logged.find((e) => e.stage === "style").style
 const usage = derivePrimitiveUsage(hoist);
 const companions = COMPANIONS ? derivePrimitiveCompanions(hoist) : {};
 // Same system prompt the primitive route builds.
-const systemFor = (prim) => SK.buildPrimitiveSystemPrompt(COMPANIONS ? primitivePromptSwitches(prim, companions[prim.type] ?? [], hoist.library) : { companions: false, holds: false, heldBy: [], places: [], selfPlaced: false })
+const systemFor = (prim) => SK.buildPrimitiveSystemPrompt(COMPANIONS ? primitivePromptSwitches(prim, companions[prim.type] ?? [], hoist.library, FOCAL) : { companions: false, holds: false, heldBy: [], places: [], selfPlaced: false })
   + `\n\nVISUAL GUIDELINES — follow these guidelines so this primitive matches the rest of its UI:\n${style}`;
 
 const env = fs.readFileSync(ROOT + "/.env.local", "utf8");
@@ -42,7 +43,7 @@ const client = new Anthropic({ apiKey: env.match(/^\s*CLAUDE_API_KEY\s*=\s*["']?
 
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
-  console.log(`config: ${MODEL} thinking=${THINKING} effort=${EFFORT} max_tokens=${MAX_TOKENS} companions=${COMPANIONS} -> ${OUT}`);
+  console.log(`config: ${MODEL} thinking=${THINKING} effort=${EFFORT} max_tokens=${MAX_TOKENS} companions=${COMPANIONS} focal=${FOCAL.join(",") || "-"} -> ${OUT}`);
   const t0 = Date.now();
   const only = arg("only", "").split(",").filter(Boolean);
   const results = await Promise.all(hoist.library.filter((t) => !only.length || only.includes(t.type)).map(async (prim) => {
@@ -86,7 +87,7 @@ const client = new Anthropic({ apiKey: env.match(/^\s*CLAUDE_API_KEY\s*=\s*["']?
   const wall = (Date.now() - t0) / 1000;
   const cost = results.reduce((a, r) => a + r.inTok * PRICE.in + r.outTok * PRICE.out, 0);
   const summary = {
-    config: { MODEL, THINKING, EFFORT, MAX_TOKENS, COMPANIONS, LOG }, wall,
+    config: { MODEL, THINKING, EFFORT, MAX_TOKENS, COMPANIONS, FOCAL, LOG }, wall,
     passedFirstTry: results.filter((r) => r.firstTry).length, passed: results.filter((r) => r.passed).length,
     types: results.length, totalAttempts: results.reduce((a, r) => a + r.attempts.length, 0),
     outTokens: results.reduce((a, r) => a + r.outTok, 0), cost: +cost.toFixed(3),

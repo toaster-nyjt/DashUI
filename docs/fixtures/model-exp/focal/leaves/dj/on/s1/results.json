@@ -1,0 +1,65 @@
+{
+  "config": {
+    "budget": true,
+    "MODEL": "claude-opus-5",
+    "THINKING": "adaptive",
+    "EFFORT": "low"
+  },
+  "wall": 61.519,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "DJ Table: Deck A Player (Left)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 58.901,
+      "outTok": 5584,
+      "codeTok": 4145,
+      "thinkTok": 1439,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 3.5 + gap 0.75 + main 26.35 (jog block) + gap 0.75 + pads 4.5 + gap 0.5 + loop 2.5 + padding 1.5 = 40.35 ≤ 41.6",
+        "// BUDGET width: pad 1.5 + jog column 34 + gap 0.75 + fader column 13 = 49.25 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 1,
+      "leaf": "DJ Table: Central Mixer",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 61.32,
+      "outTok": 5412,
+      "codeTok": 3526,
+      "thinkTok": 1886,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.5 + body(ch label 1.5 + knobstack 5×(2.5+0.7)=16 + gaps 1) 18.5 + crossfader 5 + padding 1 = 27.0 ≤ 41.6  (fader takes remaining height inside body)",
+        "// BUDGET width: chA 15 + center 12 + chB 15 + gaps 1 + padding 1 = 44.0 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 2,
+      "leaf": "DJ Table: Deck B Player (Right)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 57.492,
+      "outTok": 5730,
+      "codeTok": 4748,
+      "thinkTok": 982,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 3 + readouts 3.25 + gaps 1 + body(jog 20 + gap .5 + transport 3) 23.5 + padding .75 = 31.5 ≤ 41.6",
+        "// BUDGET width: pad .75 + pads col 15 + gap .5 + center 26 + gap .5 + fader col 4.5 + pad .75 = 48 ≤ 52.0"
+      ],
+      "postProcessed": true
+    }
+  ]
+}

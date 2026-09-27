@@ -16,12 +16,18 @@ export function buildLeafSystem({ spec, boxSize, style, primitives, budget }: {
   style?: string;
   primitives?: LeafPrimitives;
   budget: boolean;
-}): { system: string; hasLibrary: boolean; handBuilt: boolean } {
+}): { system: string; hasLibrary: boolean; handBuilt: boolean; focal: string[]; library: string[] } {
   // Primitive leaf = a library is present. handBuilt = it still builds some feature itself
   // (a plain feature list, or any feature mapped to null), which keeps the hand-built rules.
   const hasLibrary = !!primitives?.library.length;
   const handBuilt = needsHandBuiltRules(spec.features ?? [], hasLibrary);
   const withBudget = budget && hasLibrary && !!boxSize;
+  // The leaf sees only its own types: those its features map to, plus the types its own surfaces
+  // hold. Its focal types are the UI's focal types among them.
+  const mine = new Set(Array.isArray(spec.features) ? [] : Object.values(spec.features ?? {}).flatMap((t) => t ?? []));
+  for (const t of primitives?.library ?? []) if (mine.has(t.type)) heldTypeNames(t).forEach((h) => mine.add(h));
+  const library = (primitives?.library ?? []).filter((t) => mine.has(t.type));
+  const focal = hasLibrary ? (primitives!.focal ?? []).filter((t) => mine.has(t)) : [];
 
   // A box that belongs to a generated UI carries that UI's coherent style; use it
   // in place of the default style direction so all its components match. Anything
@@ -54,23 +60,21 @@ export function buildLeafSystem({ spec, boxSize, style, primitives, budget }: {
         .join("\n") + (withBudget ? "" : sizeNoteRem(boxSize))
     : baseSizeNote;
 
-  // SIZE BUDGET: this leaf's own types first (from its feature map), then the rest.
+  // SIZE BUDGET: the floors of this leaf's own types.
   let budgetBlock = "";
   if (withBudget) {
     const floors = primitives!.floors;
-    const mine = new Set(Array.isArray(spec.features) ? [] : Object.values(spec.features ?? {}).flatMap((t) => t ?? []));
-    const pick = (keep: boolean) => primitives!.library.map((t) => t.type)
-      .filter((t) => floors[t] && mine.has(t) === keep).map((t) => [t, floors[t]] as [string, PrimitiveFloor]);
-    budgetBlock = sizeBudgetBlock(boxSize!, pick(true), pick(false), parseChromeHeights(style));
+    const used = library.filter((t) => floors[t.type]).map((t) => [t.type, floors[t.type]] as [string, PrimitiveFloor]);
+    budgetBlock = sizeBudgetBlock(boxSize!, used, parseChromeHeights(style), focal);
   }
 
   // QA/max-perf preamble + main instructions + component-JSON protocol + primitive library
   // (if any) + per-UI (or fallback) style + per-box size context + size budget (if any)
   const system = GENERATE_QA_DIRECTIVE + "\n\n"
-    + buildGenerateSystemPrompt({ primitives: hasLibrary, handBuilt, budget: withBudget, holders: !!primitives?.library.some((t) => heldTypeNames(t).length) })
+    + buildGenerateSystemPrompt({ primitives: hasLibrary, handBuilt, budget: withBudget, holders: library.some((t) => heldTypeNames(t).length), focal })
     + buildComponentProtocol(hasLibrary, handBuilt)
-    + (hasLibrary ? primitiveLibraryBlock(primitives!.library, primitives!.floors, withBudget) : "")
+    + (hasLibrary ? primitiveLibraryBlock(library, primitives!.floors, withBudget) : "")
     + styleBlock + sizeNote + budgetBlock;
 
-  return { system, hasLibrary, handBuilt };
+  return { system, hasLibrary, handBuilt, focal, library: library.map((t) => t.type) };
 }

@@ -1,0 +1,5 @@
+config: claude-opus-5 thinking=adaptive effort=low max_tokens=64000 companions=true focal=JogWheel,WaveformLane,Fader -> C:\Users\realy\OneDrive\Documents\Work\DashUI\docs\fixtures\model-exp\focal\prims\dj-on-A
+wall 105s  first-try 2/3  passed 3/3  attempts 4  out 18071  $0.618
+  Fader           105s  x2    9606 out  ok  syntax: Expression expected. at line 194: `}`
+  JogWheel         34s  x1    3679 out  ok  
+  WaveformLane     46s  x1    4786 out  ok  

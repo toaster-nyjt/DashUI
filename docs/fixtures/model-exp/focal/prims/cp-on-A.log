@@ -1,0 +1,4 @@
+config: claude-opus-5 thinking=adaptive effort=low max_tokens=64000 companions=true focal=MapCanvas,StatBar -> C:\Users\realy\OneDrive\Documents\Work\DashUI\docs\fixtures\model-exp\focal\prims\cp-on-A
+wall 56s  first-try 2/2  passed 2/2  attempts 2  out 9236  $0.311
+  StatBar          33s  x1    3310 out  ok  
+  MapCanvas        56s  x1    5926 out  ok  

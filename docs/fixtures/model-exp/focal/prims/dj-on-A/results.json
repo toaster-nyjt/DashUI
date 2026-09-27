@@ -1,0 +1,108 @@
+{
+  "summary": {
+    "config": {
+      "MODEL": "claude-opus-5",
+      "THINKING": "adaptive",
+      "EFFORT": "low",
+      "MAX_TOKENS": 64000,
+      "COMPANIONS": true,
+      "FOCAL": [
+        "JogWheel",
+        "WaveformLane",
+        "Fader"
+      ],
+      "LOG": "../../logs/task-1790494291391.jsonl"
+    },
+    "wall": 104.832,
+    "passedFirstTry": 2,
+    "passed": 3,
+    "types": 3,
+    "totalAttempts": 4,
+    "outTokens": 18071,
+    "cost": 0.618
+  },
+  "results": [
+    {
+      "type": "Fader",
+      "attempts": [
+        {
+          "secs": 66.731,
+          "out": 5878,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": [
+            "syntax: Expression expected. at line 194: `}`"
+          ]
+        },
+        {
+          "secs": 38.099,
+          "out": 3728,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 104.832,
+      "inTok": 17109,
+      "outTok": 9606,
+      "floor": {
+        "base": [
+          2.5,
+          7
+        ],
+        "orientation:horizontal": [
+          7,
+          2.5
+        ]
+      },
+      "passed": true,
+      "firstTry": false
+    },
+    {
+      "type": "JogWheel",
+      "attempts": [
+        {
+          "secs": 33.975,
+          "out": 3679,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 33.976,
+      "inTok": 8281,
+      "outTok": 3679,
+      "floor": {
+        "base": [
+          7,
+          7
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    },
+    {
+      "type": "WaveformLane",
+      "attempts": [
+        {
+          "secs": 45.811,
+          "out": 4786,
+          "stop": "end_turn",
+          "thinking": 1,
+          "errors": []
+        }
+      ],
+      "secs": 45.812,
+      "inTok": 7873,
+      "outTok": 4786,
+      "floor": {
+        "base": [
+          12,
+          3.5
+        ]
+      },
+      "passed": true,
+      "firstTry": true
+    }
+  ]
+}

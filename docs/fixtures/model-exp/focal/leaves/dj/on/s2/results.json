@@ -1,0 +1,65 @@
+{
+  "config": {
+    "budget": true,
+    "MODEL": "claude-opus-5",
+    "THINKING": "adaptive",
+    "EFFORT": "low"
+  },
+  "wall": 57.323,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "DJ Table: Deck A Player (Left)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 57.171,
+      "outTok": 5446,
+      "codeTok": 4073,
+      "thinkTok": 1373,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 3 + gap 0.5 + main 24 (jog 20 + gap 0.5 + transport 3.5) + gap 0.5 + bottom 13.6 = 41.6 ≤ 41.6",
+        "// BUDGET width: left col 39.5 (jog 20 centered) + gap 0.5 + right col 11 + padding 1 = 52.0 ≤ 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 1,
+      "leaf": "DJ Table: Central Mixer",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 56.234,
+      "outTok": 5185,
+      "codeTok": 3747,
+      "thinkTok": 1438,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.5 + pad 1.0 + [gain/filter row 2.5+0.9 + eq row 2.5+0.9 + fader/meter 8.0(flex, grows) + label 0.9] + gap 0.6 + crossfader block 3.6 = 23.4 <= 41.6",
+        "// BUDGET width: pad 1.0 + chA (2.75+0.5+2.75 = 6.0 .. strip 11.5) + gap 0.6 + center 12.0 + gap 0.6 + chB 11.5 = 37.2 <= 52.0"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 2,
+      "leaf": "DJ Table: Deck B Player (Right)",
+      "box": {
+        "x": 832.3333333333333,
+        "y": 665.8666666666667
+      },
+      "secs": 47.71,
+      "outTok": 4673,
+      "codeTok": 3528,
+      "thinkTok": 1145,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 3 + readouts 3.25 + main 19 + pads 6 + loop 2.25 + footer 1.75 + gaps 1.5 + pad 1 = 37.75 ≤ 41.6",
+        "// BUDGET width: transport 9 + gap .75 + fader 4.5 + gap .75 + jog 19 + padding 1 = 35 ≤ 52.0"
+      ],
+      "postProcessed": true
+    }
+  ]
+}

@@ -109,18 +109,21 @@ export type PrimitiveCompanions = { component: string; types: PrimitiveType[] };
 export type PrimitiveFloor = Record<string, [number, number]>;
 
 // Everything the primitive stage produced for one generated UI, stored per taskID beside
-// its style. code = each type's generated source; floors = its parsed FLOOR.
+// its style. code = each type's generated source; floors = its parsed FLOOR; focal = the 1–2
+// types the UI is recognized by (focal route; [] when it failed).
 export type PrimitiveSet = {
   hoist: HoistResult;
   code: Record<string, string>;
   floors: Record<string, PrimitiveFloor>;
+  focal?: string[];
 };
 
 // What the generate route needs from a PrimitiveSet: the types a leaf may use (the ones that
-// generated) and their floors. The code itself goes to Preview, never to the model.
+// generated), their floors and the UI's focal types. The code itself goes to Preview, never to the model.
 export type LeafPrimitives = {
   library: PrimitiveType[];
   floors: Record<string, PrimitiveFloor>;
+  focal?: string[];
 };
 
 // Used in getCode to represent messages

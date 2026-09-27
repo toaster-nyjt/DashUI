@@ -1,0 +1,1825 @@
+{
+ "prompt": "You pick the FOCAL primitives of ONE multi-component UI: the 1 or 2 elements a person looking at the whole UI sees first and recognizes it by.\n\nYou are given the task, each component's role, and the UI's primitive library: each type's name, description, and the component features built from it (USED BY).\n\nPick a type only if it passes BOTH tests:\n- PURPOSE: the UI's main job is done through it or shown on it; without it, the UI could not do what the task asks.\n- IDENTITY: it is visually central to the UI's entire core identity — draw a small icon for this UI, and this element is in it.\nPick 1 or 2.\n\nOUTPUT: ONLY this JSON (no markdown, no prose): {\"focal\": [\"<exact type name>\", ...]}",
+ "results": [
+  {
+   "cfg": "s5off",
+   "run": "1790347489002",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.635,
+   "raw": "{\"focal\": [\"JogWheel\", \"Waveform\"]}",
+   "stop": "end_turn",
+   "inTok": 2923,
+   "outTok": 23,
+   "callSecs": 1.635,
+   "picks": [
+    "JogWheel",
+    "Waveform"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "Waveform"
+   ]
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790351266686",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.647,
+   "raw": "{\"focal\": [\"WaveformLane\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 3271,
+   "outTok": 23,
+   "callSecs": 1.647,
+   "picks": [
+    "WaveformLane",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 0,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": [
+    "WaveformLane"
+   ]
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790347489002",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.67,
+   "raw": "{\"focal\": [\"Waveform\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 2923,
+   "outTok": 21,
+   "callSecs": 1.67,
+   "picks": [
+    "Waveform",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 0,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": [
+    "Waveform"
+   ]
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790347150340",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.71,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformDisplay\"]}",
+   "stop": "end_turn",
+   "inTok": 3239,
+   "outTok": 27,
+   "callSecs": 1.71,
+   "picks": [
+    "JogWheel",
+    "WaveformDisplay"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformDisplay"
+   ]
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790351266686",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.717,
+   "raw": "{\"focal\": [\"WaveformLane\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 3271,
+   "outTok": 23,
+   "callSecs": 1.717,
+   "picks": [
+    "WaveformLane",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 0,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": [
+    "WaveformLane"
+   ]
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790347150340",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.785,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformDisplay\"]}",
+   "stop": "end_turn",
+   "inTok": 3239,
+   "outTok": 27,
+   "callSecs": 1.785,
+   "picks": [
+    "JogWheel",
+    "WaveformDisplay"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformDisplay"
+   ]
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790351266686b",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.325,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformLane\"]}",
+   "stop": "end_turn",
+   "inTok": 3006,
+   "outTok": 25,
+   "callSecs": 1.325,
+   "picks": [
+    "JogWheel",
+    "WaveformLane"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformLane"
+   ]
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790351266686b",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.355,
+   "raw": "{\"focal\": [\"JogWheel\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 3006,
+   "outTok": 22,
+   "callSecs": 1.355,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790356815842",
+   "task": "DJ TABLE",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.393,
+   "raw": "{\"focal\": [\"JogWheel\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 2696,
+   "outTok": 22,
+   "callSecs": 1.393,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790357285132",
+   "task": "aerospace dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.728,
+   "raw": "{\"focal\": [\"AttitudeIndicator\"]}",
+   "stop": "end_turn",
+   "inTok": 3444,
+   "outTok": 21,
+   "callSecs": 1.728,
+   "picks": [
+    "AttitudeIndicator"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790357285132",
+   "task": "aerospace dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.733,
+   "raw": "{\"focal\": [\"AttitudeIndicator\"]}",
+   "stop": "end_turn",
+   "inTok": 3444,
+   "outTok": 21,
+   "callSecs": 1.733,
+   "picks": [
+    "AttitudeIndicator"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790357767270",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.331,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformLane\"]}",
+   "stop": "end_turn",
+   "inTok": 3238,
+   "outTok": 25,
+   "callSecs": 1.331,
+   "picks": [
+    "JogWheel",
+    "WaveformLane"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformLane"
+   ]
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790359648823",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.406,
+   "raw": "{\"focal\": [\"JogWheel\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 2637,
+   "outTok": 22,
+   "callSecs": 1.406,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790357767270",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.544,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformLane\"]}",
+   "stop": "end_turn",
+   "inTok": 3238,
+   "outTok": 25,
+   "callSecs": 1.544,
+   "picks": [
+    "JogWheel",
+    "WaveformLane"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformLane"
+   ]
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790356815842",
+   "task": "DJ TABLE",
+   "sample": 2,
+   "attempts": 2,
+   "secs": 2.927,
+   "raw": "{\"focal\": [\"JogWheel\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 2729,
+   "outTok": 22,
+   "callSecs": 1.371,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790359648823",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.333,
+   "raw": "{\"focal\": [\"JogWheel\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 2637,
+   "outTok": 22,
+   "callSecs": 1.333,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790360963510",
+   "task": "Radio",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.695,
+   "raw": "{\"focal\": [\"RotaryDial\", \"TextReadout\"]}",
+   "stop": "end_turn",
+   "inTok": 2224,
+   "outTok": 25,
+   "callSecs": 1.695,
+   "picks": [
+    "RotaryDial",
+    "TextReadout"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "TextReadout"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790365640105",
+   "task": "Cyberpunk 2077",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.379,
+   "raw": "{\"focal\": [\"MapCanvas\", \"ItemGrid\"]}",
+   "stop": "end_turn",
+   "inTok": 3438,
+   "outTok": 26,
+   "callSecs": 1.379,
+   "picks": [
+    "MapCanvas",
+    "ItemGrid"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "ItemGrid"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790365640105",
+   "task": "Cyberpunk 2077",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.332,
+   "raw": "{\"focal\": [\"MapCanvas\", \"MapMarker\"]}",
+   "stop": "end_turn",
+   "inTok": 3438,
+   "outTok": 25,
+   "callSecs": 1.332,
+   "picks": [
+    "MapCanvas",
+    "MapMarker"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "MapMarker"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790475795579",
+   "task": "Cyberpunk 2077",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.285,
+   "raw": "{\"focal\": [\"MapCanvas\", \"CharacterPortrait\"]}",
+   "stop": "end_turn",
+   "inTok": 2753,
+   "outTok": 28,
+   "callSecs": 1.285,
+   "picks": [
+    "MapCanvas",
+    "CharacterPortrait"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 2,
+   "extras": [],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790475795579",
+   "task": "Cyberpunk 2077",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.299,
+   "raw": "{\"focal\": [\"MapCanvas\", \"CharacterPortrait\"]}",
+   "stop": "end_turn",
+   "inTok": 2753,
+   "outTok": 28,
+   "callSecs": 1.299,
+   "picks": [
+    "MapCanvas",
+    "CharacterPortrait"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 2,
+   "extras": [],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790360963510",
+   "task": "Radio",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.834,
+   "raw": "{\"focal\": [\"RotaryDial\", \"FrequencyScale\"]}",
+   "stop": "end_turn",
+   "inTok": 2224,
+   "outTok": 27,
+   "callSecs": 1.834,
+   "picks": [
+    "RotaryDial",
+    "FrequencyScale"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790475795579b",
+   "task": "Cyberpunk 2077",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.306,
+   "raw": "{\"focal\": [\"MapCanvas\", \"StatBar\"]}",
+   "stop": "end_turn",
+   "inTok": 3378,
+   "outTok": 24,
+   "callSecs": 1.306,
+   "picks": [
+    "MapCanvas",
+    "StatBar"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790488443585",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.324,
+   "raw": "{\"focal\": [\"MapCanvas\", \"StatBar\"]}",
+   "stop": "end_turn",
+   "inTok": 3562,
+   "outTok": 24,
+   "callSecs": 1.324,
+   "picks": [
+    "MapCanvas",
+    "StatBar"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790488443585",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.32,
+   "raw": "{\"focal\": [\"StatBar\", \"PortraitDisplay\"]}",
+   "stop": "end_turn",
+   "inTok": 3562,
+   "outTok": 26,
+   "callSecs": 1.32,
+   "picks": [
+    "StatBar",
+    "PortraitDisplay"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790475795579b",
+   "task": "Cyberpunk 2077",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.401,
+   "raw": "{\"focal\": [\"MapCanvas\", \"StatBar\"]}",
+   "stop": "end_turn",
+   "inTok": 3378,
+   "outTok": 24,
+   "callSecs": 1.401,
+   "picks": [
+    "MapCanvas",
+    "StatBar"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790488443585b",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.371,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3703,
+   "outTok": 24,
+   "callSecs": 1.371,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790488443585b",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.335,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3703,
+   "outTok": 24,
+   "callSecs": 1.335,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790491861915",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.372,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 2860,
+   "outTok": 24,
+   "callSecs": 1.372,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790492653239",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.231,
+   "raw": "{\"focal\": [\"StatBar\", \"MapSurface\"]}",
+   "stop": "end_turn",
+   "inTok": 3530,
+   "outTok": 23,
+   "callSecs": 1.231,
+   "picks": [
+    "StatBar",
+    "MapSurface"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790491861915",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.314,
+   "raw": "{\"focal\": [\"StatBar\", \"MapMarker\"]}",
+   "stop": "end_turn",
+   "inTok": 2860,
+   "outTok": 23,
+   "callSecs": 1.314,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [
+    "MapMarker->MapCanvas"
+   ],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790493003572",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.27,
+   "raw": "{\"focal\": [\"EquipmentSlot\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3185,
+   "outTok": 28,
+   "callSecs": 1.27,
+   "picks": [
+    "EquipmentSlot",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "EquipmentSlot"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790492653239",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.589,
+   "raw": "{\"focal\": [\"StatBar\", \"MapSurface\"]}",
+   "stop": "end_turn",
+   "inTok": 3530,
+   "outTok": 23,
+   "callSecs": 1.589,
+   "picks": [
+    "StatBar",
+    "MapSurface"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790493003572",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.39,
+   "raw": "{\"focal\": [\"EquipmentSlot\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3185,
+   "outTok": 28,
+   "callSecs": 1.39,
+   "picks": [
+    "EquipmentSlot",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "EquipmentSlot"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790493337400",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.234,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3111,
+   "outTok": 24,
+   "callSecs": 1.234,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790494291391",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.227,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformLane\"]}",
+   "stop": "end_turn",
+   "inTok": 3519,
+   "outTok": 25,
+   "callSecs": 1.227,
+   "picks": [
+    "JogWheel",
+    "WaveformLane"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformLane"
+   ]
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790493337400",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.312,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3111,
+   "outTok": 24,
+   "callSecs": 1.312,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "s5off",
+   "run": "1790494291391",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.348,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformLane\"]}",
+   "stop": "end_turn",
+   "inTok": 3519,
+   "outTok": 25,
+   "callSecs": 1.348,
+   "picks": [
+    "JogWheel",
+    "WaveformLane"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformLane"
+   ]
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790347150340",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.48,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformDisplay\"]}",
+   "stop": "end_turn",
+   "inTok": 3239,
+   "outTok": 27,
+   "callSecs": 1.48,
+   "picks": [
+    "JogWheel",
+    "WaveformDisplay"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformDisplay"
+   ]
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790347489002",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.263,
+   "raw": "{\"focal\": [\"JogWheel\", \"Waveform\"]}",
+   "stop": "end_turn",
+   "inTok": 2923,
+   "outTok": 23,
+   "callSecs": 1.263,
+   "picks": [
+    "JogWheel",
+    "Waveform"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "Waveform"
+   ]
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790347150340",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.768,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformDisplay\"]}",
+   "stop": "end_turn",
+   "inTok": 3239,
+   "outTok": 27,
+   "callSecs": 1.768,
+   "picks": [
+    "JogWheel",
+    "WaveformDisplay"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformDisplay"
+   ]
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790347489002",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.309,
+   "raw": "{\"focal\": [\"JogWheel\", \"Waveform\"]}",
+   "stop": "end_turn",
+   "inTok": 2923,
+   "outTok": 23,
+   "callSecs": 1.309,
+   "picks": [
+    "JogWheel",
+    "Waveform"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "Waveform"
+   ]
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790351266686",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.39,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformLane\"]}",
+   "stop": "end_turn",
+   "inTok": 3271,
+   "outTok": 25,
+   "callSecs": 1.39,
+   "picks": [
+    "JogWheel",
+    "WaveformLane"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformLane"
+   ]
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790351266686",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.884,
+   "raw": "{\"focal\":[\"JogWheel\",\"WaveformLane\"]}",
+   "stop": "end_turn",
+   "inTok": 3271,
+   "outTok": 23,
+   "callSecs": 1.884,
+   "picks": [
+    "JogWheel",
+    "WaveformLane"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformLane"
+   ]
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790356815842",
+   "task": "DJ TABLE",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.858,
+   "raw": "{\"focal\": [\"JogWheel\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 2696,
+   "outTok": 22,
+   "callSecs": 1.858,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790351266686b",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 2.212,
+   "raw": "{\"focal\": [\"JogWheel\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 3006,
+   "outTok": 22,
+   "callSecs": 2.212,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790357285132",
+   "task": "aerospace dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.386,
+   "raw": "{\"focal\": [\"AttitudeIndicator\", \"VerticalTape\"]}",
+   "stop": "end_turn",
+   "inTok": 3444,
+   "outTok": 29,
+   "callSecs": 1.386,
+   "picks": [
+    "AttitudeIndicator",
+    "VerticalTape"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "VerticalTape"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790351266686b",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 2.559,
+   "raw": "{\"focal\": [\"JogWheel\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 3006,
+   "outTok": 22,
+   "callSecs": 2.559,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790356815842",
+   "task": "DJ TABLE",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 2.046,
+   "raw": "{\"focal\": [\"JogWheel\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 2696,
+   "outTok": 22,
+   "callSecs": 2.046,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790357285132",
+   "task": "aerospace dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.545,
+   "raw": "{\"focal\": [\"AttitudeIndicator\", \"VerticalTape\"]}",
+   "stop": "end_turn",
+   "inTok": 3444,
+   "outTok": 29,
+   "callSecs": 1.545,
+   "picks": [
+    "AttitudeIndicator",
+    "VerticalTape"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "VerticalTape"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790359648823",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.228,
+   "raw": "{\"focal\": [\"JogWheel\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 2637,
+   "outTok": 22,
+   "callSecs": 1.228,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790359648823",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.289,
+   "raw": "{\"focal\": [\"JogWheel\", \"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 2637,
+   "outTok": 22,
+   "callSecs": 1.289,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790357767270",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.601,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformLane\"]}",
+   "stop": "end_turn",
+   "inTok": 3238,
+   "outTok": 25,
+   "callSecs": 1.601,
+   "picks": [
+    "JogWheel",
+    "WaveformLane"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformLane"
+   ]
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790357767270",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.816,
+   "raw": "{\"focal\": [\"JogWheel\", \"WaveformLane\"]}",
+   "stop": "end_turn",
+   "inTok": 3238,
+   "outTok": 25,
+   "callSecs": 1.816,
+   "picks": [
+    "JogWheel",
+    "WaveformLane"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": [
+    "WaveformLane"
+   ]
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790360963510",
+   "task": "Radio",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.392,
+   "raw": "{\"focal\":[\"FrequencyScale\",\"RotaryDial\"]}",
+   "stop": "end_turn",
+   "inTok": 2224,
+   "outTok": 25,
+   "callSecs": 1.392,
+   "picks": [
+    "FrequencyScale",
+    "RotaryDial"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790360963510",
+   "task": "Radio",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.383,
+   "raw": "{\"focal\": [\"FrequencyScale\", \"RotaryDial\"]}",
+   "stop": "end_turn",
+   "inTok": 2224,
+   "outTok": 27,
+   "callSecs": 1.383,
+   "picks": [
+    "FrequencyScale",
+    "RotaryDial"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790365640105",
+   "task": "Cyberpunk 2077",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.293,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3438,
+   "outTok": 24,
+   "callSecs": 1.293,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790365640105",
+   "task": "Cyberpunk 2077",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.379,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3438,
+   "outTok": 24,
+   "callSecs": 1.379,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790475795579",
+   "task": "Cyberpunk 2077",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.357,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 2753,
+   "outTok": 24,
+   "callSecs": 1.357,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790475795579",
+   "task": "Cyberpunk 2077",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.312,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 2753,
+   "outTok": 24,
+   "callSecs": 1.312,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790475795579b",
+   "task": "Cyberpunk 2077",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.357,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3378,
+   "outTok": 24,
+   "callSecs": 1.357,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790475795579b",
+   "task": "Cyberpunk 2077",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.377,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3378,
+   "outTok": 24,
+   "callSecs": 1.377,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790488443585",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.276,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3562,
+   "outTok": 24,
+   "callSecs": 1.276,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790488443585b",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.265,
+   "raw": "{\"focal\": [\"StatBar\", \"EquipSlot\"]}",
+   "stop": "end_turn",
+   "inTok": 3703,
+   "outTok": 24,
+   "callSecs": 1.265,
+   "picks": [
+    "StatBar",
+    "BodyDiagram"
+   ],
+   "repairs": [
+    "EquipSlot->BodyDiagram"
+   ],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790488443585",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.318,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3562,
+   "outTok": 24,
+   "callSecs": 1.318,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790488443585b",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.298,
+   "raw": "{\"focal\": [\"StatBar\", \"EquipSlot\"]}",
+   "stop": "end_turn",
+   "inTok": 3703,
+   "outTok": 24,
+   "callSecs": 1.298,
+   "picks": [
+    "StatBar",
+    "BodyDiagram"
+   ],
+   "repairs": [
+    "EquipSlot->BodyDiagram"
+   ],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790491861915",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.323,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 2860,
+   "outTok": 24,
+   "callSecs": 1.323,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790491861915",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.435,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 2860,
+   "outTok": 24,
+   "callSecs": 1.435,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790493003572",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.328,
+   "raw": "{\"focal\": [\"MapCanvas\", \"StatBar\"]}",
+   "stop": "end_turn",
+   "inTok": 3185,
+   "outTok": 24,
+   "callSecs": 1.328,
+   "picks": [
+    "MapCanvas",
+    "StatBar"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790492653239",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.654,
+   "raw": "{\"focal\": [\"StatBar\", \"MapSurface\"]}",
+   "stop": "end_turn",
+   "inTok": 3530,
+   "outTok": 23,
+   "callSecs": 1.654,
+   "picks": [
+    "StatBar",
+    "MapSurface"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790492653239",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.47,
+   "raw": "{\"focal\": [\"StatBar\", \"MapSurface\"]}",
+   "stop": "end_turn",
+   "inTok": 3530,
+   "outTok": 23,
+   "callSecs": 1.47,
+   "picks": [
+    "StatBar",
+    "MapSurface"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790493003572",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 1.627,
+   "raw": "{\"focal\": [\"MapCanvas\", \"StatBar\"]}",
+   "stop": "end_turn",
+   "inTok": 3185,
+   "outTok": 24,
+   "callSecs": 1.627,
+   "picks": [
+    "MapCanvas",
+    "StatBar"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790493337400",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 2.008,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3111,
+   "outTok": 24,
+   "callSecs": 2.008,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790494291391",
+   "task": "DJ Table",
+   "sample": 1,
+   "attempts": 1,
+   "secs": 1.344,
+   "raw": "{\"focal\":[\"JogWheel\",\"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 3519,
+   "outTok": 20,
+   "callSecs": 1.344,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790493337400",
+   "task": "Cyberpunk 2077 Dashboard",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 2.803,
+   "raw": "{\"focal\": [\"StatBar\", \"MapCanvas\"]}",
+   "stop": "end_turn",
+   "inTok": 3111,
+   "outTok": 24,
+   "callSecs": 2.803,
+   "picks": [
+    "StatBar",
+    "MapCanvas"
+   ],
+   "repairs": [],
+   "groups": 2,
+   "hit": 1,
+   "extras": [
+    "StatBar"
+   ],
+   "borderline": []
+  },
+  {
+   "cfg": "o5low",
+   "run": "1790494291391",
+   "task": "DJ Table",
+   "sample": 2,
+   "attempts": 1,
+   "secs": 2.044,
+   "raw": "{\"focal\":[\"JogWheel\",\"Fader\"]}",
+   "stop": "end_turn",
+   "inTok": 3519,
+   "outTok": 20,
+   "callSecs": 2.044,
+   "picks": [
+    "JogWheel",
+    "Fader"
+   ],
+   "repairs": [],
+   "groups": 1,
+   "hit": 1,
+   "extras": [
+    "Fader"
+   ],
+   "borderline": []
+  }
+ ]
+}

@@ -52,12 +52,12 @@ export async function POST(req: Request) {
     console.log("[generate] spec is not JSON:\n" + prompt);
   }
 
-  const { system, hasLibrary, handBuilt } = buildLeafSystem({ spec, boxSize, style, primitives, budget: LEAF_SIZE_BUDGET });
+  const { system, hasLibrary, handBuilt, focal, library } = buildLeafSystem({ spec, boxSize, style, primitives, budget: LEAF_SIZE_BUDGET });
 
   const leaf = spec.name ?? leafKey ?? "?";
   runLog(taskID, "leaf:start", `${leaf} — ${hasLibrary ? (handBuilt ? "primitives + hand-built" : "primitives only") : "hand-built (base prompt)"}, ${boxSize ? Math.round(boxSize.x) + "x" + Math.round(boxSize.y) + "px" : "no box size"}`, {
     leaf, leafKey, spec, hasLibrary, handBuilt, boxSize, historyTurns: history?.length ?? 0,
-    library: primitives?.library.map((t) => t.type), floors: primitives?.floors,
+    library, floors: primitives?.floors, focal: focal.length ? focal : undefined,
     held: Object.fromEntries((primitives?.library ?? []).filter((t) => heldTypeNames(t).length).map((t) => [t.type, heldTypeNames(t)])),
     styleChars: style?.length ?? 0, systemChars: system.length, system,
   });

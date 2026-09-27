@@ -1,0 +1,4 @@
+s1: budget=true claude-opus-5 adaptive low — wall 61s
+  Deck A Player (Left)      61s  out  5978 = code  4652 + think  1326  end_turn  budget-comment:2  (post-processed)
+  Central Mixer             55s  out  5544 = code  4619 + think   925  end_turn  budget-comment:2  (post-processed)
+  Deck B Player (Right)     46s  out  4546 = code  3813 + think   733  end_turn  budget-comment:2  (post-processed)

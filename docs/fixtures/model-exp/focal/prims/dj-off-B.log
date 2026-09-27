@@ -1,0 +1,5 @@
+config: claude-opus-5 thinking=adaptive effort=low max_tokens=64000 companions=true focal=- -> C:\Users\realy\OneDrive\Documents\Work\DashUI\docs\fixtures\model-exp\focal\prims\dj-off-B
+wall 45s  first-try 3/3  passed 3/3  attempts 3  out 11513  $0.41
+  Fader            45s  x1    4187 out  ok  
+  JogWheel         27s  x1    3021 out  ok  
+  WaveformLane     42s  x1    4305 out  ok  

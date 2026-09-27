@@ -153,14 +153,25 @@ const GEN_FLOORS_HEAD_INLINE = `- PRIMITIVE FLOORS — A FIRST-CLASS SIZING REQU
 const GEN_FLOORS_HEAD_BUDGET = `- PRIMITIVE FLOORS — A FIRST-CLASS SIZING REQUIREMENT: every primitive has a FLOOR — [width, height] in rem, the smallest size at which it still reads and works.
   - BUDGET FIRST: the SIZE BUDGET at the end of this prompt gives your box and the floors of your primitives, all in rem. Before laying anything out, do the sum it asks for.`;
 
+// Focal switches (the UI's focal types that this leaf uses; see the focal route): a sentence at the top
+// of the prompt, the AXES rule variant, one clause in PRIMITIVE FLOORS, and a line in SIZE BUDGET.
+// [] -> today's prompt.
+const focalNames = (focal: string[]): string => focal.join(" and ");
+const genAxesFocal = (focal: string[]): string => `  - RESPOND TO BOTH AXES INDEPENDENTLY: the box can be resized in width AND height separately, and the layout must visibly reflow for each. Size layout regions with fluid units (%, fr, flex-1/basis-0) on BOTH axes so they rescale as either dimension changes; the other primitive boxes keep their rem sizes, and ${focal.length > 1 ? focal.map((t) => t + "'s").join(" and ") + " boxes are the fluid regions that absorb the change — each" : focal[0] + "'s box is the fluid region that absorbs the change —"} a flex-1 or grid share, never a fixed rem size. The component must look intentional whether it is tall-and-narrow, short-and-wide, or square.`;
+const genIntroFocal = (focal: string[]): string =>
+  ` ${focalNames(focal)} ${focal.length > 1 ? "are FOCAL POINTS" : "is a FOCAL POINT"} of the whole UI: render the other parts smaller and make ${focalNames(focal)} ${focal.length > 1 ? "the largest elements in this component — their size dominates the layout, make them MASSIVE." : "the largest element in this component — its size dominates the layout, make it MASSIVE."}`;
+const genFloorsFocal = (focal: string[]): string =>
+  `  - The focal primitive${focal.length > 1 ? "s" : ""} (${focalNames(focal)}) ${focal.length > 1 ? "are never the ones" : "is never the one"} compacted, reduced or dropped.
+`;
+
 const GEN_HELD_LAYERS = `  - HELD LAYERS: when a contract types "children" as library type names, that primitive is a surface and those are the primitives drawn on it: pass them as its direct children — no wrapper elements, which would break its layering — each placed in the surface's own coordinates as its description says. They need no slot of their own: the surface is their box.
 `;
 
 // The primitive rules. handBuilt=false (every feature maps to a primitive) drops the one
 // sentence about hand-building, which could never apply there.
-const genPrimitiveRules = (handBuilt: boolean, budget = false, holders = false): string => `- PRIMITIVES (only when a feature maps to primitive type names): each listed type is a pre-built React component, styled to this UI's VISUAL GUIDELINES and in scope by its exact name (e.g. <Knob />). Build every feature that names a type FROM that type — never your own version — because the same primitive code is shared across this UI, which keeps its repeated parts identical.
+const genPrimitiveRules = (handBuilt: boolean, budget = false, holders = false, focal: string[] = []): string => `- PRIMITIVES (only when a feature maps to primitive type names): each listed type is a pre-built React component, styled to this UI's VISUAL GUIDELINES and in scope by its exact name (e.g. <Knob />). Build every feature that names a type FROM that type — never your own version — because the same primitive code is shared across this UI, which keeps its repeated parts identical.
   - USE AS-IS: never fork, re-implement or restyle a primitive (no className/style overrides, no recoloring wrappers), and never reapply the VISUAL GUIDELINES tokens for controls' insides (rings, tracks, thumbs, on/off fills) around one — it already has them. If it can't express a detail a feature needs, keep it and build ONLY that detail beside it.${handBuilt ? " A feature given as a plain string or mapped to null is one you build yourself as usual." : ""} Excluded features stay excluded even when a capable primitive is in scope.
-  - YOU STILL AUTHOR EVERYTHING AROUND THEM: how many of each to render (a 3-band EQ is three <Knob/>s even though the feature lists Knob once), the layout, labels, header/footer chrome, spacing, and the containers around repeated primitives.
+  - YOU STILL AUTHOR EVERYTHING AROUND THEM: how many of each to render (a 3-band EQ is three <Knob/>s even though the feature lists Knob once), the layout, labels, header/footer chrome, decoration, spacing, and the containers around primitives.
   - PROPS: each contract lists prop NAMES and TYPES, not values — YOU choose the values per feature from your genInstructions (the same Knob is min={-12} max={12} in one feature and min={0} max={100} in another). Pass CONFIG props (min, max, mode, ...) as fixed setup, and wire the DATA-SEAM props — the value/data prop and its callback (value + onChange, onPress, on + onChange) — to your own React state, as the INTERACTION rule requires (an unwired callback is a dead control).
   - DATA: primitives hold NO content of their own — every data prop (a list's options/rows, a waveform's data, a readout's value, a tree's nodes) is empty until YOU fill it, and an unfed primitive renders blank. Create realistic sample data in your own state, as you would for hand-built content, and pass it in.
   - FACE CONTENT: when a contract ${holders ? 'types "children" as React.ReactNode' : 'has "children"'}, that is the element's FACE — pass the text or icon that belongs ON it as children (never beside it); captions that belong beside or around it stay outside. The face scales its children to fit, like text:
@@ -181,7 +192,7 @@ ${budget ? GEN_FLOORS_HEAD_BUDGET : GEN_FLOORS_HEAD_INLINE}
     2. FEWER COPIES: keep the feature but render fewer instances of a repeated primitive or item.
     3. SCROLL: put a run of repeated items (a column of pad rows, a list) in a hidden-scrollbar scroll region (see SCROLLING); its items keep their floors and scroll instead of shrinking.
     4. DROP: only then leave a primitive out entirely — the least essential first, and NEVER one that a "connectivity" connection depends on (the wiring step attaches to those controls later).
-  - Never shrink a primitive below its floor.
+${focal.length ? genFloorsFocal(focal) : ""}  - Never shrink a primitive below its floor.
 </important>
 `;
 
@@ -195,7 +206,7 @@ export const needsHandBuiltRules = (features: string[] | LeafFeatures, hasLibrar
 // System prompt for component-generation (code string output), lots of strict restrictions to allow for rendering correctly within Sandpack.
 // primitives = a PRIMITIVE LIBRARY is present; handBuilt=false only for a leaf that
 // assembles EVERY feature from primitives. {primitives:false, handBuilt:true} = manual boxes.
-export const buildGenerateSystemPrompt = ({ primitives, handBuilt, budget = false, holders = false }: { primitives: boolean; handBuilt: boolean; budget?: boolean; holders?: boolean }): string => `You are an expert React developer and designer. Generate a single React functional component based on the user's request. The request is structured client content — follow the COMPONENT PROTOCOL (below) to parse it.${primitives ? GEN_INTRO_PRIM : ""}
+export const buildGenerateSystemPrompt = ({ primitives, handBuilt, budget = false, holders = false, focal = [] }: { primitives: boolean; handBuilt: boolean; budget?: boolean; holders?: boolean; focal?: string[] }): string => `You are an expert React developer and designer. Generate a single React functional component based on the user's request. The request is structured client content — follow the COMPONENT PROTOCOL (below) to parse it.${primitives ? GEN_INTRO_PRIM : ""}${primitives && focal.length ? genIntroFocal(focal) : ""}
 
 RULES:
 - Output ONLY the React component code, no explanations or markdown
@@ -210,7 +221,7 @@ ${primitives ? GEN_DOMINANT_PRIM : GEN_DOMINANT_BASE}
 ${primitives ? GEN_WIDTH_PRIM : GEN_WIDTH_BASE}
 ${handBuilt ? GEN_TABLES_RULE : ""}${primitives ? GEN_FIT_PRIM : GEN_FIT_BASE}
 ${primitives ? GEN_NO_SHRINK_PRIM : GEN_NO_SHRINK_BASE}
-${handBuilt ? GEN_LISTS_RULE : ""}${primitives ? GEN_AXES_PRIM : GEN_AXES_BASE}
+${handBuilt ? GEN_LISTS_RULE : ""}${primitives ? (focal.length ? genAxesFocal(focal) : GEN_AXES_PRIM) : GEN_AXES_BASE}
   - Design as responsively as possible so that attributes resize seamlessly with changes to the container size, and so it looks correct whether the box is small or large, or even weirdly proportioned.
   - FILL THE CONTAINER, DON'T FLOAT IN IT: the content must occupy the WHOLE box. Never center a fixed-size cluster of content inside a larger container and leave big empty bands above/below or left/right — that dead space reads as unwanted padding. When the natural content is smaller than the box, make regions stretch to fill it (e.g. "flex-1" rows/cells, "items-stretch", space distributed across the available room) and let typography and spacing scale UP with the container, instead of pinning content to one size and surrounding it with emptiness. A full-bleed element (chart, map, image, table, single big readout, a row of stat cells) should reach the container edges.
   - PADDING ONLY WHERE IT EARNS ITS KEEP: add internal padding solely for genuine breathing room around legible content, and keep it small and proportional (e.g. p-2/p-3) — never large fixed bands. Components that don't need padding (full-bleed media, a status strip, a single edge-to-edge visual) should have none. Padding must never be the reason content gets clipped in a short or narrow box.
@@ -222,7 +233,7 @@ ${handBuilt ? GEN_LISTS_RULE : ""}${primitives ? GEN_AXES_PRIM : GEN_AXES_BASE}
 ${primitives ? GEN_BUILD_HEAD_PRIM : GEN_BUILD_HEAD_BASE} Treat "genInstructions", "role", and "connectivity" as GUIDELINES that shape HOW you build those features — their purpose, emphasis, and relationships — never as a source of extra features to add. If "genInstructions" seems to describe something not represented in the feature list, defer to the feature list.
 - ROLE & CONNECTIVITY ARE FOCUS GUIDELINES (not extra features): when the component includes "role" and/or "connectivity", use them to understand WHY this component exists and how it relates to its siblings, and let that shape which of its features you emphasize. "role" = this component's purpose within the larger UI. "connectivity" = which sibling components this one drives ("targets") or is driven by ("effectors"); any control or surface a connection needs is ALREADY present in the feature list, so realize those features well and make their purpose obvious rather than inventing new ones. The actual cross-component wiring is injected elsewhere, so build standalone but leave those features intact and ready for it.
 - INTERACTION AND DECORATION: a purely visual/display/stylized/aesthetic component is MORE THAN WELCOME — build it well and don't bolt fake controls onto something that is meant to just show information or aesthetics. But when a component's role carries explicit potential for interaction — anything a user would click, type into, drag, toggle, select, search, filter, sort, reorder, play/pause, or navigate — it MUST give every such control real, working React state and handlers so it genuinely responds to the user, never a static, decorative mockup of a control. (This governs whether the interactive elements you DO render actually work — it is NOT license to add features outside the feature list.) Again, purely visual components are more than welcome.
-${handBuilt ? GEN_PURE_VISUAL_RULE : ""}${primitives ? genPrimitiveRules(handBuilt, budget, holders) : ""}- Use modern React patterns (hooks, functional components)
+${handBuilt ? GEN_PURE_VISUAL_RULE : ""}${primitives ? genPrimitiveRules(handBuilt, budget, holders, focal) : ""}- Use modern React patterns (hooks, functional components)
 - IMPORTANT: Don't generate an attribute or customization if not explicitly told to do so! Example: If generating a graph but not told to include a legend, don't include a legend.
 - IMPORTANT: Never use template literals (backticks with \${}) inside JSX attributes. Use string concatenation instead. For example, use key={"item-" + index} instead of key={\`item-\${index}\`}
 - IMPORTANT: Any JSX attribute value, for example className=... that is not a plain quoted string literal MUST be wrapped in braces. A quoted string followed by any operator must be placed in braces.
@@ -380,10 +391,9 @@ export const COMPONENT_PROTOCOL = buildComponentProtocol(false);
 
 /* ---------- PRIMITIVE LIBRARY BLOCK (generate route) ---------- */
 
-// Appended to the GENERATE system prompt for a leaf whose features are type-mapped.
-// Pass the WHOLE UI library (not just this component's types) so the leaf can reuse a
-// shared primitive for incidental elements too; each type carries its parsed floor as
-// "floor". Empty -> "" so manual boxes get the exact previous prompt.
+// Appended to the GENERATE system prompt for a leaf whose features are type-mapped: only this
+// leaf's own types (buildLeafSystem), each with its parsed floor as "floor". Empty -> "" so
+// manual boxes get the exact previous prompt.
 // budget: the floors live in the SIZE BUDGET block instead, so the contracts go alone.
 export const primitiveLibraryBlock = (library: PrimitiveType[], floors: Record<string, PrimitiveFloor> = {}, budget = false): string =>
   !library.length ? "" : budget
@@ -399,16 +409,17 @@ const floorText = (f: PrimitiveFloor): string =>
 
 // The LAST block of a primitive leaf's prompt: every number the PRIMITIVE FLOORS check needs,
 // in one place and one unit, plus the sum to write out as a comment. `used` = the types this
-// leaf's features map to; `others` = the rest of the library (for incidental reuse);
-// chrome = the style sheet's fixed header/footer heights in rem, when it declares them.
-export const sizeBudgetBlock = (box: { x: number; y: number }, used: [string, PrimitiveFloor][], others: [string, PrimitiveFloor][], chrome: { header?: number; footer?: number }): string => {
+// leaf's features use; chrome = the style sheet's fixed header/footer heights in rem, when it
+// declares them; focal = the UI's focal types this leaf uses.
+export const sizeBudgetBlock = (box: { x: number; y: number }, used: [string, PrimitiveFloor][], chrome: { header?: number; footer?: number }, focal: string[] = []): string => {
   const W = (box.x / 16).toFixed(1), H = (box.y / 16).toFixed(1);
   const chromeLine = chrome.header || chrome.footer
     ? `\n- Chrome, only if you include it: ${[chrome.header && `header ${chrome.header}rem`, chrome.footer && `footer ${chrome.footer}rem`].filter(Boolean).join(", ")}.`
     : "";
   return `\n\nSIZE BUDGET — every number for the PRIMITIVE FLOORS check, in rem (16px):
 - Box: ${W}rem wide × ${H}rem tall.${chromeLine}
-${used.length ? "- Floors [width × height] of the primitives your features use:\n" + used.map(([t, f]) => `    ${t}: ${floorText(f)}`).join("\n") : "- No primitive your features use has a floor to budget."}${others.length ? `\n- Other library primitives, if you reuse one for an incidental element: ${others.map(([t, f]) => `${t} ${floorText(f)}`).join("; ")}.` : ""}
+${used.length ? "- Floors [width × height] of the primitives your features use:\n" + used.map(([t, f]) => `    ${t}: ${floorText(f)}`).join("\n") : "- No primitive your features use has a floor to budget."}${focal.length ? `
+- Focal: ${focalNames(focal)} — budget everything else first; ${focal.length > 1 ? "they take" : "it takes"} what remains.` : ""}
 Write the sum FIRST, as the opening lines inside GeneratedComponent, for the main stack in each direction — every stacked part in rem (a repeated primitive as count × floor), plus gaps, padding and chrome:
     // BUDGET height: <part> + <part> + ... = <total> ≤ ${H}
     // BUDGET width: <part> + <part> + ... = <total> ≤ ${W}
@@ -502,9 +513,10 @@ RULES:
 /* ---------- PRIMITIVE GENERATION ---------- */
 
 // Primitive-prompt variants, switched by primitivePromptSwitches (helpers.ts). USED WITH is listed
-// only when the type has companions; HELD LAYERS replaces FACE CONTENT for a type whose "children"
+// only when the type has companions; FOCAL is added to the opening for a focal type; HELD LAYERS replaces FACE CONTENT for a type whose "children"
 // names library types (a holder); HELD is added for a type some holder names. Who places each
 // held type (heldPlacement, from the contracts) picks one sentence in each, so both agree.
+const PRIM_INTRO_FOCAL = ` This primitive is a FOCAL POINT of the whole UI: one of the few elements people see first and recognize the UI by, and it fills a large space on screen. Build it at the highest detail you can: fine markings and texture, layered depth and highlights, and motion on every state change that rewards a close look.`;
 const PRIM_GIVEN_COMPANIONS = `
 - USED WITH: the other primitives each of those components also builds from, and what each one is — so yours fits beside them.`;
 const PRIM_FACE_BASE = `- FACE CONTENT: if the contract has "children", the element's face is where that content goes — render children ON the face through <FitText> (see TEXT), in the token typography and in the color of the current state. Without children the face is clean: never invent an emblem, glyph or text that pretends to be content.`;
@@ -516,7 +528,7 @@ const primHeld = (holders: string[], selfPlaced: boolean): string => `
 // UI, against that UI's style sheet (appended as VISUAL GUIDELINES, exactly like the
 // generate route). One call per type, all in parallel. Output is concatenated into one
 // shared primitives file per taskID, so names must not collide across primitives.
-export const buildPrimitiveSystemPrompt = ({ companions, holds, heldBy, places = [], selfPlaced = false }: { companions: boolean; holds: boolean; heldBy: string[]; places?: string[]; selfPlaced?: boolean }): string => `You are an expert React developer and designer building ONE shared primitive for a multi-component UI. A primitive is a small, self-contained building block (a knob, a fader, a waveform display, a track list) that is generated ONCE and then used, unchanged, by every component of the UI that needs it — every use of this element in the UI is literally your code, so it must be excellent and it must work everywhere it is used.
+export const buildPrimitiveSystemPrompt = ({ companions, holds, heldBy, places = [], selfPlaced = false, focal = false }: { companions: boolean; holds: boolean; heldBy: string[]; places?: string[]; selfPlaced?: boolean; focal?: boolean }): string => `You are an expert React developer and designer building ONE shared primitive for a multi-component UI. A primitive is a small, self-contained building block (a knob, a fader, a waveform display, a track list) that is generated ONCE and then used, unchanged, by every component of the UI that needs it — every use of this element in the UI is literally your code, so it must be excellent and it must work everywhere it is used.${focal ? PRIM_INTRO_FOCAL : ""}
 
 You are given:
 - Task: the UI this primitive belongs to.
@@ -576,7 +588,7 @@ STYLE:
 - Use ONLY the VISUAL GUIDELINES tokens for color, borders, radius, shadow, typography and motion — that is what makes this primitive match every component around it. Active/value states use the accent tokens.
 - No className or style props: the look is fixed here and is identical wherever it is used.
 - KEY DIRECTION: ${KEY_DIRECTION} Most of the UI's tactile detail lives in its primitives, so give this one rich, responsive feedback — hover, press, drag and value-change motion with CSS transitions/animations and transforms. 
-- Most importantly, because primitives will be used all over the UI, render it at a level of detail fit for a large, standalone item. For unique primitives especially, GO ALL OUT ON THE DETAIL.
+- Most importantly, because primitives will be used all over the UI, render it at a level of detail fit for a large, standalone item.
 
 JSX RULES:
 - Never use template literals (backticks with \${}) inside JSX attributes; use string concatenation, e.g. key={"tick-" + i}.
@@ -595,6 +607,27 @@ export const primitiveRequest = (task: string, prim: PrimitiveType, uses: Primit
   (companions.length ? `\n\nUSED WITH (the other primitives each component builds from):\n` +
     companions.map((c) => `- "${c.component}":\n` + c.types.map((t) => `    ${t.type}: ${t.description}`).join("\n")).join("\n") : "");
 
+
+/* ---------- FOCAL ---------- */
+
+// System prompt for the FOCAL route: after the hoist, picks the 1 or 2 library types the whole UI is
+// recognized by. Validated by validateFocal (1–2 exact type names; a held type is repaired to its
+// holder), retried with previousError. The picks switch PRIM_INTRO_FOCAL and the leaf's focal lines on.
+export const FOCAL_SYSTEM_PROMPT = `You pick the FOCAL primitives of ONE multi-component UI: the 1 or 2 elements a person looking at the whole UI sees first and recognizes it by.
+
+You are given the task, each component's role, and the UI's primitive library: each type's name, description, and the component features built from it (USED BY).
+
+Pick a type only if it passes BOTH tests:
+- PURPOSE: the UI's main job is done through it or shown on it; without it, the UI could not do what the task asks.
+- IDENTITY: it is visually central to the UI's entire core identity — draw a small icon for this UI, and this element is in it.
+Pick 1 or 2.
+
+OUTPUT: ONLY this JSON (no markdown, no prose): {"focal": ["<exact type name>", ...]}`;
+
+// User message for the focal route: task, each component's role, the library with its derived usage.
+export const focalRequest = (task: string, components: { name: string; role?: string }[], library: PrimitiveType[], usage: Record<string, PrimitiveUse[]>): string =>
+  `Task: ${task}\n\nComponents:\n` + components.map((c) => `- "${c.name}": ${c.role ?? ""}`).join("\n")
+  + `\n\nPRIMITIVE LIBRARY:\n` + library.map((t) => `- ${t.type}: ${t.description}\n    USED BY: ` + (usage[t.type] ?? []).map((u) => `"${u.component}" -> "${u.feature}"`).join("; ")).join("\n");
 
 /* ---------- FITTEXT (host utility, injected — not generated) ---------- */
 

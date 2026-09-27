@@ -194,6 +194,24 @@ Deferred / decided-against for now: recursive group generation (see §7).
   - **Held types:** a surface's contract names what it holds (`"children?": "MapMarker | RouteOverlay"`, HOIST rule HELD TYPES, checked by `validateHoist`). The primitive prompt switches on it: HELD LAYERS for the holder (grid-stacked full-size layers inside its transform) and HELD for held types (pass-through root, operable parts stop propagation). The leaf prompt passes held children directly.
   - **Result:** the hoist declared the holder 2/2 on Cyberpunk and 0/2 on DJ Table. The map trio holds 0–0.7px through zoom and pan, with real clicks working 2/2. The regenerated Map leaf shows 10/10 and 9/9 markers, against 0/9 in the live run.
   - All switches are no-ops without a holder (leaf and manual-box prompts byte-identical).
+  - **HELD LAYERS vs PRIMITIVE SLOTS left as is (2026-09-27).** "Need no slot of their own" reads as an exception to "every primitive needs a definite box", and held floors stay in SIZE BUDGET. This is kept because a type held in one component can be used unheld in another. Behaviour is fine: 0/9 map leaves since the change wrapped or budgeted markers.
+- **Focal primitives (2026-09-27, `docs/fixtures/model-exp/FOCAL_PRIMITIVES.md`).** A new agent runs after the hoist and marks the 1 or 2 types the UI is recognized by, so they can get different instructions.
+  - **Why an agent:** code signals don't separate them. Single use scored 0.17 precision and floor area 0.34, and a contract can't tell a JogWheel from a Knob.
+  - **Picker:** the `/api/focal` route (Opus 5 adaptive `low`, ~1.5s) runs as soon as the hoist returns. It asks for types that pass both PURPOSE and IDENTITY, with "Pick 1 or 2."
+    - With "1 to 3", the model always filled all three slots, and no wording on the count changed that. The user accepted always getting two.
+    - Haiku 4.5 named components instead of types: 14 of 38 calls never returned a valid list.
+  - **Switches:**
+    - The primitive prompt gets a FOCAL POINT sentence in its opening. The old "For unique primitives especially, GO ALL OUT" sentence is removed for every primitive.
+    - The leaf prompt gets a focal sentence in its opening, a PRIMITIVE FLOORS clause and a SIZE BUDGET line.
+    - With no picks, every prompt is byte-identical.
+  - **Measured:**
+    - The JogWheel was picked 16/16 on DJ. The second pick was the Fader half the time, and StatBar always on Cyberpunk.
+    - Focal JogWheels render at about 2× the area in their decks.
+    - Focal primitives write 12–54% more code and take 13–126% longer (the Fader: 79–105s against 37–45s), which lengthens the primitive stage: 44s → 92s on DJ, 44s → 62s on Cyberpunk. Leaves don't grow: −29% to +4% code.
+- **Leaves see only their own types (2026-09-27).** A leaf's PRIMITIVE LIBRARY block and SIZE BUDGET now list only the types its features map to, plus the types its own surfaces hold. They used to list the whole library, with an invitation to reuse another type "for an incidental element".
+  - **Evidence:** a scan of 136 logged primitive leaves found 9 (6.6%) using a type outside their own set: Indicator ×5, StatusIndicator ×2, LevelMeter, StatBar. All were small status lamps or meters used as decoration.
+  - **Prompt change:** YOU STILL AUTHOR EVERYTHING AROUND THEM now names "decoration", and says "containers around primitives" instead of "around repeated primitives".
+  - **Why:** simpler prompts, no invitation outside the feature list, and it lets a leaf start as soon as its own types are generated (per-leaf start, being explored).
 - **User-added features: out of scope for now** — they resolve to `null` and the leaf builds
   them inline (already covered by the PRIMITIVES fallback rule). Same for features toggled on
   after generation (the hoist sees only default-active features) and for features whose
@@ -503,6 +521,8 @@ contract** (§3). Of the props in a contract, wiring cares ONLY about the data-c
 ignores them. So "props the primitive needs" (the whole contract) and "props that carry
 cross-component data" (the wiring subset) are two overlapping circles; the data seam is the
 intersection.
+
+> **Superseded 2026-09-27 (§0.1):** leaves now get only their own types (their features' types plus the types their surfaces hold), not the whole library.
 
 **Are contracts given to the leaf generators? Yes — the WHOLE library, every prop.** The
 leaf must see `value`/`onChange` to supply them from its own state (`<Knob value={gain}

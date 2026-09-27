@@ -1,0 +1,65 @@
+{
+  "config": {
+    "budget": true,
+    "MODEL": "claude-opus-5",
+    "THINKING": "adaptive",
+    "EFFORT": "low"
+  },
+  "wall": 76.212,
+  "results": [
+    {
+      "i": 0,
+      "leaf": "Cyberpunk 2077: Night City Map",
+      "box": {
+        "x": 1442.711111111111,
+        "y": 443.9111111111111
+      },
+      "secs": 44.682,
+      "outTok": 4369,
+      "codeTok": 3957,
+      "thinkTok": 412,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 2.75 + map 24.95 = 27.7 ≤ 27.7",
+        "// BUDGET width: map 90.2 (markers 2x2 placed on surface) = 90.2 ≤ 90.2"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 1,
+      "leaf": "Cyberpunk 2077: V Vitals Status HUD",
+      "box": {
+        "x": 2497,
+        "y": 221.95555555555555
+      },
+      "secs": 47.551,
+      "outTok": 3487,
+      "codeTok": 3315,
+      "thinkTok": 172,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: chrome 1.75 + padding 0.75 + body row 11.0 (portrait 4.5..11 fits, bars 3×1.25 + 2×0.5 gaps = 4.75) = 13.5 ≤ 13.9",
+        "// BUDGET width: pad 1 + portrait 8 + gap .75 + level 4 + gap .75 + bars 46 + gap .75 + readouts 2×7 + gap .75 + effects 22 + gap .75 + clock 6 + pad 1 = 106.5 ≤ 156.1"
+      ],
+      "postProcessed": true
+    },
+    {
+      "i": 2,
+      "leaf": "Cyberpunk 2077: Cyberware Ripperdoc Loadout",
+      "box": {
+        "x": 665.8666666666667,
+        "y": 610.3777777777777
+      },
+      "secs": 75.968,
+      "outTok": 7205,
+      "codeTok": 5512,
+      "thinkTok": 1693,
+      "stop": "end_turn",
+      "budgetLines": [
+        "// BUDGET height: header 3 + main 24 (diagram 24 / slot grid 4×4 + gaps 1.5 = 17.5 + bonuses 4.5) + capacity strip 4.5 + padding 1 = 32.5 ≤ 38.1",
+        "// BUDGET width: pad 0.5 + diagram col 14 + gap 0.5 + right col 26 (grid 2×6 + gap 0.5) + pad 0.5 = 41.5 ≤ 41.6"
+      ],
+      "postProcessed": true
+    }
+  ]
+}

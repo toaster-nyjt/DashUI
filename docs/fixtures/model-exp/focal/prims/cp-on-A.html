@@ -1,0 +1,477 @@
+<title>cp on A</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { color-scheme: dark; }
+  body { background: #070707; color: #d4d4d4; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; }
+  .wrap { padding: 20px 16px 60px; max-width: 1400px; margin: 0 auto; }
+  h1 { font-size: 18px; margin: 0 0 4px; color: #fbbf24; }
+  .sub { font-size: 12px; color: #737373; margin-bottom: 20px; }
+  section { border-top: 1px solid #262626; padding: 18px 0; }
+  h2 { font-size: 15px; margin: 0 0 2px; color: #f5f5f5; }
+  .desc { font-size: 12px; color: #737373; margin: 0 0 4px; }
+  .contract { font: 11px ui-monospace, monospace; color: #a3a3a3; margin: 0 0 12px; overflow-x: auto; white-space: pre; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
+  .vlabel { font: 11px ui-monospace, monospace; color: #fbbf24; width: 100%; margin: 4px 0 -6px; }
+  .cell { display: flex; flex-direction: column; gap: 4px; }
+  .cap { font-size: 10px; color: #525252; }
+  .slot { position: relative; overflow: hidden; border-radius: 10px; outline: 1px dashed #3f3f46;
+          background: linear-gradient(to bottom, rgba(38,38,38,.7), rgba(23,23,23,.9)); }
+  .err { color: #fb7185; font: 11px ui-monospace, monospace; padding: 6px; white-space: pre-wrap; }
+  .log { position: fixed; right: 12px; bottom: 12px; background: #171717; border: 1px solid #333; border-radius: 8px;
+         padding: 6px 10px; font: 11px ui-monospace, monospace; color: #fbbf24; max-width: 60vw; }
+  .ctrls { font-size: 12px; margin-bottom: 16px; }
+</style>
+<div id="root"></div>
+<script>
+const { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } = React;
+function FitText(props) {
+    const { children, className, wrap = true, align = "center" } = props;
+    const boxRef = useRef(null);
+    const layerRef = useRef(null);
+    const textRef = useRef(null);
+    const [size, setSize] = useState(0);
+    // unsized: the parent gives the box no definite size, so there is nothing to fit to.
+    const [unsized, setUnsized] = useState(false);
+    const lastKey = useRef("");
+    const fit = useCallback(() => {
+        const box = boxRef.current, layer = layerRef.current, text = textRef.current;
+        if (!box || !layer || !text)
+            return;
+        // Hidden (display:none or detached): no layout to measure yet; try again when shown.
+        if (!box.getClientRects().length)
+            return;
+        // Measure with the text out of flow, so the box's size is the parent's, never the text's.
+        layer.style.position = "absolute";
+        const W = box.clientWidth, H = box.clientHeight;
+        if (!W || !H) {
+            // No definite size: show the text at its inherited size instead of shrinking it away.
+            layer.style.position = "static";
+            text.style.fontSize = "";
+            lastKey.current = "";
+            setSize(0);
+            setUnsized(true);
+            return;
+        }
+        setUnsized(false);
+        // Parents may re-render every frame (meters, playheads): skip when nothing changed.
+        const key = W + "x" + H + "|" + text.textContent;
+        if (key === lastKey.current)
+            return;
+        lastKey.current = key;
+        const fits = (px) => {
+            text.style.fontSize = px + "px";
+            return text.scrollWidth <= W - 1 && text.offsetHeight <= H - 1;
+        };
+        const cur = parseFloat(text.style.fontSize) || 0;
+        // Fast path: the current size still fits and one step larger doesn't.
+        if (cur > 0 && fits(cur) && !fits(cur + 0.25)) {
+            text.style.fontSize = cur + "px";
+            return;
+        }
+        let lo = 1, hi = Math.max(2, H), best = 1;
+        for (let i = 0; i < 14; i++) {
+            const mid = (lo + hi) / 2;
+            if (fits(mid)) {
+                best = mid;
+                lo = mid;
+            }
+            else
+                hi = mid;
+        }
+        best = Math.floor(best * 4) / 4;
+        text.style.fontSize = best + "px";
+        setSize(best);
+    }, []);
+    useLayoutEffect(fit);
+    useEffect(() => {
+        const box = boxRef.current;
+        if (!box || typeof ResizeObserver === "undefined")
+            return;
+        const ro = new ResizeObserver(() => fit());
+        ro.observe(box);
+        return () => ro.disconnect();
+    }, [fit]);
+    const justify = align === "start" ? "justify-start" : align === "end" ? "justify-end" : "justify-center";
+    return (React.createElement("div", { ref: boxRef, className: "relative h-full w-full min-w-0 min-h-0 overflow-hidden " + (className || "") },
+        React.createElement("div", { ref: layerRef, className: "inset-0 flex items-center " + justify, style: { position: unsized ? "static" : "absolute" } },
+            React.createElement("span", { ref: textRef, style: {
+                    fontSize: size ? size + "px" : undefined,
+                    lineHeight: 1.1,
+                    display: "inline-block",
+                    whiteSpace: wrap ? "normal" : "nowrap",
+                    maxWidth: wrap ? "calc(100% - 2px)" : undefined,
+                    wordBreak: "keep-all",
+                    overflowWrap: "normal",
+                    textAlign: align === "start" ? "left" : align === "end" ? "right" : "center",
+                } }, children))));
+}
+
+const StatBarTONES = {
+    neutral: { a: "rgba(34,211,238,1)", b: "rgba(6,182,212,0.55)", glow: "rgba(34,211,238,0.7)", txt: "text-cyan-300", bd: "rgba(34,211,238,0.35)" },
+    accent: { a: "rgba(253,224,71,1)", b: "rgba(234,179,8,0.55)", glow: "rgba(253,224,71,0.65)", txt: "text-yellow-300", bd: "rgba(253,224,71,0.4)" },
+    warning: { a: "rgba(251,191,36,1)", b: "rgba(217,119,6,0.55)", glow: "rgba(245,158,11,0.65)", txt: "text-amber-400", bd: "rgba(245,158,11,0.4)" },
+    danger: { a: "rgba(244,63,94,1)", b: "rgba(190,18,60,0.6)", glow: "rgba(244,63,94,0.7)", txt: "text-rose-500", bd: "rgba(244,63,94,0.45)" }
+};
+const StatBar_MIN = { "base": [6, 1.5] };
+function StatBar(props) {
+    const uid = useRef("statbar-" + Math.random().toString(36).slice(2)).current;
+    const tone = props.tone || "neutral";
+    const T = StatBarTONES[tone];
+    const max = props.max > 0 ? props.max : 1;
+    const raw = props.value / max;
+    const frac = Math.max(0, Math.min(1, isFinite(raw) ? raw : 0));
+    const floor = StatBar_MIN.base;
+    const segs = props.segments && props.segments > 0 ? Math.floor(props.segments) : 0;
+    const prev = useRef(frac);
+    const [pulse, setPulse] = useState(0);
+    useEffect(() => {
+        if (Math.abs(prev.current - frac) > 0.0005) {
+            prev.current = frac;
+            setPulse((p) => p + 1);
+        }
+    }, [frac]);
+    const fmt = (n) => {
+        const r = Math.round(n * 10) / 10;
+        return Math.abs(r - Math.round(r)) < 0.05 ? String(Math.round(r)) : r.toFixed(1);
+    };
+    const ticks = [];
+    for (let i = 1; i < 10; i++)
+        ticks.push(i / 10);
+    const barCore = (React.createElement("div", { className: "relative h-full w-full overflow-hidden rounded-md border border-cyan-400/15 bg-black/60 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)]" },
+        React.createElement("div", { className: "pointer-events-none absolute inset-0 opacity-30", style: { backgroundImage: "repeating-linear-gradient(115deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 6px)" } }),
+        !segs && (React.createElement(React.Fragment, null,
+            React.createElement("div", { className: "absolute inset-y-0 left-0 transition-[width] duration-500 ease-in-out", style: {
+                    width: (frac * 100) + "%",
+                    background: "linear-gradient(90deg," + T.b + " 0%," + T.a + " 100%)",
+                    boxShadow: "0 0 10px " + T.glow + ", inset 0 1px 0 rgba(255,255,255,0.45)"
+                } },
+                React.createElement("div", { className: "absolute inset-0 opacity-40", style: { backgroundImage: "repeating-linear-gradient(90deg, rgba(0,0,0,0.35) 0px, rgba(0,0,0,0.35) 2px, transparent 2px, transparent 7px)" } }),
+                React.createElement("div", { className: "absolute inset-x-0 top-0 h-1/3", style: { background: "linear-gradient(180deg, rgba(255,255,255,0.35), transparent)" } }),
+                React.createElement("div", { key: "sweep-" + pulse, className: "absolute inset-y-0 w-1/3", style: { background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)", animation: "statbarsweep 900ms ease-out 1" } })),
+            React.createElement("div", { className: "absolute inset-y-0 w-[2px] transition-[left] duration-500 ease-in-out", style: { left: "calc(" + (frac * 100) + "% - 1px)", background: "#fff", boxShadow: "0 0 8px " + T.a + ", 0 0 16px " + T.glow, opacity: frac > 0.004 ? 1 : 0 } }))),
+        segs > 0 && (React.createElement("div", { className: "absolute inset-[6%] flex gap-[2px]" }, Array.from({ length: segs }).map((_, i) => {
+            const cell = Math.max(0, Math.min(1, frac * segs - i));
+            return (React.createElement("div", { key: "s" + i, className: "relative h-full flex-1 overflow-hidden rounded-[2px]", style: { background: "rgba(255,255,255,0.05)", border: "1px solid " + T.bd } },
+                React.createElement("div", { className: "absolute inset-y-0 left-0 transition-[width,opacity] duration-500 ease-in-out", style: {
+                        width: (cell * 100) + "%",
+                        background: "linear-gradient(180deg," + T.a + "," + T.b + ")",
+                        boxShadow: cell > 0 ? "0 0 8px " + T.glow : "none",
+                        opacity: cell > 0 ? 1 : 0
+                    } }),
+                React.createElement("div", { className: "absolute inset-x-0 top-0 h-1/3", style: { background: "linear-gradient(180deg, rgba(255,255,255,0.3), transparent)", opacity: cell > 0 ? 1 : 0 } })));
+        }))),
+        !segs && (React.createElement("div", { className: "pointer-events-none absolute inset-0" },
+            ticks.map((t, i) => (React.createElement("div", { key: "t" + i, className: "absolute top-0 w-px", style: { left: (t * 100) + "%", height: (i === 4 ? "100%" : "34%"), background: "rgba(0,0,0,0.6)", opacity: 0.8 } }))),
+            ticks.map((t, i) => (React.createElement("div", { key: "tb" + i, className: "absolute bottom-0 w-px", style: { left: (t * 100) + "%", height: i === 4 ? "0%" : "34%", background: "rgba(0,0,0,0.6)" } }))))),
+        React.createElement("div", { className: "pointer-events-none absolute inset-0 rounded-md", style: { background: "linear-gradient(180deg, rgba(255,255,255,0.10), transparent 45%, rgba(0,0,0,0.35))" } }),
+        React.createElement("div", { className: "pointer-events-none absolute inset-0 rounded-md", style: { boxShadow: "inset 0 0 14px " + (frac > 0 ? T.glow.replace("0.7", "0.25").replace("0.65", "0.22") : "rgba(0,0,0,0)") } }),
+        React.createElement("style", null, "@keyframes statbarsweep{0%{transform:translateX(-120%);opacity:0}30%{opacity:.9}100%{transform:translateX(340%);opacity:0}}")));
+    return (React.createElement("div", { className: "relative flex h-full w-full items-stretch gap-2", style: { minWidth: floor[0] + "rem", minHeight: floor[1] + "rem" }, key: uid },
+        React.createElement("div", { className: "relative min-w-0 flex-1" }, barCore),
+        props.showNumeric && (React.createElement("div", { className: "relative h-full min-w-0", style: { flex: "0 0 26%" } },
+            React.createElement("div", { className: "absolute inset-y-[8%] left-0 right-0" },
+                React.createElement(FitText, { wrap: false, align: "end", className: "font-mono font-black tracking-tighter " + T.txt + " drop-shadow-[0_0_8px_rgba(253,224,71,0.5)] transition-colors duration-200" }, fmt(props.value) + "/" + fmt(props.max)))))));
+}
+
+const MapCanvas_MIN = { "base": [12, 9] };
+function MapCanvas(props) {
+    const uid = useRef("mapcanvas-" + Math.random().toString(36).slice(2)).current;
+    const minZ = props.minZoom ?? 1;
+    const maxZ = props.maxZoom ?? 6;
+    const z = Math.min(maxZ, Math.max(minZ, props.zoom));
+    const cx = props.center.x;
+    const cy = props.center.y;
+    const hostRef = useRef(null);
+    const drag = useRef(null);
+    const [panning, setPanning] = useState(false);
+    const [pulse, setPulse] = useState(0);
+    const clamp01 = (v) => Math.min(1, Math.max(0, v));
+    const emit = (nz, nx, ny) => {
+        props.onViewportChange({ zoom: nz, center: { x: clamp01(nx), y: clamp01(ny) } });
+    };
+    const onDown = (e) => {
+        if (e.button !== undefined && e.button !== 0)
+            return;
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, cx, cy, moved: false };
+        setPanning(true);
+    };
+    const onMove = (e) => {
+        const d = drag.current;
+        if (!d || d.id !== e.pointerId)
+            return;
+        const r = hostRef.current?.getBoundingClientRect();
+        if (!r || r.width === 0 || r.height === 0)
+            return;
+        const dx = (e.clientX - d.x) / r.width / z;
+        const dy = (e.clientY - d.y) / r.height / z;
+        if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 3)
+            d.moved = true;
+        emit(z, d.cx - dx, d.cy - dy);
+    };
+    const onUp = (e) => {
+        const d = drag.current;
+        drag.current = null;
+        setPanning(false);
+        if (d && !d.moved) {
+            const r = hostRef.current?.getBoundingClientRect();
+            if (!r)
+                return;
+            const ratioX = (e.clientX - r.left) / r.width - 0.5;
+            const ratioY = (e.clientY - r.top) / r.height - 0.5;
+            const nz = Math.min(maxZ, z * 1.6);
+            if (nz !== z) {
+                emit(nz, cx + ratioX / z, cy + ratioY / z);
+                setPulse((p) => p + 1);
+            }
+        }
+    };
+    const layerTransform = "translate(50%,50%) scale(" + z + ") translate(" + (-cx * 100) + "%," + (-cy * 100) + "%)";
+    const MapCanvasBlocks = [];
+    let seed = 7;
+    const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    for (let i = 0; i < 46; i++) {
+        const w = 4 + rnd() * 13;
+        const h = 4 + rnd() * 13;
+        MapCanvasBlocks.push({ x: rnd() * (100 - w), y: rnd() * (100 - h), w, h, t: rnd() });
+    }
+    return (React.createElement("div", { className: "relative h-full w-full overflow-hidden select-none", style: { minWidth: MapCanvas_MIN.base[0] + "rem", minHeight: MapCanvas_MIN.base[1] + "rem" } },
+        React.createElement("div", { className: "absolute inset-0 rounded-md bg-black/60 border border-cyan-400/15 shadow-[inset_0_0_12px_rgba(0,0,0,0.8)] overflow-hidden" },
+            React.createElement("div", { ref: hostRef, className: "absolute inset-0 touch-none " + (panning ? "cursor-grabbing" : "cursor-grab"), onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: () => { drag.current = null; setPanning(false); } },
+                React.createElement("div", { className: "absolute inset-0 origin-top-left will-change-transform", style: {
+                        transform: layerTransform,
+                        transition: panning ? "none" : "transform 420ms cubic-bezier(0.22,0.9,0.28,1)",
+                    } },
+                    React.createElement("svg", { className: "absolute inset-0 h-full w-full", viewBox: "0 0 100 100", preserveAspectRatio: "none" },
+                        React.createElement("defs", null,
+                            React.createElement("linearGradient", { id: uid + "-bg", x1: "0", y1: "0", x2: "1", y2: "1" },
+                                React.createElement("stop", { offset: "0%", stopColor: "#09090b" }),
+                                React.createElement("stop", { offset: "50%", stopColor: "#000000" }),
+                                React.createElement("stop", { offset: "100%", stopColor: "#0b1116" })),
+                            React.createElement("linearGradient", { id: uid + "-blk", x1: "0", y1: "0", x2: "0", y2: "1" },
+                                React.createElement("stop", { offset: "0%", stopColor: "rgba(34,211,238,0.16)" }),
+                                React.createElement("stop", { offset: "100%", stopColor: "rgba(34,211,238,0.04)" })),
+                            React.createElement("linearGradient", { id: uid + "-blk2", x1: "0", y1: "0", x2: "0", y2: "1" },
+                                React.createElement("stop", { offset: "0%", stopColor: "rgba(217,70,239,0.16)" }),
+                                React.createElement("stop", { offset: "100%", stopColor: "rgba(217,70,239,0.03)" })),
+                            React.createElement("radialGradient", { id: uid + "-vig", cx: "0.5", cy: "0.5", r: "0.72" },
+                                React.createElement("stop", { offset: "55%", stopColor: "rgba(0,0,0,0)" }),
+                                React.createElement("stop", { offset: "100%", stopColor: "rgba(0,0,0,0.85)" }))),
+                        React.createElement("rect", { x: "0", y: "0", width: "100", height: "100", fill: "url(#" + uid + "-bg)" }),
+                        React.createElement("g", { stroke: "rgba(34,211,238,0.10)", strokeWidth: "0.12" },
+                            Array.from({ length: 39 }).map((_, i) => (React.createElement("line", { key: "v" + i, x1: (i + 1) * 2.5, y1: "0", x2: (i + 1) * 2.5, y2: "100" }))),
+                            Array.from({ length: 39 }).map((_, i) => (React.createElement("line", { key: "h" + i, x1: "0", y1: (i + 1) * 2.5, x2: "100", y2: (i + 1) * 2.5 })))),
+                        React.createElement("g", { stroke: "rgba(34,211,238,0.26)", strokeWidth: "0.22" },
+                            Array.from({ length: 9 }).map((_, i) => (React.createElement("line", { key: "V" + i, x1: (i + 1) * 10, y1: "0", x2: (i + 1) * 10, y2: "100" }))),
+                            Array.from({ length: 9 }).map((_, i) => (React.createElement("line", { key: "H" + i, x1: "0", y1: (i + 1) * 10, x2: "100", y2: (i + 1) * 10 })))),
+                        React.createElement("g", null, MapCanvasBlocks.map((b, i) => (React.createElement("rect", { key: "b" + i, x: b.x, y: b.y, width: b.w, height: b.h, rx: "0.6", fill: b.t > 0.82 ? "url(#" + uid + "-blk2)" : "url(#" + uid + "-blk)", stroke: b.t > 0.82 ? "rgba(217,70,239,0.45)" : "rgba(34,211,238,0.3)", strokeWidth: "0.15" })))),
+                        React.createElement("g", { stroke: "rgba(253,224,71,0.35)", strokeWidth: "0.5", fill: "none", strokeLinecap: "round" },
+                            React.createElement("path", { d: "M -2 32 L 40 32 L 58 50 L 102 50" }),
+                            React.createElement("path", { d: "M 24 -2 L 24 44 L 46 66 L 46 102" }),
+                            React.createElement("path", { d: "M 102 18 L 70 18 L 54 34 L 54 102" }),
+                            React.createElement("path", { d: "M -2 78 L 34 78 L 52 88 L 102 88" })),
+                        React.createElement("g", { stroke: "rgba(253,224,71,0.9)", strokeWidth: "0.14", fill: "none", strokeDasharray: "1.6 2.4" },
+                            React.createElement("path", { d: "M -2 32 L 40 32 L 58 50 L 102 50" },
+                                React.createElement("animate", { attributeName: "stroke-dashoffset", from: "0", to: "-40", dur: "4s", repeatCount: "indefinite" })),
+                            React.createElement("path", { d: "M 24 -2 L 24 44 L 46 66 L 46 102" },
+                                React.createElement("animate", { attributeName: "stroke-dashoffset", from: "0", to: "-40", dur: "5.5s", repeatCount: "indefinite" }))),
+                        React.createElement("path", { d: "M 0 96 L 18 92 L 40 97 L 66 91 L 100 95 L 100 100 L 0 100 Z", fill: "rgba(34,211,238,0.07)", stroke: "rgba(34,211,238,0.35)", strokeWidth: "0.2" })),
+                    (props.regions ?? []).map((r) => (React.createElement("div", { key: r.id, className: "absolute -translate-x-1/2 -translate-y-1/2", style: { left: r.x * 100 + "%", top: r.y * 100 + "%" } },
+                        React.createElement("div", { className: "flex items-center gap-2" },
+                            React.createElement("span", { className: "h-1 w-1 rounded-full bg-fuchsia-400 shadow-[0_0_10px_rgba(217,70,239,0.7)]" }),
+                            React.createElement("span", { className: "min-w-0 truncate text-[0.6rem] font-semibold uppercase tracking-[0.25em] text-cyan-300/80 drop-shadow-[0_0_6px_rgba(34,211,238,0.5)]" }, r.label))))),
+                    React.createElement("div", { className: "absolute inset-0 grid grid-rows-[100%] grid-cols-[100%] [&>*]:[grid-area:1/1]" }, props.children)),
+                React.createElement("div", { className: "pointer-events-none absolute inset-0" },
+                    React.createElement("div", { className: "absolute inset-0 opacity-[0.25]", style: {
+                            backgroundImage: "repeating-linear-gradient(to bottom, rgba(34,211,238,0.14) 0px, rgba(34,211,238,0.14) 1px, transparent 1px, transparent 4px)",
+                        } }),
+                    React.createElement("svg", { className: "absolute inset-0 h-full w-full", viewBox: "0 0 100 100", preserveAspectRatio: "none" },
+                        React.createElement("rect", { x: "0", y: "0", width: "100", height: "100", fill: "url(#" + uid + "-vig)" })),
+                    React.createElement("div", { key: "sweep", className: "absolute -inset-y-1 w-[22%] opacity-40", style: {
+                            background: "linear-gradient(90deg, transparent, rgba(34,211,238,0.28), transparent)",
+                            animation: "mapcanvas-sweep 6s linear infinite",
+                        } }),
+                    React.createElement("div", { key: "pulse-" + pulse, className: "absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-yellow-300/70", style: { animation: "mapcanvas-pulse 700ms ease-out forwards" } }),
+                    React.createElement("div", { className: "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" },
+                        React.createElement("div", { className: "relative h-8 w-8" },
+                            React.createElement("div", { className: "absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-yellow-300/40" }),
+                            React.createElement("div", { className: "absolute top-1/2 left-0 w-full h-px -translate-y-1/2 bg-yellow-300/40" }),
+                            React.createElement("div", { className: "absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-yellow-300 shadow-[0_0_10px_rgba(253,224,71,0.8)]" }))),
+                    React.createElement("div", { className: "absolute inset-1" },
+                        React.createElement("div", { className: "absolute left-0 top-0 h-3 w-3 border-l border-t border-cyan-400/50" }),
+                        React.createElement("div", { className: "absolute right-0 top-0 h-3 w-3 border-r border-t border-cyan-400/50" }),
+                        React.createElement("div", { className: "absolute left-0 bottom-0 h-3 w-3 border-l border-b border-cyan-400/50" }),
+                        React.createElement("div", { className: "absolute right-0 bottom-0 h-3 w-3 border-r border-b border-cyan-400/50" })),
+                    React.createElement("div", { className: "absolute left-2 bottom-2 flex items-end gap-1" }, Array.from({ length: 7 }).map((_, i) => {
+                        const frac = i / 6;
+                        const active = frac <= (z - minZ) / Math.max(0.0001, maxZ - minZ);
+                        return (React.createElement("span", { key: "z" + i, className: "w-1 rounded-sm transition-all duration-200 ease-out " +
+                                (active
+                                    ? "bg-yellow-300 shadow-[0_0_8px_rgba(253,224,71,0.7)]"
+                                    : "bg-cyan-400/20"), style: { height: 3 + i * 2 + "px" } }));
+                    }))))),
+        React.createElement("style", null, "@keyframes mapcanvas-sweep{0%{transform:translateX(-30%)}100%{transform:translateX(480%)}}" +
+            "@keyframes mapcanvas-pulse{0%{opacity:0.9;transform:translate(-50%,-50%) scale(0.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(3.2)}}")));
+}
+
+
+const h = React.createElement;
+const LIB = [{"type":"StatBar","description":"Horizontal filled bar showing a quantity; fill fraction is value/max clamped to 0-1. Optional segmented rendering for discrete pips.","props":{"value":"number","max":"number","segments?":"number","tone?":"'neutral' | 'accent' | 'warning' | 'danger'","showNumeric?":"boolean"}},{"type":"MapCanvas","description":"Pannable/zoomable stylized map surface; child markers and routes are placed in normalized 0-1 map coordinates. Emits viewport changes on pan/zoom.","props":{"zoom":"number","minZoom?":"number","maxZoom?":"number","center":"{ x: number; y: number }","onViewportChange":"(v: { zoom: number; center: { x: number; y: number } }) => void","regions?":"{ id: string; label: string; x: number; y: number }[]","children?":"MapMarker | RoutePath"}}];
+let logSet = null;
+const log = (m) => logSet && logSet(m + "  @" + new Date().toLocaleTimeString());
+
+/* ---- sample data ---- */
+const wave = Array.from({ length: 600 }, (_, i) => {
+  const beat = Math.pow(Math.max(0, Math.sin(i / 600 * Math.PI * 64)), 6);
+  const env = 0.35 + 0.35 * Math.sin(i / 600 * Math.PI * 3) ** 2;
+  return Math.min(1, env * (0.5 + 0.5 * Math.random()) + beat * 0.5) * (i % 2 ? 1 : -1);
+});
+const grid = Array.from({ length: 33 }, (_, i) => i / 32);
+const TREE = [
+  { id: "lib", label: "Library", children: [
+    { id: "house", label: "House", children: [{ id: "deep", label: "Deep House" }, { id: "tech", label: "Tech House" }] },
+    { id: "techno", label: "Techno" }, { id: "dnb", label: "Drum & Bass" } ] },
+  { id: "crates", label: "Crates", children: [{ id: "warmup", label: "Warm-up Set" }, { id: "peak", label: "Peak Time" }] },
+  { id: "hist", label: "History" } ];
+const flatTree = (ns, p) => ns.flatMap((n) => [{ id: n.id, label: n.label, parentId: p }, ...flatTree(n.children || [], n.id)]);
+const TRACK = [
+  { title: "One More Time", artist: "Daft Punk", bpm: 123, key: "8B", duration: "5:20" },
+  { title: "Strobe", artist: "deadmau5", bpm: 128, key: "4A", duration: "10:37" },
+  { title: "Innerbloom", artist: "RÜFÜS DU SOL", bpm: 122, key: "11A", duration: "9:38" },
+  { title: "Opus", artist: "Eric Prydz", bpm: 126, key: "6A", duration: "9:03" },
+  { title: "Cola", artist: "CamelPhat & Elderbrook", bpm: 122, key: "5A", duration: "3:46" },
+  { title: "Losing It", artist: "FISHER", bpm: 125, key: "10A", duration: "4:08" },
+  { title: "Pjanoo", artist: "Eric Prydz", bpm: 126, key: "7A", duration: "7:02" },
+  { title: "Gecko", artist: "Oliver Heldens", bpm: 124, key: "9B", duration: "3:31" } ];
+const COLUMNS = ["Title", "Artist", "BPM", "Key", "Time"].map((l) => ({ id: l.toLowerCase(), label: l }));
+const FX = ["Echo", "Reverb", "Filter", "Flanger", "Phaser", "Bitcrush"].map((l) => ({ id: l.toLowerCase(), label: l }));
+
+/* ---- contract parsing ---- */
+const isFn = (t) => t.includes("=>");
+const members = (t) => { const m = [...t.matchAll(/'([^']*)'/g)].map((x) => x[1]); return m.length > 1 && !t.includes("{") ? m : null; };
+const fieldsOf = (t) => [...t.matchAll(/(\w+)\??\s*:/g)].map((x) => x[1]);
+function sampleArray(name, t) {
+  if (name === "data") return wave;
+  if (name === "beatGrid") return grid;
+  if (name === "steps") return [0, 25, 50, 75, 100];
+  if (/^string\[\]$/.test(t.trim())) return ["title", "artist", "bpm", "key", "duration"];
+  const f = fieldsOf(t);
+  if (f.includes("children")) return TREE;
+  if (f.includes("parentId")) return flatTree(TREE);
+  if (f.includes("cells")) return TRACK.map((r, i) => ({ id: "t" + i, cells: Object.fromEntries(Object.entries(r).map(([k, v]) => [k, String(v)])) }));
+  const extra = f.filter((k) => k !== "id" && k !== "label");
+  if (extra.length) return TRACK.map((r, i) => ({ id: "t" + i, label: r.title, ...Object.fromEntries(extra.map((k) => [k, r[k] ?? "—"])) }));
+  return FX;
+}
+function sample(name, t, c) {
+  const u = members(t);
+  if (u) return u[0];
+  if (/\[\]\s*$/.test(t.trim())) return sampleArray(name, t);
+  if (t.includes("ReactNode")) return "PLAY";
+  if (t.trim().startsWith("{")) { const o = {}; for (const k of fieldsOf(t)) { const m = t.match(new RegExp(k + "\\??\\s*:\\s*([^;}]+)")); o[k] = m && members(m[1]) ? members(m[1])[0] : (k === "field" ? "bpm" : ""); } return o; }
+  if (t === "boolean") return false;
+  if (t.includes("number") && t.includes("string")) return "128.00";
+  if (t === "number") {
+    if (name === "min") return 0; if (name === "max") return 100;
+    if (name === "value") return has(c, "min") ? 35 : 0.4;
+    if (name === "zoom") return 1; if (name === "playhead") return 0.3;
+    return 0.6;
+  }
+  if (t === "string") {
+    if (name === "placeholder") return "Search tracks…";
+    if (name === "field") return "bpm";
+    if (name === "value") return has(c, "options") ? null : (has(c, "onChange") ? "" : "128.00");
+    return "text";
+  }
+  return null;
+}
+const has = (c, k) => k in c || (k + "?") in c;
+const bare = (k) => k.replace(/\?$/, "");
+
+function buildVariations(t) {
+  const c = t.props, base = {}, vars = [{}];
+  for (const [k0, ty] of Object.entries(c)) {
+    const k = bare(k0), opt = k0.endsWith("?");
+    if (isFn(ty)) { if (opt) vars.push({ ["__cb_" + k]: true }); continue; }
+    const v = sample(k, ty, c);
+    if (!opt || (k === "children" && !has(c, "value")) || (k === "value" && has(c, "children"))) base[k] = v;
+    else vars.push({ [k]: v });
+    const u = members(ty); if (u) u.slice(opt ? 0 : 1).forEach((m) => vars.push({ [k]: m }));
+    if (ty === "boolean") vars.push({ [k]: true });
+    if (Array.isArray(v) && !opt && ["data", "options", "nodes", "rows", "items"].includes(k)) vars.push({ [k]: [] });
+    if (k === "steps") vars.push({ steps: [0.5, 1, 2, 4], min: 0.5, max: 4, value: 1 });
+    if (k === "children") { if (has(c, "value")) vars.push({ children: v }); vars.push({ children: "HEADPHONE CUE" }, { children: undefined }); }
+    if (k === "value" && typeof v === "string" && v === "128.00") vars.push({ value: "-03:42" }, { value: "One More Time — Daft Punk (Extended Mix)" });
+    if (k === "value" && ty.includes("number") && ty.includes("string")) vars.push({ value: "-03:42" }, { value: "One More Time — Daft Punk (Extended Mix)" });
+  }
+  if (has(c, "options") && base.value === null) base.value = (base.options[0] || {}).id ?? "";
+  if (base.options && base.options === TREE) base.value = "deep";
+  if (base.options && base.value && typeof base.value === "object" && "field" in base.value) base.options = COLUMNS;
+  if (has(c, "level")) base.__animate = "level"; else if (has(c, "playhead")) base.__animate = "playhead";
+  const seen = new Set();
+  return { base, vars: vars.filter((v) => { const s = JSON.stringify(v); if (seen.has(s)) return false; seen.add(s); return true; }) };
+}
+
+const SLOTS = [["small", 72, 72], ["large", 240, 240], ["wide", 320, 64], ["tall", 64, 240]];
+
+class Boundary extends React.Component {
+  constructor(p) { super(p); this.state = { e: null }; }
+  static getDerivedStateFromError(e) { return { e }; }
+  render() { return this.state.e ? h("div", { className: "err" }, String(this.state.e.message || this.state.e)) : this.props.children; }
+}
+
+function Harness({ t, init }) {
+  const [s, set] = useState(init);
+  useEffect(() => {
+    if (!init.__animate) return;
+    const id = setInterval(() => set((p) => init.__animate === "level"
+      ? { ...p, level: Math.max(0, Math.min(1, 0.55 + 0.35 * Math.sin(Date.now() / 180) + 0.1 * Math.random())) }
+      : { ...p, playhead: (p.playhead + 0.002) % 1 }), 60);
+    return () => clearInterval(id);
+  }, []);
+  const props = {};
+  for (const [k, v] of Object.entries(s)) if (!k.startsWith("__") && v !== undefined) props[k] = v;
+  for (const [k0, ty] of Object.entries(t.props)) {
+    const k = bare(k0);
+    if (!isFn(ty)) continue;
+    if (k0.endsWith("?") && !s["__cb_" + k]) continue;
+    props[k] = (...a) => {
+      log(t.type + "." + k + "(" + a.map((x) => JSON.stringify(x)).join(", ") + ")");
+      if (k === "onChange") set((p) => ("on" in p ? { ...p, on: a[0] } : { ...p, value: a[0] }));
+      if (k === "onScrub" && "playhead" in s && a[0] >= 0 && a[0] <= 1) set((p) => ({ ...p, playhead: a[0] }));
+      if (k === "onPress" && "active" in s) set((p) => ({ ...p, active: !p.active }));
+    };
+  }
+  const C = window[t.type];
+  return C ? h(C, props) : h("div", { className: "err" }, "missing " + t.type);
+}
+
+function App() {
+  const [msg, setMsg] = useState("interact with any primitive — callbacks log here");
+  const [scale, setScale] = useState(1);
+  logSet = setMsg;
+  const only = location.hash.slice(1).split(",").filter(Boolean);
+  const label = (v) => { const e = Object.entries(v).map(([k, x]) => k.startsWith("__cb_") ? k.slice(5) + ": fn" : k + ": " + (Array.isArray(x) ? "[" + x.length + "]" : JSON.stringify(x))); return e.length ? e.join(", ") : "base"; };
+  return h("div", { className: "wrap" },
+    h("h1", null, "cp on A"),
+    h("div", { className: "sub" }, "Samples and variations derived from each contract. Dashed outline = the slot a leaf would give it."),
+    h("div", { className: "ctrls" }, "slot scale ",
+      h("input", { type: "range", min: 0.5, max: 2, step: 0.1, value: scale, onChange: (e) => setScale(+e.target.value) }), " " + scale.toFixed(1) + "×"),
+    LIB.filter((t) => !only.length || only.includes(t.type)).map((t) => {
+      const { base, vars } = buildVariations(t);
+      return h("section", { key: t.type },
+        h("h2", null, t.type), h("p", { className: "desc" }, t.description),
+        h("div", { className: "contract" }, JSON.stringify(t.props)),
+        vars.map((v, vi) => h("div", { className: "row", key: vi },
+          h("div", { className: "vlabel" }, label(v)),
+          SLOTS.map(([n, w, hh]) => h("div", { className: "cell", key: n },
+            h("div", { className: "slot", style: { width: w * scale, height: hh * scale } },
+              h(Boundary, null, h(Harness, { t, init: { ...base, ...v } }))),
+            h("div", { className: "cap" }, n + " " + Math.round(w * scale) + "×" + Math.round(hh * scale)))))));
+    }),
+    h("div", { className: "log" }, msg));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>

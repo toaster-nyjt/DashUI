@@ -11,10 +11,11 @@ import { generatePrimitive } from "@/app/utils/primitiveGen";
 import { runLog } from "@/app/utils/runLog";
 
 export async function POST(req: Request) {
-  const { task, hoist, style, taskID } = await req.json() as {
+  const { task, hoist, style, focal = [], taskID } = await req.json() as {
     task: string;
     hoist: HoistResult;
     style: string;   // the UI's token sheet (VISUAL GUIDELINES)
+    focal?: string[]; // the UI's focal types (focal route); [] = none
     taskID?: number;
   };
   const t0 = Date.now();
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
   const usage = derivePrimitiveUsage(hoist);
   const companions = derivePrimitiveCompanions(hoist);
   const results = await Promise.all(hoist.library.map(async (prim) =>
-    [prim.type, await generatePrimitive(task, prim, hoist.library, usage[prim.type], companions[prim.type], style, taskID)] as const));
+    [prim.type, await generatePrimitive(task, prim, hoist.library, usage[prim.type], companions[prim.type], style, focal, taskID)] as const));
 
   const code: Record<string, string> = {};
   const floors: Record<string, PrimitiveFloor> = {};
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
   const dropped = results.filter(([, r]) => !r.code || !r.floor).map(([type]) => type);
 
   runLog(taskID, "primitives:done", `${Object.keys(code).length}/${hoist.library.length} type(s) usable in ${((Date.now() - t0) / 1000).toFixed(1)}s`,
-    { usable: Object.keys(code), dropped, held: Object.fromEntries(hoist.library.filter((t) => heldTypeNames(t).length).map((t) => [t.type, heldTypeNames(t)])), attempts: Object.fromEntries(results.map(([t, r]) => [t, r.attempts])), floors });
+    { usable: Object.keys(code), dropped, focal, held: Object.fromEntries(hoist.library.filter((t) => heldTypeNames(t).length).map((t) => [t.type, heldTypeNames(t)])), attempts: Object.fromEntries(results.map(([t, r]) => [t, r.attempts])), floors });
 
   return Response.json({ code, floors });
 }

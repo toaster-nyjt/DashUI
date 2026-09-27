@@ -27,6 +27,7 @@ Full context: `docs/UI_GENERATOR.md` (§1 gotchas, §2 validation table, §14 pr
 ## Testing and deciding changes
 - **Compare offline first, through the real app code** (the `docs/fixtures` harnesses, on pinned inputs), with more than one sample and with renders when the output is visual (`map-probe.mjs`, `leaf-map-probe.mjs`, `leaf-render.mjs`). Check every claim against the data before reporting it.
 - **Present the numbers and a recommendation; the user decides** whether to switch.
+- **Prompt QA after a prompt change:** render the prompts with `docs/fixtures/prompt-qa-render.cjs` and give a fresh subagent the renders, these rules and `docs/PROMPT_QA.md`. It must not re-report an entry already decided there unless the quoted text changed. Record every new finding and its decision in that ledger.
 - **Document every change:**
   - the decision in plan §0.1;
   - the evidence in a `docs/fixtures/model-exp/*.md` report;

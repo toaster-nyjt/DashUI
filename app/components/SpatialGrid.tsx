@@ -3,7 +3,7 @@ import { useRef, useEffect, useState } from 'react';
 import GeneratedBox from './GeneratedBox';
 import { XY, defaultXY, GeneratedBoxProps, ComponentDef, Placement, numGridBlocksWide, numVHTall, HoistResult, PrimitiveSet, PrimitiveFloor } from '../utils/spec';
 import { COMPONENT_REGISTRY } from '../utils/componentRegistry';
-import { validateLayout, validateConnectivity, logRegistry, resolveComponent, buildChannels, validateWiring, validateStyleSheet, validateHoist } from '../utils/helpers';
+import { validateLayout, validateConnectivity, logRegistry, resolveComponent, buildChannels, validateWiring, validateStyleSheet, validateHoist, validateFocal } from '../utils/helpers';
 
 // How many times to re-ask the layout route for a valid (gap-free) tiling
 const LAYOUT_RETRIES = 3;
@@ -15,6 +15,8 @@ const PATH_RETRIES = 3;
 const STYLE_RETRIES = 3;
 // How many times to re-ask the hoist route for a library that covers every feature
 const HOIST_RETRIES = 3;
+// How many times to re-ask the focal route for 1–2 valid focal type names
+const FOCAL_RETRIES = 3;
 
 export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning, setHasEmptyTarget, canvasWidth, setCanvasWidth }
   : { interactMode: boolean; taskRequest: { prompt: string; id: number } | null; setIsDesigning: React.Dispatch<React.SetStateAction<boolean>>; setHasEmptyTarget: React.Dispatch<React.SetStateAction<boolean>>;
@@ -272,26 +274,55 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
     return null;
   };
 
+  // Calls the focal route and re-asks (feeding back the validation error) until it names 1–2 library
+  // types (a held type is repaired to its holder). [] = no focal types: every prompt stays as without them.
+  const fetchValidFocal = async (task: string, components: { name: string; role?: string }[], hoist: HoistResult): Promise<string[]> => {
+    let previousError: string | undefined;
+    for (let attempt = 1; attempt <= FOCAL_RETRIES; attempt++) {
+      try {
+        const res = await fetch('/api/focal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task, components: components.map((c) => ({ name: c.name, role: c.role })), hoist, previousError, taskID: taskRequest!.id }),
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`);
+
+        const { focal, repairs, error } = validateFocal(body, hoist.library);
+        if (focal) { logRun(taskRequest!.id, "focal:valid", `attempt ${attempt}: ${focal.join(", ")}${repairs?.length ? " (repaired " + repairs.join(", ") + ")" : ""}`, { focal, repairs }); return focal; }
+
+        previousError = error;
+        logRun(taskRequest!.id, "focal:rejected", `attempt ${attempt}/${FOCAL_RETRIES}: ${error}`);
+      } catch (e) {
+        previousError = e instanceof Error ? e.message : String(e);
+        logRun(taskRequest!.id, "focal:errored", `attempt ${attempt}/${FOCAL_RETRIES}: ${previousError}`);
+      }
+    }
+    console.error(`Focal failed after ${FOCAL_RETRIES} attempts; no focal primitives. Last error: ${previousError}`);
+    logRun(taskRequest!.id, "focal:exhausted", `no focal primitives. Last error: ${previousError}`);
+    return [];
+  };
+
   // Generates every library type through ONE request to the primitives route, which runs
   // them in parallel on the server, each with its own validate-and-retry loop (one request,
   // so the browser's per-host connection limit can't queue them). A type that never passes
   // is left out of `code`; resolveComponent then hands its features to the leaf as null
   // (build it yourself), so one bad primitive never costs the whole library. A failed
   // request means no primitives at all: the UI is built by hand.
-  const fetchValidPrimitives = async (task: string, hoist: HoistResult, style: string): Promise<PrimitiveSet> => {
+  const fetchValidPrimitives = async (task: string, hoist: HoistResult, style: string, focal: string[]): Promise<PrimitiveSet> => {
     try {
       const res = await fetch("/api/primitives", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task, hoist, style, taskID: taskRequest!.id }),
+        body: JSON.stringify({ task, hoist, style, focal, taskID: taskRequest!.id }),
       });
       if (!res.ok) throw new Error(`request failed (${res.status})`);
       const { code, floors } = await res.json() as { code: Record<string, string>; floors: Record<string, PrimitiveFloor> };
-      return { hoist, code, floors };
+      return { hoist, code, floors, focal: focal.filter((t) => t in code) };
     } catch (e) {
       console.error("Primitive stage failed; building this UI without primitives:", e);
       logRun(taskRequest!.id, "primitives:failed", `building this UI without primitives: ${e instanceof Error ? e.message : String(e)}`);
-      return { hoist, code: {}, floors: {} };
+      return { hoist, code: {}, floors: {}, focal: [] };
     }
   };
 
@@ -370,13 +401,14 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       //    - STYLE: ONE coherent visual style for the whole UI, so every box matches.
       //      Only manual boxes (no taskID) skip it and get the generate route's fallback.
       //    - HOIST: the UI's shared primitive types + each feature's types. null -> this
-      //      UI is built without primitives (hand-built leaves), never aborted.
+      //      UI is built without primitives (hand-built leaves), never aborted. FOCAL runs as
+      //      soon as the hoist returns: the 1–2 types the UI is recognized by.
       //    - LAYOUT: tile the box interior (w x h); a single component fills it.
       const resolvedDefs = defs.map((s) =>
         JSON.parse(resolveComponent({ name: s.name, activeIdx: s.defaultActiveIdx }, defs)));
-      const [style, hoist, placements] = await Promise.all([
+      const [style, { hoist, focal }, placements] = await Promise.all([
         fetchValidStyle(task, resolvedDefs),
-        fetchValidHoist(task, resolvedDefs),
+        fetchValidHoist(task, resolvedDefs).then(async (hoist) => ({ hoist, focal: hoist ? await fetchValidFocal(task, resolvedDefs, hoist) : [] })),
         defs.length === 1
           ? Promise.resolve<Placement[]>([{ name: defs[0].name, colStart: 1, colEnd: w, rowStart: 1, rowEnd: h }])
           : fetchValidLayout(task, resolvedDefs, w, h),
@@ -395,7 +427,7 @@ export default function SpacialGrid({ interactMode, taskRequest, setIsDesigning,
       //    Stored per taskID beside the style; a UI with no usable primitive stores none,
       //    so its leaves generate exactly as manual boxes do.
       if (hoist) {
-        const prims = await fetchValidPrimitives(task, hoist, style);
+        const prims = await fetchValidPrimitives(task, hoist, style, focal);
         logRun(taskRequest!.id, "run:primitives", `done at ${secs()}`);
         if (Object.keys(prims.code).length) setPrimitiveSpec((prev) => ({ ...prev, [taskRequest!.id]: prims }));
       }

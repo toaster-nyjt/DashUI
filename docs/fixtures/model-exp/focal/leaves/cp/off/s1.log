@@ -1,0 +1,4 @@
+s1: budget=true claude-opus-5 adaptive low — wall 76s
+  Night City Map            45s  out  4369 = code  3957 + think   412  end_turn  budget-comment:2  (post-processed)
+  V Vitals Status HUD       48s  out  3487 = code  3315 + think   172  end_turn  budget-comment:2  (post-processed)
+  Cyberware Ripperdoc Loadout  76s  out  7205 = code  5512 + think  1693  end_turn  budget-comment:2  (post-processed)

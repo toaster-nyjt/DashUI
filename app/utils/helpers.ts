@@ -268,8 +268,8 @@ const hasPlacementData = (holder: PrimitiveType): boolean =>
 
 // The primitive prompt switches for one type (buildPrimitiveSystemPrompt): companions present,
 // holds other types (HELD LAYERS) and which of them it places itself, the holders that draw it
-// (HELD), and whether it places itself on them.
-export const primitivePromptSwitches = (prim: PrimitiveType, companions: PrimitiveCompanions[], library: PrimitiveType[]) => {
+// (HELD), whether it places itself on them, and whether it is a focal type.
+export const primitivePromptSwitches = (prim: PrimitiveType, companions: PrimitiveCompanions[], library: PrimitiveType[], focal: string[] = []) => {
   const mode = heldPlacement(prim, library);
   return {
     companions: companions.length > 0,
@@ -277,8 +277,30 @@ export const primitivePromptSwitches = (prim: PrimitiveType, companions: Primiti
     places: Object.keys(mode).filter((n) => mode[n] === "surface"),
     heldBy: library.filter((t) => heldTypeNames(t).includes(prim.type)).map((t) => t.type),
     selfPlaced: hasCoordinates(prim),
+    focal: focal.includes(prim.type),
   };
 };
+
+export const FOCAL_MAX = 2;
+
+// Validates a focal-route result: 1 to FOCAL_MAX distinct library type names. A held type is
+// repaired to its holder (the surface is the focal element). Returns the repaired picks, or the
+// first violation to feed back on retry (see fetchValidFocal).
+export function validateFocal(result: unknown, library: PrimitiveType[]): { focal?: string[]; repairs?: string[]; error?: string } {
+  const picks = (result as { focal?: unknown })?.focal;
+  if (!Array.isArray(picks) || picks.some((p) => typeof p !== "string"))
+    return { error: `Output must be {"focal": [type names]}.` };
+  const repairs: string[] = [];
+  const focal = [...new Set(picks.map((n: string) => {
+    const holder = library.find((t) => heldTypeNames(t).includes(n));
+    if (holder) { repairs.push(`${n} -> ${holder.type}`); return holder.type; }
+    return n;
+  }))];
+  for (const n of focal)
+    if (!library.some((t) => t.type === n)) return { error: `"${n}" is not a library type name; use exact type names from the PRIMITIVE LIBRARY.` };
+  if (focal.length < 1 || focal.length > FOCAL_MAX) return { error: `Pick 1 or ${FOCAL_MAX} types; got ${focal.length}.` };
+  return { focal, repairs };
+}
 
 // Validates a hoist-route result against the resolved components it was given: every
 // component and every feature key present verbatim, every assigned type in the library,
